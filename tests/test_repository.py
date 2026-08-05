@@ -18,6 +18,7 @@ class RepositoryContractTests(unittest.TestCase):
         frontmatter = match.group(1) if match else ""
         self.assertIn("name: beaker-setup", frontmatter)
         self.assertIn("description:", frontmatter)
+        self.assertIn("license: MIT", frontmatter)
         self.assertNotIn("TODO", frontmatter)
 
     def test_references_are_real_and_one_level_deep(self) -> None:

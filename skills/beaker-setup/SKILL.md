@@ -1,6 +1,7 @@
 ---
 name: beaker-setup
 description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring .beaker/beaker.yaml, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, validating with beaker run dry-run, or preparing a hosted optimization run.
+license: MIT
 ---
 
 # Beaker setup
