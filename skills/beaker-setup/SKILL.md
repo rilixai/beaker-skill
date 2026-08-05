@@ -32,7 +32,11 @@ Turn the repository's real LLM or agent task into a Beaker optimization spec. Fi
 3. Replace every `TODO(beaker)` in the selected spec:
    - `_seed_targets`: use the prompts currently sent by the application.
    - `_run_case`: call the real agent/LLM and apply every optimized prompt.
-   - scorer: match actual output and ground-truth fields and weights.
+   - scorer: match actual output and ground-truth fields and weights. If it
+     uses an LLM judge, route hosted judge calls through
+     `scoring_inference_target(...)` so gateway accounting and run budgets
+     include them; retain the project's normal provider client only for local
+     dry-runs where that helper returns `None`.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
 4. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
 5. Add a smoke assertion or captured-call test proving optimized prompts reach the model call.
@@ -43,7 +47,7 @@ Read [datasets-and-spec.md](references/datasets-and-spec.md) before deriving dat
 
 Keep Beaker-selected model routing inside the evaluation/spec path. If `runtime.model` is absent, retain the application's existing client and model defaults. If it is present, adapt `inference_target(runtime)` to the framework's existing client type through the narrowest available injection seam.
 
-Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, framework instrumentation, or trace evidence.
+Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
 ## Authenticate and validate
 
@@ -74,6 +78,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
+- Never let a hosted LLM judge bypass `scoring_inference_target(...)`; direct
+  provider clients are only the local dry-run fallback.
 - Never require `runtime.model` for ordinary dry-runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.

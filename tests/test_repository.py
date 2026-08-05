@@ -54,6 +54,14 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("packages/" + "beaker", content)
         self.assertNotIn("BEAKER_SETUP" + "_CORE", content)
 
+    def test_llm_judge_routing_uses_public_gateway_helper(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
+        self.assertIn("scoring_inference_target", skill)
+        self.assertIn("scoring_inference_target", routing)
+        self.assertIn("LLM-as-a-judge scoring", routing)
+        self.assertIn("local dry-runs", routing)
+
 
 if __name__ == "__main__":
     unittest.main()
