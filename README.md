@@ -19,7 +19,7 @@ npx skills add rilixai/beaker-skill --skill beaker-setup --agent cursor --global
 npx skills add rilixai/beaker-skill --skill beaker-setup --agent devin --global
 ```
 
-GitHub CLI:
+GitHub CLI 2.90 or newer:
 
 ```bash
 gh skill install rilixai/beaker-skill beaker-setup
