@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "beaker",
+  "owner": {
+    "name": "Beaker",
+    "email": "matt@rilix.ai"
+  },
+  "metadata": {
+    "description": "Set up Beaker prompt optimization in a repository.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "beaker-setup",
+      "description": "Configure a repository for Beaker prompt optimization.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/beaker-setup"]
+    }
+  ]
+}

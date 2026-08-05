@@ -1,0 +1,4 @@
+interface:
+  display_name: "Beaker Setup"
+  short_description: "Set up Beaker prompt optimization"
+  default_prompt: "Use $beaker-setup to configure this repository for Beaker prompt optimization."

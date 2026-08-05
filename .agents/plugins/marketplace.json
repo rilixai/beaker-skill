@@ -1,0 +1,20 @@
+{
+  "name": "beaker",
+  "interface": {
+    "displayName": "Beaker"
+  },
+  "plugins": [
+    {
+      "name": "beaker-setup",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
