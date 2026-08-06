@@ -64,6 +64,10 @@ credentials or placeholder datasets.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
+Leave `scope_key` absent or unset in `beaker.yaml` by default. Ordinary setups
+use the selected agent's default scope; a custom scope is an advanced isolation
+option, not a way to distinguish repositories, specs, or repeated setup runs.
+
 ## Build the real integration
 
 1. Identify the selected task's input, expected answer, scored fields, prompt targets, and application call path.
@@ -106,26 +110,58 @@ defaults.
 
 Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
-## Authenticate and validate
+## Authenticate, discover the agent, and validate
 
-After the target is known, authenticate with:
+After the optimization target is known, authenticate and inspect the
+organization's existing agents before running any command that could create an
+agent:
 
 ```bash
+beaker auth status
 beaker login
-beaker agent setup "<Agent Name>" --repo <owner/name>
+beaker agent list
 ```
 
-`beaker login` creates or reuses the user-level CLI session. Then run `beaker
-agent setup` from the same selected project root and pass the same global
-`--config-file`/`BEAKER_CONFIG_FILE` selection used during init. Its positional
-value selects an existing agent by name or key, or names a new agent; `--repo`
-is required when creating one. If running a later command from the Git root
-instead, use the full repository-relative path, for example `--config-file
+Skip `beaker login` only when `beaker auth status` confirms the stored session
+is valid. Review `beaker agent list` for an agent representing the same
+optimization target, considering its name, purpose, and repository association.
+Do not treat a missing or different custom scope as evidence that a new agent is
+needed.
+
+When a suitable agent already exists, stop before setup and ask the developer
+to choose one of these outcomes:
+
+1. reuse that agent with its default scope;
+2. create a different agent with a distinct optimization-target name; or
+3. reuse that agent and explicitly add a custom scope.
+
+Recommend reuse with the default scope. Do not make this decision silently and
+do not configure a custom scope unless the developer chooses the third option
+and supplies or approves its stable key. For that advanced case, set
+`scope_key` in `beaker.yaml` for a persistent scope or pass `--scope-key` to the
+specific run; otherwise leave both unset.
+
+After the developer selects an existing agent, run:
+
+```bash
+beaker agent setup "<Existing Agent Name or key>"
+```
+
+Pass `--repo <owner/name>` only when the selected agent still needs that
+repository association. If no suitable agent exists, or the developer
+explicitly chooses a different agent, confirm the new optimization-target name
+and then run `beaker agent setup "<New Agent Name>" --repo <owner/name>`.
+Because an unknown name creates an agent, never use a guessed or merely
+repo-derived name before completing discovery and obtaining that choice.
+
+Run `beaker agent setup` from the same selected project root and pass the same
+global `--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If
+running a later command from the Git root instead, use the full
+repository-relative path, for example `--config-file
 services/invoices/.beaker/beaker.yaml`. Setup stores the discovered YAML on the
 agent as `beaker_config_path` relative to the Git root. Rerunning setup also
-synchronizes that path for an existing repository-associated agent. Pass
-`--repo` when selecting an unassociated agent so setup can associate it and
-store the path. A hosted run can then find a config such as
+synchronizes that path for an existing repository-associated agent. A hosted
+run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
 
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
@@ -147,6 +183,11 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Never create a generic repository-named Beaker agent; name the optimization target.
+- Never create or select an agent before a valid user login and `beaker agent
+  list` discovery. If a suitable agent exists, ask whether to reuse it, create
+  a distinct agent, or explicitly add a custom scope.
+- Never set `scope_key` or pass `--scope-key` in an ordinary setup. Custom
+  scopes are opt-in for power users; the default is no explicit scope.
 - Never silently choose among multiple plausible tasks.
 - Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never place Beaker-owned code or files outside `.beaker/` when they can live there.
