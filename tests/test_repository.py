@@ -70,6 +70,41 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("LLM-as-a-judge scoring", routing)
         self.assertIn("local dry-runs", routing)
 
+    def test_skill_explains_nested_beaker_config_paths(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        for text in (skill, operations):
+            self.assertIn("beaker_config_path", text)
+            self.assertIn("--config-file", text)
+            self.assertIn("BEAKER_CONFIG_FILE", text)
+            self.assertIn("services/invoices/.beaker/beaker.yaml", text)
+            self.assertIn("relative to the Git root", " ".join(text.split()))
+
+    def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+
+        self.assertIn("Treat Beaker as development/evaluation tooling, not an application runtime", skill)
+        self.assertIn("Keep every Beaker-owned file under the selected project's `.beaker/`", skill)
+        self.assertIn("Never import or initialize Beaker from production entrypoints", skill)
+        self.assertIn("Never create or modify test", datasets)
+        self.assertIn("Keep all Beaker imports", routing)
+        self.assertIn("Do not modify a central LLM wrapper", routing)
+        self.assertIn("Production entrypoints and deployment/runtime configuration", handoff)
+
+    def test_skill_never_adds_consumer_tests(self) -> None:
+        skill_dir = SKILL.parent
+        content = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in [SKILL, *(skill_dir / "references").glob("*.md")]
+        )
+        self.assertIn("Never create or modify tests", content)
+        self.assertIn("existing tests are read-only sources of truth", content)
+        self.assertNotIn(".beaker/tests", content)
+        self.assertNotIn("Add a smoke assertion", content)
+
 
 if __name__ == "__main__":
     unittest.main()

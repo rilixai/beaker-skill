@@ -2,14 +2,22 @@
 
 ## Model-selection boundary
 
-Treat `runtime.model` as an explicit request for Beaker-controlled model selection in the evaluation path. Its absence means use the application's existing production-like client and model defaults.
+Treat `runtime.model` as an explicit request for Beaker-controlled model
+selection in the evaluation path. Its absence means use the application's
+existing production-like client and model defaults. Keep all Beaker imports,
+gateway construction, and routing decisions inside `.beaker/`.
 
 Prefer these seams in order:
 
-1. Inject a client/model into an existing eval entrypoint from the spec.
-2. Add optional keyword arguments to the nearest agent factory or eval function, preserving existing defaults.
-3. Add a small Beaker adapter beside the spec.
-4. Modify a central LLM wrapper only when no narrower seam exists.
+1. Inject a client/model into an existing interface directly from the spec.
+2. Add a small adapter beside the spec under `.beaker/`.
+3. Only if both fail, add optional keyword arguments to the nearest agent
+   factory or eval function. Preserve existing defaults and do not import
+   Beaker from application code.
+
+Do not modify a central LLM wrapper, production entrypoint, global environment
+routing, or deployment configuration for Beaker. If the application cannot be
+evaluated without such changes, stop and explain the limitation instead.
 
 Example:
 
@@ -39,7 +47,9 @@ The target speaks OpenAI Chat Completions, including SSE streaming with `stream:
 
 `inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. Prefer `runtime.canonical_model_id`; the helper may combine an explicit provider and model but does not guess an ambiguous provider.
 
-Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped Beaker gateway credentials. Do not add global environment-driven routing when optional per-call or factory injection is possible.
+Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped
+Beaker gateway credentials. Never add global environment-driven routing for
+Beaker.
 
 ## LLM-as-a-judge scoring
 
@@ -85,9 +95,10 @@ Use an explicit canonical provider/model name such as
 `base_url`, `api_key`, and `model` to the project's existing async client when
 it is not OpenAI SDK-based. Keep `score_case` non-blocking.
 
-Validate both routes when feasible: with runtime gateway variables present,
-assert the judge client receives the runtime target; without them, assert the
-local provider path remains usable. Hosted setup does not need a provider API
+Exercise both routes through Beaker's dry-run or trace workflow when feasible:
+with runtime gateway variables present, verify the judge uses the runtime
+target; without them, verify the local provider path remains usable. Do not add
+or modify tests for this validation. Hosted setup does not need a provider API
 key solely for a judge that uses the runtime gateway.
 
 ## Trace evidence
