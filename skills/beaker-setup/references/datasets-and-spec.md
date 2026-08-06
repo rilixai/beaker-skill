@@ -2,7 +2,9 @@
 
 ## Establish the dataset contract
 
-Find real labeled examples in local evals, tests, JSONL/CSV files, API fixtures, or uploaded datasets. For the selected task, identify:
+Find real labeled examples in local evals, tests, JSONL/CSV files, API fixtures,
+or uploaded datasets. Treat existing tests and fixtures as read-only evidence;
+never edit or repurpose them for Beaker. For the selected task, identify:
 
 - input shape;
 - expected/ground-truth shape;
@@ -16,6 +18,11 @@ Declare the matching JSON Schema through the loader/spec so uploads can be valid
 If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running dry-run, building, or uploading synthetic data.
 
 ## Map repository code into the spec
+
+Keep the spec and its helper adapters under `.beaker/`. Import the application's
+public or existing internal interfaces from the spec; do not create Beaker
+orchestration modules in the application package. Never create or modify test
+files, fixtures, snapshots, helpers, or test configuration for Beaker.
 
 | Spec component | Repository source of truth |
 |---|---|
@@ -34,6 +41,13 @@ Distinguish execution failure from a bad answer:
 
 ## Prove prompt application
 
-For every `_seed_targets` entry, trace the path into the real model call. Rebuild or clone constructor-bound agents per target bundle, or add a narrow `apply_targets`/factory seam. Add a captured-call assertion, test double, or smoke test that fails if the target prompt is ignored.
+For every `_seed_targets` entry, trace the path into the real model call. Rebuild
+or clone constructor-bound agents per target bundle, or add a narrow
+`apply_targets`/factory seam. Prove the path with `beaker run dry-run` and, when
+needed, traced validation plus `beaker trace inspect`; do not add tests or test
+doubles.
 
-Do not place uploaded data under `.beaker/`; that directory owns Beaker configuration, credentials, and local trace receipts.
+Do not place datasets under `.beaker/`. Existing labeled data is source material,
+not Beaker-owned tooling: leave it in its established location and reference it
+from the config or command. `.beaker/` owns Beaker config, specs, adapters,
+credentials, and local trace receipts.

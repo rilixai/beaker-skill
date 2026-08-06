@@ -15,6 +15,16 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 
 ## Completion checklist
 
+- Beaker-owned config, specs, adapters, credentials, and traces are under
+  the selected project's `.beaker/` directory.
+- No tests, fixtures, snapshots, test helpers, or test configuration were
+  created or modified; existing tests were read-only evidence.
+- Production entrypoints and deployment/runtime configuration do not import,
+  initialize, or route through Beaker.
+- Any application-code edit is a minimal optional injection seam with unchanged
+  defaults and no Beaker import; otherwise application code is untouched.
+- Beaker is recorded as development/tooling rather than a production runtime
+  dependency when the project supports that separation.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
 - Every optimized prompt reaches its corresponding model call.
