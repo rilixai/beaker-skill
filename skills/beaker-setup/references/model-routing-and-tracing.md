@@ -54,8 +54,21 @@ Beaker.
 ## LLM-as-a-judge scoring
 
 An LLM judge is optimizer-owned traffic, not part of the candidate rollout.
+Declare its model once on the agent's `Spec` with the optional
+`llm_scorer_model` field. Use a canonical `provider:model` value such as
+`openai:gpt-4.1-mini` or `anthropic:claude-sonnet-4-5`. Omit the field when the
+scorer is deterministic. If the repository or developer has not established
+which model an LLM judge should use, ask instead of choosing a default.
+
+The scorer model is evaluation policy for this agent. It stays fixed when
+Beaker evaluates different `runtime.model` values and when the application runs
+through its normal client/model path with no selected runtime model. Never copy
+or derive `llm_scorer_model` from `runtime.model`; different agents may declare
+different judge models.
+
 For hosted runs, always construct its OpenAI-compatible client from
-`scoring_inference_target(...)`. This uses the runtime-scoped gateway token, so
+`scoring_inference_target()`. This uses a scorer-scoped gateway token backed by
+the platform's existing provider credentials, so
 judge tokens and cost are included automatically in the run ledger and budget.
 Do not use the application's normal provider client when this target is
 available.
@@ -67,17 +80,18 @@ client and credentials.
 ```python
 from openai import AsyncOpenAI
 
-from beaker import CaseScore, scoring_inference_target
+from beaker import CaseScore, Spec, scoring_inference_target
 
 
 JUDGE_MODEL = "openai:gpt-4.1-mini"
+LOCAL_JUDGE_MODEL = "gpt-4.1-mini"
 
 
 def _judge_client() -> tuple[AsyncOpenAI, str]:
-    target = scoring_inference_target(JUDGE_MODEL)
+    target = scoring_inference_target()
     if target is not None:
         return AsyncOpenAI(base_url=target.base_url, api_key=target.api_key), target.model
-    return AsyncOpenAI(), "gpt-4.1-mini"
+    return AsyncOpenAI(), LOCAL_JUDGE_MODEL
 
 
 class LLMJudgeScorer:
@@ -88,12 +102,20 @@ class LLMJudgeScorer:
             messages=build_judge_messages(case=case, result=result),
         )
         return case_score_from_judgment(judgment)
+
+
+def build_spec() -> Spec:
+    return Spec(
+        # ...the agent's seed targets, loader, and run_case...
+        scorer=LLMJudgeScorer(),
+        llm_scorer_model=JUDGE_MODEL,
+    )
 ```
 
-Use an explicit canonical provider/model name such as
-`openai:gpt-4.1-mini` or `anthropic:claude-sonnet-4-5`. Adapt the returned
-`base_url`, `api_key`, and `model` to the project's existing async client when
-it is not OpenAI SDK-based. Keep `score_case` non-blocking.
+Adapt the returned `base_url`, `api_key`, and `model` to the project's existing
+async client when it is not OpenAI SDK-based. Keep `score_case` non-blocking.
+Keep the local fallback on the same judge model declared by the spec, translating
+only the provider-specific model syntax when the local SDK requires it.
 
 Exercise both routes through Beaker's dry-run or trace workflow when feasible:
 with runtime gateway variables present, verify the judge uses the runtime

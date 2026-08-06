@@ -72,10 +72,14 @@ ambiguous; use `--discover` to locate existing factories.
    - `_seed_targets`: use the prompts currently sent by the application.
    - `_run_case`: call the real agent/LLM and apply every optimized prompt.
    - scorer: match actual output and ground-truth fields and weights. If it
-     uses an LLM judge, route hosted judge calls through
-     `scoring_inference_target(...)` so gateway accounting and run budgets
-     include them; retain the project's normal provider client only for local
-     dry-runs where that helper returns `None`.
+     uses an LLM judge, set `Spec.llm_scorer_model` to that agent's fixed
+     canonical `provider:model`, then route hosted judge calls through
+     `scoring_inference_target()` so gateway accounting and run budgets include
+     them. The judge model must not follow `runtime.model`; retain the same
+     local judge model and normal provider client only for local dry-runs where
+     the helper returns `None`. Omit the field for deterministic scorers. If an
+     LLM judge exists but its intended model is not established, ask the
+     developer rather than choosing a default.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
@@ -143,8 +147,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
-- Never let a hosted LLM judge bypass `scoring_inference_target(...)`; direct
+- Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
   provider clients are only the local dry-run fallback.
+- Never set `llm_scorer_model` for a deterministic scorer, infer it from
+  `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary dry-runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.

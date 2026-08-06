@@ -29,6 +29,7 @@ files, fixtures, snapshots, helpers, or test configuration for Beaker.
 | `_seed_targets` | Current system prompts, templates, or prompt constants |
 | `_run_case` | Real async agent/LLM evaluation path; thread every target prompt into its call sites |
 | scorer | Prediction and ground-truth fields plus objective weights |
+| `llm_scorer_model` | Optional fixed canonical `provider:model` for an LLM judge; omit for deterministic scoring |
 | data loader | Real labeled rows and their validation contract |
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
