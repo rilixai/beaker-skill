@@ -68,6 +68,12 @@ ambiguous; use `--discover` to locate existing factories.
 
 1. Identify the selected task's input, expected answer, scored fields, prompt targets, and application call path.
 2. Derive dataset rows only from real evals, fixtures, files, hosted previews, or examples supplied by the developer. If none exist, stop and request labeled examples or an upload.
+   When existing labeled data must be converted to JSONL for Beaker, keep the
+   converter under `.beaker/`, stage its generated files with
+   `tempfile.TemporaryDirectory()`, and invoke `beaker dataset upload` before
+   leaving that context. Never save generated JSONL in the user's repository or
+   under `.beaker/`. Existing source-of-truth datasets remain in their established
+   locations.
 3. Replace every `TODO(beaker)` in the selected spec:
    - `_seed_targets`: use the prompts currently sent by the application.
    - `_run_case`: call the real agent/LLM and apply every optimized prompt.
@@ -140,6 +146,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never silently choose among multiple plausible tasks.
 - Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never place Beaker-owned code or files outside `.beaker/` when they can live there.
+- Never save generated JSONL dataset files in the user's repository or under
+  `.beaker/`; stage conversions in an OS-managed temporary directory and upload
+  them before cleanup.
 - Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth.
 - Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.

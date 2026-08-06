@@ -62,6 +62,13 @@ Beaker lists names and hints only and does not return plaintext values. Never lo
    beaker dataset show <dataset-name> --agent <agent-key>
    ```
 
+   The upload command requires a directory or JSONL file path. If a conversion
+   script generates that input, it must use an OS-managed temporary directory
+   rather than a path in the repository. Run `beaker dataset upload`
+   synchronously before the temporary directory is removed. Existing
+   source-of-truth dataset directories may be uploaded from their established
+   locations without being copied.
+
 4. Trigger only with explicit developer authorization:
 
    ```bash
