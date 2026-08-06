@@ -49,6 +49,16 @@ Use your marketplace's update flow or:
 npx skills update beaker-setup
 ```
 
+The canonical version is stored in [`VERSION`](VERSION). When releasing a new
+version, update that file and run:
+
+```bash
+python3 scripts/sync_version.py
+```
+
+The repository checks fail if either marketplace manifest drifts from
+`VERSION`.
+
 ## Development
 
 Run the repository checks with:

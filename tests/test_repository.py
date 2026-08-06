@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "beaker-setup" / "SKILL.md"
+VERSION_FILE = ROOT / "VERSION"
 
 
 class RepositoryContractTests(unittest.TestCase):
@@ -39,6 +40,13 @@ class RepositoryContractTests(unittest.TestCase):
         marketplace = json.loads((ROOT / ".agents" / "plugins" / "marketplace.json").read_text())
         self.assertEqual(marketplace["plugins"][0]["source"]["path"], ".")
         self.assertTrue(SKILL.is_file())
+
+    def test_manifest_versions_match_central_version(self) -> None:
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
+        claude = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
+        self.assertEqual(codex["version"], version)
+        self.assertEqual(claude["metadata"]["version"], version)
 
     def test_public_content_has_no_private_source_dependency(self) -> None:
         allowed_suffixes = {".md", ".json", ".yml", ".yaml", ".py"}
