@@ -36,7 +36,7 @@ insufficient. Do not refactor production code for Beaker.
 
 1. Inspect the repository for `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt definitions, model/agent calls, evals, and labeled fixtures. In a monorepo, identify the package or service being optimized before choosing the config location; do not assume the Git root.
 2. If multiple tasks are plausible, summarize them and ask which one to optimize first.
-3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent login, validation, builds, and runs:
+3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent setup, validation, builds, and runs:
 
    ```bash
    cd services/invoices
@@ -105,21 +105,25 @@ Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) whe
 After the target is known, authenticate with:
 
 ```bash
-beaker auth status
-beaker login --agent --agent-name "<Agent Name>" --repo <owner/name>
+beaker login
+beaker agent setup "<Agent Name>" --repo <owner/name>
 ```
 
-Run login from the same selected project root and pass the same global
-`--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If running a
-later command from the Git root instead, use the full repository-relative path,
-for example `--config-file services/invoices/.beaker/beaker.yaml`. Login stores
-the discovered YAML on the agent as `beaker_config_path` relative to the Git
-root. Rerunning login also synchronizes that path for an existing agent, so a
-hosted run can find a config such as
+`beaker login` creates or reuses the user-level CLI session. Then run `beaker
+agent setup` from the same selected project root and pass the same global
+`--config-file`/`BEAKER_CONFIG_FILE` selection used during init. Its positional
+value selects an existing agent by name or key, or names a new agent; `--repo`
+is required when creating one. If running a later command from the Git root
+instead, use the full repository-relative path, for example `--config-file
+services/invoices/.beaker/beaker.yaml`. Setup stores the discovered YAML on the
+agent as `beaker_config_path` relative to the Git root. Rerunning setup also
+synchronizes that path for an existing repository-associated agent. Pass
+`--repo` when selecting an unassociated agent so setup can associate it and
+store the path. A hosted run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
 
-Login writes secrets only to `.beaker/.env` under the directory where it runs.
-Never print, echo, or commit them. Read
+Agent setup writes runtime secrets only to `.beaker/.env` under the directory
+where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
 credentials, datasets, hosted environment variables, builds, or runs.
 
