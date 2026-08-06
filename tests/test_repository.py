@@ -105,6 +105,16 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn(".beaker/tests", content)
         self.assertNotIn("Add a smoke assertion", content)
 
+    def test_generated_jsonl_is_temporary_and_uploaded_before_cleanup(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+
+        self.assertIn("Never save generated JSONL dataset files", skill)
+        self.assertIn("tempfile.TemporaryDirectory", datasets)
+        self.assertIn("subprocess.run", datasets)
+        self.assertIn("before the temporary directory is removed", operations)
+
 
 if __name__ == "__main__":
     unittest.main()
