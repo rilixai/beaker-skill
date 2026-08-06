@@ -3,12 +3,35 @@
 ## Authentication and agent selection
 
 - `beaker auth status` checks the user-level login; `beaker login` creates it.
-- `beaker agent setup "<Agent Name or key>" --repo <owner/name>` selects an existing optimization target by name or key, or creates a named target, then writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and `BEAKER_AGENT_KEY` to `.beaker/.env`. Run `beaker login` first. `--repo` is required when creating a target and optional when selecting one already associated with a repository.
+- After login, run `beaker agent list` before setup or creation. Compare the
+  available agents by optimization target and repository association; scope
+  configuration is not part of agent identity.
+- If a suitable agent exists, ask the developer whether to reuse it, create a
+  different agent, or reuse it with a custom scope. Recommend reusing it with
+  no explicit scope. Do not choose on the developer's behalf.
+- `beaker agent setup "<Agent Name or key>"` selects an existing optimization
+  target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and
+  `BEAKER_AGENT_KEY` to `.beaker/.env`. Pass `--repo <owner/name>` only when the
+  existing target needs a repository association.
+- An unknown name passed to `beaker agent setup` creates a target. Only do this
+  after discovery finds no suitable agent or the developer explicitly chooses
+  a different agent; creation requires `--repo <owner/name>`.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
 - Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
 Do not ask the developer to paste API keys when CLI login is available. `BEAKER_AGENT_KEY` is an agent selector, not a credential-bound API key.
+
+## Scope defaults
+
+Leave `scope_key` absent or unset in `beaker.yaml` and omit `--scope-key` for a
+normal setup. Beaker then uses the selected agent's default scope. Scopes are
+an advanced, opt-in isolation mechanism; do not add one merely because setup is
+being run from another repository, config path, spec, or task.
+
+If the developer explicitly chooses to add a scope to an existing agent, ask
+for or confirm its stable key. Configure it persistently with `scope_key` in
+`beaker.yaml`, or use `--scope-key <scope-key>` only for the relevant run.
 
 Organization admins can use the user-level login to edit an active agent's mutable metadata without rewriting repo-local credentials:
 
@@ -28,10 +51,12 @@ Enter that root first, then use the same config selection for every command:
 cd services/invoices
 beaker init
 beaker login
+beaker agent list
 beaker agent setup "Invoice Extraction" --repo acme/invoices
 
 # Or choose another location inside this project:
 beaker --config-file config/beaker.yaml init
+beaker agent list
 beaker --config-file config/beaker.yaml agent setup "Invoice Extraction" --repo acme/invoices
 ```
 

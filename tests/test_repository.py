@@ -86,10 +86,27 @@ class RepositoryContractTests(unittest.TestCase):
         content = "\n".join((skill, operations))
 
         self.assertIn("beaker login", content)
-        self.assertIn('beaker agent setup "<Agent Name>"', skill)
+        self.assertIn('beaker agent setup "<Existing Agent Name or key>"', skill)
+        self.assertIn('beaker agent setup "<New Agent Name>"', skill)
         self.assertIn("beaker agent edit", operations)
         self.assertNotIn("beaker login --agent", content)
         self.assertNotIn("--agent-name", content)
+
+    def test_agent_discovery_precedes_creation_and_scopes_are_opt_in(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+
+        for text in (skill, operations):
+            normalized = " ".join(text.split())
+            self.assertIn("beaker auth status", normalized)
+            self.assertIn("beaker agent list", normalized)
+            self.assertIn("no explicit scope", normalized)
+            self.assertIn("reuse", normalized)
+            self.assertIn("create a different agent", normalized)
+            self.assertIn("custom scope", normalized)
+
+        self.assertLess(skill.index("beaker agent list"), skill.index('beaker agent setup "<Existing Agent'))
+        self.assertIn("Never set `scope_key` or pass `--scope-key` in an ordinary setup", skill)
 
     def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
