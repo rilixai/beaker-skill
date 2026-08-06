@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "beaker-setup" / "SKILL.md"
+VERSION_FILE = ROOT / "VERSION"
 
 
 class RepositoryContractTests(unittest.TestCase):
@@ -40,6 +41,13 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertEqual(marketplace["plugins"][0]["source"]["path"], ".")
         self.assertTrue(SKILL.is_file())
 
+    def test_manifest_versions_match_central_version(self) -> None:
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
+        claude = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
+        self.assertEqual(codex["version"], version)
+        self.assertEqual(claude["metadata"]["version"], version)
+
     def test_public_content_has_no_private_source_dependency(self) -> None:
         allowed_suffixes = {".md", ".json", ".yml", ".yaml", ".py"}
         content = "\n".join(
@@ -53,6 +61,14 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("git@github.com/" + "rilixai/rilixai", content)
         self.assertNotIn("packages/" + "beaker", content)
         self.assertNotIn("BEAKER_SETUP" + "_CORE", content)
+
+    def test_llm_judge_routing_uses_public_gateway_helper(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
+        self.assertIn("scoring_inference_target", skill)
+        self.assertIn("scoring_inference_target", routing)
+        self.assertIn("LLM-as-a-judge scoring", routing)
+        self.assertIn("local dry-runs", routing)
 
 
 if __name__ == "__main__":

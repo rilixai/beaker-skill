@@ -20,6 +20,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Every optimized prompt reaches its corresponding model call.
 - Ordinary execution retains application model/client defaults.
 - The selected-model branch uses the narrowest injection seam.
+- Any hosted LLM judge uses the runtime gateway via
+  `scoring_inference_target(...)`, with direct provider routing limited to the
+  local dry-run fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
 - Local dry-run passes when real data is available.
 - Hosted operations occur only after their preconditions and user authorization.

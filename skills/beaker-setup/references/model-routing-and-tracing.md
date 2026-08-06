@@ -41,6 +41,55 @@ The target speaks OpenAI Chat Completions, including SSE streaming with `stream:
 
 Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped Beaker gateway credentials. Do not add global environment-driven routing when optional per-call or factory injection is possible.
 
+## LLM-as-a-judge scoring
+
+An LLM judge is optimizer-owned traffic, not part of the candidate rollout.
+For hosted runs, always construct its OpenAI-compatible client from
+`scoring_inference_target(...)`. This uses the runtime-scoped gateway token, so
+judge tokens and cost are included automatically in the run ledger and budget.
+Do not use the application's normal provider client when this target is
+available.
+
+The helper returns `None` during local dry-runs because there is no hosted run
+gateway. Only in that case should the scorer retain its existing local provider
+client and credentials.
+
+```python
+from openai import AsyncOpenAI
+
+from beaker import CaseScore, scoring_inference_target
+
+
+JUDGE_MODEL = "openai:gpt-4.1-mini"
+
+
+def _judge_client() -> tuple[AsyncOpenAI, str]:
+    target = scoring_inference_target(JUDGE_MODEL)
+    if target is not None:
+        return AsyncOpenAI(base_url=target.base_url, api_key=target.api_key), target.model
+    return AsyncOpenAI(), "gpt-4.1-mini"
+
+
+class LLMJudgeScorer:
+    async def score_case(self, *, case, result) -> CaseScore:
+        client, model = _judge_client()
+        judgment = await client.chat.completions.create(
+            model=model,
+            messages=build_judge_messages(case=case, result=result),
+        )
+        return case_score_from_judgment(judgment)
+```
+
+Use an explicit canonical provider/model name such as
+`openai:gpt-4.1-mini` or `anthropic:claude-sonnet-4-5`. Adapt the returned
+`base_url`, `api_key`, and `model` to the project's existing async client when
+it is not OpenAI SDK-based. Keep `score_case` non-blocking.
+
+Validate both routes when feasible: with runtime gateway variables present,
+assert the judge client receives the runtime target; without them, assert the
+local provider path remains usable. Hosted setup does not need a provider API
+key solely for a judge that uses the runtime gateway.
+
 ## Trace evidence
 
 Use `runtime.trace` for concise application stages, artifacts, and handoffs; framework adapters should own model/tool spans. Preserve the application's existing instrumentation and avoid global instrumentation changes.
