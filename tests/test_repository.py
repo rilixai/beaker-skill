@@ -70,6 +70,16 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("LLM-as-a-judge scoring", routing)
         self.assertIn("local dry-runs", routing)
 
+    def test_skill_explains_nested_beaker_config_paths(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        for text in (skill, operations):
+            self.assertIn("beaker_config_path", text)
+            self.assertIn("--config-file", text)
+            self.assertIn("BEAKER_CONFIG_FILE", text)
+            self.assertIn("services/invoices/.beaker/beaker.yaml", text)
+            self.assertIn("relative to the Git root", " ".join(text.split()))
+
 
 if __name__ == "__main__":
     unittest.main()

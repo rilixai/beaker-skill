@@ -6,17 +6,21 @@ The canonical Agent Skill lives at [`skills/beaker-setup`](skills/beaker-setup).
 
 ## Install
 
-Any supported agent:
+Install globally for all detected agents (non-interactive):
 
 ```bash
-npx skills add rilixai/beaker-skill --skill beaker-setup
+npx skills add rilixai/beaker-skill --skill beaker-setup --global --yes
 ```
+
+The `skills` CLI detects the agents installed on your machine. `--yes` accepts
+those detected agents without opening the agent-selection menu, and `--global`
+makes the skill available across projects.
 
 Install globally for a specific agent:
 
 ```bash
-npx skills add rilixai/beaker-skill --skill beaker-setup --agent cursor --global
-npx skills add rilixai/beaker-skill --skill beaker-setup --agent devin --global
+npx skills add rilixai/beaker-skill --skill beaker-setup --agent cursor --global --yes
+npx skills add rilixai/beaker-skill --skill beaker-setup --agent devin --global --yes
 ```
 
 GitHub CLI 2.90 or newer:

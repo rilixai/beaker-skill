@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring .beaker/beaker.yaml, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, validating with beaker run dry-run, or preparing a hosted optimization run.
+description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, validating with beaker run dry-run, or preparing a hosted optimization run.
 license: MIT
 ---
 
@@ -10,20 +10,35 @@ Turn the repository's real LLM or agent task into a Beaker optimization spec. Fi
 
 ## Start safely
 
-1. Inspect the repository for `pyproject.toml`, existing `@spec` factories, `.beaker/beaker.yaml`, prompt definitions, model/agent calls, evals, and labeled fixtures.
+1. Inspect the repository for `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt definitions, model/agent calls, evals, and labeled fixtures. In a monorepo, identify the package or service being optimized before choosing the config location; do not assume the Git root.
 2. If multiple tasks are plausible, summarize them and ask which one to optimize first.
-3. Preview deterministic scaffolding before writing:
+3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent login, validation, builds, and runs:
 
    ```bash
+   cd services/invoices
+
+   # Default location in this project.
    uvx --from beaker-sdk beaker init --print
    uvx --from beaker-sdk beaker init
+
+   # Or choose another path inside this project.
+   uvx --from beaker-sdk beaker --config-file config/beaker.yaml init --print
+   uvx --from beaker-sdk beaker --config-file config/beaker.yaml init
    ```
 
-   If Beaker is already installed, use `beaker init --print` and `beaker init`.
+   `BEAKER_CONFIG_FILE=config/beaker.yaml` is equivalent to the global
+   `--config-file` option. If Beaker is already installed, omit
+   `uvx --from beaker-sdk`. Config paths must be files inside the Git repository;
+   absolute paths and paths containing `..` are rejected.
 4. Never overwrite an existing spec or populated config. Fill the existing integration instead.
 5. Install the dependency command printed by `beaker init` so future commands use the project's pinned package.
 
-`beaker init` creates `.beaker/beaker.yaml` and, when needed, `.beaker/beaker_spec.py`. It does not create credentials or placeholder datasets. Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are ambiguous; use `--discover` to locate existing factories.
+By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
+`.beaker/beaker_spec.py` under the selected project root. `--config-file` or
+`BEAKER_CONFIG_FILE` relocates the YAML inside that project. Init does not create
+credentials or placeholder datasets.
+Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
+ambiguous; use `--discover` to locate existing factories.
 
 ## Build the real integration
 
@@ -58,7 +73,19 @@ beaker auth status
 beaker login --agent --agent-name "<Agent Name>" --repo <owner/name>
 ```
 
-This writes secrets only to `.beaker/.env`. Never print, echo, or commit them. Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before credentials, datasets, hosted environment variables, builds, or runs.
+Run login from the same selected project root and pass the same global
+`--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If running a
+later command from the Git root instead, use the full repository-relative path,
+for example `--config-file services/invoices/.beaker/beaker.yaml`. Login stores
+the discovered YAML on the agent as `beaker_config_path` relative to the Git
+root. Rerunning login also synchronizes that path for an existing agent, so a
+hosted run can find a config such as
+`services/invoices/.beaker/beaker.yaml` without another path entry.
+
+Login writes secrets only to `.beaker/.env` under the directory where it runs.
+Never print, echo, or commit them. Read
+[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
+credentials, datasets, hosted environment variables, builds, or runs.
 
 Run a local validation only after real labeled examples are available:
 
@@ -75,6 +102,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Never create a generic repository-named Beaker agent; name the optimization target.
 - Never silently choose among multiple plausible tasks.
+- Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
