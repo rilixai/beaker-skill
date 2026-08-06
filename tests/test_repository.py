@@ -80,6 +80,17 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("services/invoices/.beaker/beaker.yaml", text)
             self.assertIn("relative to the Git root", " ".join(text.split()))
 
+    def test_skill_uses_current_login_and_agent_setup_commands(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        content = "\n".join((skill, operations))
+
+        self.assertIn("beaker login", content)
+        self.assertIn('beaker agent setup "<Agent Name>"', skill)
+        self.assertIn("beaker agent edit", operations)
+        self.assertNotIn("beaker login --agent", content)
+        self.assertNotIn("--agent-name", content)
+
     def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")

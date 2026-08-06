@@ -3,12 +3,21 @@
 ## Authentication and agent selection
 
 - `beaker auth status` checks the user-level login; `beaker login` creates it.
-- `beaker login --agent --agent-name "<Agent Name>" --repo <owner/name>` selects or creates the optimization target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and `BEAKER_AGENT_KEY` to `.beaker/.env`.
+- `beaker agent setup "<Agent Name or key>" --repo <owner/name>` selects an existing optimization target by name or key, or creates a named target, then writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and `BEAKER_AGENT_KEY` to `.beaker/.env`. Run `beaker login` first. `--repo` is required when creating a target and optional when selecting one already associated with a repository.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
-- Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning agent login synchronizes this value for an existing agent.
+- Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
 Do not ask the developer to paste API keys when CLI login is available. `BEAKER_AGENT_KEY` is an agent selector, not a credential-bound API key.
+
+Organization admins can use the user-level login to edit an active agent's mutable metadata without rewriting repo-local credentials:
+
+```bash
+beaker agent edit "<Agent Name or key>" --name "<New Name>"
+beaker agent edit "<Agent Name or key>" --config-path services/invoices/.beaker/beaker.yaml
+```
+
+At least one of `--name` or `--config-path` is required. The agent key and GitHub repository cannot be changed with `agent edit`; `--config-path` must be relative to the Git root.
 
 ## Config location and monorepos
 
@@ -18,20 +27,21 @@ Enter that root first, then use the same config selection for every command:
 ```bash
 cd services/invoices
 beaker init
-beaker login --agent --agent-name "Invoice Extraction" --repo acme/invoices
+beaker login
+beaker agent setup "Invoice Extraction" --repo acme/invoices
 
 # Or choose another location inside this project:
 beaker --config-file config/beaker.yaml init
-beaker --config-file config/beaker.yaml login --agent --agent-name "Invoice Extraction" --repo acme/invoices
+beaker --config-file config/beaker.yaml agent setup "Invoice Extraction" --repo acme/invoices
 ```
 
 `BEAKER_CONFIG_FILE` is equivalent to `--config-file`. The CLI converts the
 discovered location to a Git-root-relative `beaker_config_path`, such as
 `services/invoices/.beaker/beaker.yaml`, when creating or selecting the agent.
 If a later command runs from the Git root, pass that full repository-relative
-path as its selector. Paths must remain inside the Git repository. Login writes
-`.beaker/.env` under its working directory, so run it from the intended project
-root when credentials should live beside that project's config.
+path as its selector. Paths must remain inside the Git repository. Agent setup
+writes `.beaker/.env` under its working directory, so run it from the intended
+project root when credentials should live beside that project's config.
 
 ## Hosted environment variables
 
