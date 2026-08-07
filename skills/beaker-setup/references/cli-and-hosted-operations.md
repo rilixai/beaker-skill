@@ -1,5 +1,27 @@
 # CLI and hosted operations
 
+## GitHub App access
+
+- `beaker github status` reports the organization's GitHub App installation
+  without opening a browser. `--repo <owner/name>` also checks that this
+  installation can read that repository. Exit 0 connected, 1 missing, 2 error.
+- `beaker github connect` installs the app for the organization. `--repo` is
+  optional and only verifies a repository after connecting; repository selection
+  happens in GitHub's picker.
+- Connect opens the install page and polls until the installation appears,
+  waiting up to `--timeout` seconds (default 600). Relay the printed URL when
+  the browser cannot open, and leave the command running.
+- Installing the app requires an organization admin. A non-admin receives
+  `connecting GitHub requires an organization admin`; that is a handoff, not a
+  retryable error.
+- `beaker agent setup --repo <owner/name>` and `beaker agent create` run the
+  same flow implicitly. Check `beaker github status` first so the browser step
+  is expected.
+- On `timed out waiting for GitHub access to <repo>`, re-run `beaker github
+  connect --repo <owner/name>` rather than re-running agent setup.
+- `beaker spec build-from-github --installation-id` overrides the stored
+  installation. Do not pass it during setup; it exists for operator recovery.
+
 ## Authentication and agent selection
 
 - `beaker auth status` checks the user-level login; `beaker login` creates it.
@@ -51,6 +73,7 @@ Enter that root first, then use the same config selection for every command:
 cd services/invoices
 beaker init
 beaker login
+beaker github status --repo acme/invoices
 beaker agent list
 beaker agent setup "Invoice Extraction" --repo acme/invoices
 
@@ -82,7 +105,9 @@ Beaker lists names and hints only and does not return plaintext values. Never lo
 
 ## Hosted build, data, and run ordering
 
-1. Ensure the target agent exists and has repository access.
+1. Ensure the target agent exists and that `beaker github status --repo
+   <owner/name>` reports the repository as readable. If it does not, have the
+   developer run `beaker github connect --repo <owner/name>` before continuing.
 2. Before the first dataset upload, build a READY spec when necessary:
 
    ```bash

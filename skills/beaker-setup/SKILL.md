@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, validating with beaker run dry-run, or preparing a hosted optimization run.
+description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted builds can read the repository, validating with beaker run dry-run, or preparing a hosted optimization run.
 license: MIT
 ---
 
@@ -112,21 +112,62 @@ Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) whe
 
 ## Authenticate, discover the agent, and validate
 
-After the optimization target is known, authenticate and inspect the
-organization's existing agents before running any command that could create an
-agent:
+After the optimization target is known, authenticate, confirm GitHub access, and
+inspect the organization's existing agents before running any command that could
+create an agent:
 
 ```bash
 beaker auth status
 beaker login
+beaker github status
 beaker agent list
 ```
 
 Skip `beaker login` only when `beaker auth status` confirms the stored session
-is valid. Review `beaker agent list` for an agent representing the same
-optimization target, considering its name, purpose, and repository association.
-Do not treat a missing or different custom scope as evidence that a new agent is
-needed.
+is valid.
+
+### Connect the Beaker GitHub App
+
+Hosted builds and runs read the repository through the Beaker GitHub App, so the
+organization needs an installation before `beaker agent setup`, `beaker spec
+build-from-github`, or `beaker run trigger`.
+
+`beaker github status` is read-only and never opens a browser. Run it first;
+exit code 0 means connected, 1 means the connection or repository access is
+missing, 2 means the check itself failed. Add `--repo <owner/name>` once the
+target repository is known to confirm this installation can read it.
+
+Only the developer can grant access. When status reports a gap, ask them to
+complete the install:
+
+```bash
+beaker github connect
+beaker github connect --repo <owner/name>
+```
+
+`beaker github connect` opens the GitHub App install page and then blocks,
+polling until the installation appears (`--timeout`, default 600 seconds). Say
+plainly that the command is waiting on them, relay the printed install URL
+verbatim when the browser cannot open, and let it keep running while they click
+through. Do not kill it, background it, or retry it in a loop.
+
+Repository selection happens in GitHub's own picker — all repositories, or an
+explicit list — and is not something this skill controls. `--repo` only verifies
+afterwards that the chosen repository is readable; it never selects one. If the
+installation exists but omits the target repository, `connect --repo` reopens the
+install page so the developer can add it. When the repository belongs to an
+organization the developer does not administer, an owner must approve the
+install request before the command returns.
+
+`beaker agent setup --repo <owner/name>` runs this same connection flow
+implicitly and can block on the browser in exactly the same way. Running
+`beaker github status` first turns that surprise into a deliberate step.
+
+### Select the agent
+
+Review `beaker agent list` for an agent representing the same optimization
+target, considering its name, purpose, and repository association. Do not treat
+a missing or different custom scope as evidence that a new agent is needed.
 
 When a suitable agent already exists, stop before setup and ask the developer
 to choose one of these outcomes:
@@ -186,6 +227,11 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never create or select an agent before a valid user login and `beaker agent
   list` discovery. If a suitable agent exists, ask whether to reuse it, create
   a distinct agent, or explicitly add a custom scope.
+- Never attempt to grant GitHub access on the developer's behalf, and never
+  guess or pass `--installation-id`; surface the install URL and wait for the
+  developer to confirm.
+- Never kill, background, or loop-retry `beaker github connect` or `beaker agent
+  setup` while it waits for the browser grant; it is polling, not hung.
 - Never set `scope_key` or pass `--scope-key` in an ordinary setup. Custom
   scopes are opt-in for power users; the default is no explicit scope.
 - Never silently choose among multiple plausible tasks.
