@@ -1,6 +1,6 @@
 {
   "name": "beaker-setup",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Configure a repository for Beaker prompt optimization.",
   "author": {
     "name": "Beaker",
