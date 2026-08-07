@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "beaker-setup" / "SKILL.md"
+USAGE_SKILL = ROOT / "skills" / "beaker-usage" / "SKILL.md"
 VERSION_FILE = ROOT / "VERSION"
 
 
@@ -32,7 +33,10 @@ class RepositoryContractTests(unittest.TestCase):
 
     def test_marketplaces_resolve_the_canonical_skill(self) -> None:
         claude = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
-        self.assertEqual(claude["plugins"][0]["skills"], ["./skills/beaker-setup"])
+        self.assertEqual(
+            claude["plugins"][0]["skills"],
+            ["./skills/beaker-setup", "./skills/beaker-usage"],
+        )
 
         codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
         self.assertEqual(codex["skills"], "./skills/")
@@ -40,6 +44,78 @@ class RepositoryContractTests(unittest.TestCase):
         marketplace = json.loads((ROOT / ".agents" / "plugins" / "marketplace.json").read_text())
         self.assertEqual(marketplace["plugins"][0]["source"]["path"], ".")
         self.assertTrue(SKILL.is_file())
+        self.assertTrue(USAGE_SKILL.is_file())
+
+    def test_usage_skill_has_portable_frontmatter_and_metadata(self) -> None:
+        text = USAGE_SKILL.read_text(encoding="utf-8")
+        match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
+        self.assertIsNotNone(match)
+        frontmatter = match.group(1) if match else ""
+        self.assertIn("name: beaker-usage", frontmatter)
+        self.assertIn("description:", frontmatter)
+        self.assertIn("license: MIT", frontmatter)
+        self.assertNotIn("TODO", frontmatter)
+
+        metadata = (USAGE_SKILL.parent / "agents" / "openai.yaml").read_text(encoding="utf-8")
+        self.assertIn('display_name: "Beaker Usage"', metadata)
+        self.assertIn("$beaker-usage", metadata)
+
+    def test_usage_references_are_real_and_one_level_deep(self) -> None:
+        text = USAGE_SKILL.read_text(encoding="utf-8")
+        references = re.findall(r"\]\((references/[^)]+\.md)\)", text)
+        self.assertGreaterEqual(len(references), 1)
+        for reference in references:
+            self.assertTrue((USAGE_SKILL.parent / reference).is_file(), reference)
+            self.assertEqual(len(Path(reference).parts), 2)
+
+    def test_usage_skill_covers_the_hosted_run_lifecycle(self) -> None:
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
+        content = "\n".join((USAGE_SKILL.read_text(encoding="utf-8"), reference))
+
+        for command in (
+            "beaker github branches",
+            "beaker dataset list",
+            "beaker model list --available-only --json",
+            "beaker run trigger",
+            "beaker run list",
+            "beaker run status",
+            "beaker run pull",
+            "beaker run cancel",
+        ):
+            self.assertIn(command, content)
+
+        self.assertIn("Ordinary prompt optimization", content)
+        self.assertIn("Harness Optimization", content)
+        self.assertIn("Selected-model run", content)
+        self.assertIn("optimize_only", content)
+        self.assertIn("benchmark_only", content)
+        self.assertIn("benchmark_and_optimize", content)
+
+    def test_usage_skill_requires_explicit_remote_choices_and_authorization(self) -> None:
+        skill = USAGE_SKILL.read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
+
+        self.assertIn("Ask which remote GitHub branch to use", normalized)
+        self.assertIn("unpushed local commits", normalized)
+        self.assertIn("Ask which dataset", normalized)
+        self.assertIn("Ask the developer which one to eight", normalized)
+        self.assertIn("Launch only after explicit developer authorization", normalized)
+        self.assertIn("Never cancel a run without explicit authorization", normalized)
+        self.assertIn("Never combine selected models with Harness Optimization", normalized)
+
+    def test_usage_skill_preserves_agent_operational_details(self) -> None:
+        skill = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
+        content = "\n".join((skill, reference))
+
+        self.assertIn("--config-file", content)
+        self.assertIn("BEAKER_CONFIG_FILE", skill)
+        self.assertIn("exit code `3` as an active run", skill)
+        self.assertIn("full run `id`", skill)
+        self.assertIn("`web_url`", skill)
+        self.assertIn("Do not hand-author", skill)
+        self.assertIn("Do not overwrite an existing result directory", skill)
+        self.assertIn("use `$beaker-setup`", skill)
 
     def test_manifest_versions_match_central_version(self) -> None:
         version = VERSION_FILE.read_text(encoding="utf-8").strip()
