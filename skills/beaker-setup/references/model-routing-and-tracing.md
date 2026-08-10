@@ -73,9 +73,10 @@ judge tokens and cost are included automatically in the run ledger and budget.
 Do not use the application's normal provider client when this target is
 available.
 
-The helper returns `None` during local dry-runs because there is no hosted run
-gateway. Only in that case should the scorer retain its existing local provider
-client and credentials.
+The helper returns `None` during local application or evaluation runs because
+there is no hosted run gateway. Only in that case should the scorer retain its
+existing local provider client and credentials. The structural smoke check does
+not call the scorer.
 
 ```python
 from openai import AsyncOpenAI
@@ -117,11 +118,12 @@ async client when it is not OpenAI SDK-based. Keep `score_case` non-blocking.
 Keep the local fallback on the same judge model declared by the spec, translating
 only the provider-specific model syntax when the local SDK requires it.
 
-Exercise both routes through Beaker's dry-run or trace workflow when feasible:
-with runtime gateway variables present, verify the judge uses the runtime
-target; without them, verify the local provider path remains usable. Do not add
-or modify tests for this validation. Hosted setup does not need a provider API
-key solely for a judge that uses the runtime gateway.
+Exercise both routes through an existing application/evaluation or trace
+workflow when feasible: with runtime gateway variables present, verify the judge
+uses the runtime target; without them, verify the local provider path remains
+usable. Do not add or modify tests for this validation. `beaker run smoke` is
+structural and does not execute either route. Hosted setup does not need a
+provider API key solely for a judge that uses the runtime gateway.
 
 ## Trace evidence
 
@@ -131,9 +133,13 @@ For evidence-sensitive validation:
 
 ```bash
 uv add 'beaker-sdk[tracing]'
-beaker run dry-run --strict --trace --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+# Exercise the repository's normal agent/evaluation path under a local Beaker capture.
 beaker trace doctor
 beaker trace inspect .beaker/traces
 ```
 
-Validate both the default-model branch and selected-model branch when feasible. Fail setup clearly if `runtime.model` is present but the selected client cannot be injected.
+Smoke verifies structural wiring only; it neither opens a capture nor executes a
+model call. Validate both the default-model branch and selected-model branch
+through the existing application/evaluation path when feasible. Fail setup
+clearly if `runtime.model` is present but the selected client cannot be injected.

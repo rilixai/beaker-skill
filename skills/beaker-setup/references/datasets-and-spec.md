@@ -15,7 +15,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, or split composition from application code or prose.
 
-If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running dry-run, building, or uploading synthetic data.
+If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running smoke, building, or uploading synthetic data.
 
 ## Convert without persisting generated datasets
 
@@ -89,11 +89,13 @@ Distinguish execution failure from a bad answer:
 
 ## Prove prompt application
 
-For every `_seed_targets` entry, trace the path into the real model call. Rebuild
-or clone constructor-bound agents per target bundle, or add a narrow
-`apply_targets`/factory seam. Prove the path with `beaker run dry-run` and, when
-needed, traced validation plus `beaker trace inspect`; do not add tests or test
-doubles.
+For every `_seed_targets` entry, inspect the path into the real model call.
+Rebuild or clone constructor-bound agents per target bundle, or add a narrow
+`apply_targets`/factory seam. Use `beaker run smoke --strict` to validate the
+structural wiring; it does not execute the runner or prove prompt delivery.
+When runtime proof is needed, exercise the repository's existing application
+or evaluation path under a local Beaker capture and inspect it with
+`beaker trace inspect`; do not add tests or test doubles.
 
 Do not place datasets under `.beaker/`. Existing labeled data is source material,
 not Beaker-owned tooling: leave it in its established location and reference it
