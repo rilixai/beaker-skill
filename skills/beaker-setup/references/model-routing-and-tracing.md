@@ -73,7 +73,7 @@ judge tokens and cost are included automatically in the run ledger and budget.
 Do not use the application's normal provider client when this target is
 available.
 
-The helper returns `None` during local dry-runs because there is no hosted run
+The helper returns `None` during local execution because there is no hosted run
 gateway. Only in that case should the scorer retain its existing local provider
 client and credentials.
 
@@ -117,7 +117,7 @@ async client when it is not OpenAI SDK-based. Keep `score_case` non-blocking.
 Keep the local fallback on the same judge model declared by the spec, translating
 only the provider-specific model syntax when the local SDK requires it.
 
-Exercise both routes through Beaker's dry-run or trace workflow when feasible:
+Exercise both routes through a local-capture or hosted-run workflow when feasible:
 with runtime gateway variables present, verify the judge uses the runtime
 target; without them, verify the local provider path remains usable. Do not add
 or modify tests for this validation. Hosted setup does not need a provider API
@@ -127,12 +127,19 @@ key solely for a judge that uses the runtime gateway.
 
 Use `runtime.trace` for concise application stages, artifacts, and handoffs; framework adapters should own model/tool spans. Preserve the application's existing instrumentation and avoid global instrumentation changes.
 
-For evidence-sensitive validation:
+First verify structural wiring:
 
 ```bash
-uv add 'beaker-sdk[tracing]'
-beaker run dry-run --strict --trace --config '{"local_dataset_path":"<dataset-dir>"}'
-beaker trace doctor
+beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+```
+
+Smoke does not execute a model call. For runtime evidence, detect whether model
+spans are wired, exercise the repository's normal agent path under a local
+Beaker capture, then validate and inspect the resulting receipt:
+
+```bash
+beaker trace instrument --check
+beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 

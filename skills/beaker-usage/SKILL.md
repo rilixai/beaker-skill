@@ -77,9 +77,9 @@ has not already specified it, ask which outcome they want:
 
 | Run family | Use when | CLI selection |
 |---|---|---|
-| Ordinary prompt optimization | Optimize the configured prompts through the spec's normal model path | no model or Harness flags |
+| Ordinary prompt optimization | Optimize the configured production-system path, optionally without an initial benchmark | no model or Harness flags; use `--execution-mode optimize_only` only when explicitly requested |
 | Harness Optimization | Use the Codex-driven optimizer rather than the ordinary optimizer | `--use-harness-optimization` |
-| Selected-model run | Test, optimize, or compare user-selected models | one to eight `--optimization-model provider:model` flags |
+| Selected-model run | Benchmark, optimize, and compare user-selected models | one to eight `--optimization-model provider:model` flags |
 
 Ordinary optimization preserves the spec's configured model behavior. Do not
 ask for models or add `--optimization-model` unless the developer selects a
@@ -87,6 +87,11 @@ selected-model run.
 
 Harness Optimization and selected models are mutually exclusive. Never combine
 them.
+
+`optimize_only` uses the production system and cannot be combined with
+`--optimization-model`, benchmark flags, or final-evaluation flags. If the
+developer asks to optimize without an initial benchmark, use
+`--execution-mode optimize_only` and skip model discovery.
 
 ### Select models and execution mode
 
@@ -101,19 +106,14 @@ For a selected-model run:
 2. Ask the developer which one to eight canonical `provider:model` values to
    use. Offer only values returned by the command. Do not substitute a similar
    model, infer a default, or choose based on cost or speed without direction.
-3. Ask for the execution mode if it is not explicit:
-
-   - `optimize_only`: optimize the prompts for the selected models without the
-     initial benchmark;
-   - `benchmark_only`: evaluate the selected models without optimizing; or
-   - `benchmark_and_optimize`: benchmark, optimize, and compare the selected
-     models. Recommend this when the user asks to "test and optimize" models.
-
-4. For a mode with a benchmark, use the CLI defaults unless the developer asks
+3. Selected-model runs use `benchmark_and_optimize`; it is also the CLI default
+   when models are supplied. The CLI does not expose benchmark-only execution.
+4. Use the benchmark defaults unless the developer asks
    to choose the benchmark split or case count. Valid splits are `VAL` and
    `TEST`; valid case counts are 1 through 1000.
-5. Add final evaluation splits or quality tolerance only when the developer
-   supplies them or asks to configure them. Do not invent tuning values.
+5. Add final evaluation splits or `--test-all-candidates` only when the
+   developer supplies them or asks to configure them. Do not invent tuning
+   values.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.
@@ -128,7 +128,8 @@ state the exact:
 - dataset reference;
 - run family;
 - selected models and execution mode, when applicable; and
-- non-default benchmark, evaluation, budget, or scope settings.
+- non-default benchmark, evaluation, candidate-testing, budget, or scope
+  settings.
 
 Launch only after explicit developer authorization. A request such as "launch
 this now" that already contains every required choice counts as authorization;
@@ -141,6 +142,10 @@ Prefer JSON output so the run identity is unambiguous:
 # Ordinary prompt optimization
 beaker run trigger --ref <branch> --dataset <dataset-ref> --json
 
+# Production-system optimization without an initial benchmark
+beaker run trigger --ref <branch> --dataset <dataset-ref> \
+  --execution-mode optimize_only --json
+
 # Harness Optimization
 beaker run trigger --ref <branch> --dataset <dataset-ref> \
   --use-harness-optimization --json
@@ -148,7 +153,7 @@ beaker run trigger --ref <branch> --dataset <dataset-ref> \
 # Selected-model run
 beaker run trigger --ref <branch> --dataset <dataset-ref> \
   --optimization-model <provider:model> \
-  --execution-mode <mode> --json
+  --execution-mode benchmark_and_optimize --json
 ```
 
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
@@ -167,7 +172,7 @@ beaker run list --scope-key <scope> --limit 25 --offset 0 --json
 Check a known run once with:
 
 ```bash
-beaker run status <full-run-id> --once --json
+beaker run status <full-run-id> --json
 ```
 
 Interpret exit code `3` as an active run, not a failed command. Exit `0` means
@@ -178,7 +183,7 @@ When the developer asks you to monitor until completion, use bounded polling
 and remain responsive:
 
 ```bash
-beaker run status <full-run-id> --poll-interval 15 --poll-timeout 45 --json
+beaker run status <full-run-id> --watch --poll-interval 15 --poll-timeout 45 --json
 ```
 
 Report meaningful state changes. Do not start an indefinite foreground poll
@@ -225,6 +230,7 @@ Cancellation is a state-changing operation:
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with Harness Optimization.
+- Never combine selected models with `--execution-mode optimize_only`.
 - Never treat unpushed local changes as part of a hosted run.
 - Never cancel a run without explicit authorization for the resolved run ID.
 - Never expose secrets or bypass the CLI with `curl` or private API calls.

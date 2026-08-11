@@ -15,7 +15,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, or split composition from application code or prose.
 
-If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running dry-run, building, or uploading synthetic data.
+If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running smoke validation, building, or uploading synthetic data.
 
 ## Convert without persisting generated datasets
 
@@ -91,9 +91,12 @@ Distinguish execution failure from a bad answer:
 
 For every `_seed_targets` entry, trace the path into the real model call. Rebuild
 or clone constructor-bound agents per target bundle, or add a narrow
-`apply_targets`/factory seam. Prove the path with `beaker run dry-run` and, when
-needed, traced validation plus `beaker trace inspect`; do not add tests or test
-doubles.
+`apply_targets`/factory seam. Verify that path by inspection, then use
+`beaker run smoke --strict` for structural wiring. When runtime evidence is
+needed, exercise the normal agent path under a local capture and inspect it with
+`beaker trace doctor --require-model-calls` and `beaker trace inspect`; do not
+add tests or test doubles. Smoke alone does not prove that the runner applies
+the prompts because it does not execute the runner.
 
 Do not place datasets under `.beaker/`. Existing labeled data is source material,
 not Beaker-owned tooling: leave it in its established location and reference it

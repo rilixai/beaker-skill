@@ -1,12 +1,12 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted builds can read the repository, validating with beaker run dry-run, or preparing a hosted optimization run.
+description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted builds can read the repository, validating with beaker run smoke, or preparing a hosted optimization run.
 license: MIT
 ---
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local dry-run when real labeled examples are available; build or launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
 
 ## Keep Beaker isolated
 
@@ -86,7 +86,7 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
      canonical `provider:model`, then route hosted judge calls through
      `scoring_inference_target()` so gateway accounting and run budgets include
      them. The judge model must not follow `runtime.model`; retain the same
-     local judge model and normal provider client only for local dry-runs where
+     local judge model and normal provider client only for local execution where
      the helper returns `None`. Omit the field for deterministic scorers. If an
      LLM judge exists but its intended model is not established, ask the
      developer rather than choosing a default.
@@ -94,9 +94,14 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
-6. Prove optimized prompts reach the model call with `beaker run dry-run` and,
-   when needed, `--strict --trace` plus `beaker trace inspect`. Do not add tests
-   or modify the user's existing test suite for Beaker validation.
+6. Trace every optimized prompt into the real model call by inspecting the
+   evaluation path, then run `beaker run smoke --strict` to validate the config,
+   spec, dataset, targets, runner, and scorer wiring. Smoke is structural: it
+   does not execute a rollout, model call, or scoring call. When runtime evidence
+   is required, exercise the repository's normal agent path under a local Beaker
+   capture and inspect it with `beaker trace doctor --require-model-calls` and
+   `beaker trace inspect`. Do not add tests or modify the user's existing test
+   suite for Beaker validation.
 
 Read [datasets-and-spec.md](references/datasets-and-spec.md) before deriving data or editing the spec.
 
@@ -213,10 +218,14 @@ credentials, datasets, hosted environment variables, builds, or runs.
 Run a local validation only after real labeled examples are available:
 
 ```bash
-beaker run dry-run --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-When execution evidence matters, install `beaker-sdk[tracing]`, add `--strict --trace`, run `beaker trace doctor`, and inspect `.beaker/traces` with `beaker trace inspect`.
+This command does not execute the runner or scorer. When execution evidence
+matters, run `beaker trace instrument --check`, exercise the repository's normal
+agent path under a local Beaker capture, run
+`beaker trace doctor --require-model-calls`, and inspect `.beaker/traces` with
+`beaker trace inspect`.
 
 Read [validation-and-handoff.md](references/validation-and-handoff.md) before declaring setup complete or launching remotely.
 
@@ -248,10 +257,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
 - Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
-  provider clients are only the local dry-run fallback.
+  provider clients are only the local-execution fallback.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
-- Never require `runtime.model` for ordinary dry-runs or prompt-only optimization.
+- Never require `runtime.model` for structural smoke checks or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.
 - Treat `beaker spec build-from-github`, `beaker dataset upload`, and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.

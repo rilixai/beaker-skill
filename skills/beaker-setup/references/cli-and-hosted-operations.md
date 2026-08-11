@@ -142,4 +142,7 @@ hosted operations resolve the same nested YAML.
 
 Dataset uploads create immutable revisions and normally promote the new revision to `production`. Re-uploading identical files is a no-op. Select data by name, `name@revision`, artifact id, or `config_defaults.dataset_ref`; never expose storage URIs.
 
-Preserve the full run UUID and the `View in UI:` link printed by trigger. Use `beaker run status <full-run-id> --once` for a one-shot check; exit code 3 means the run is still active. Use `beaker run pull <full-run-id>` for results.
+Preserve the full run UUID and the `View in UI:` link printed by trigger. Use
+`beaker run status <full-run-id>` for a one-shot check; exit code 3 means the
+run is still active. Add `--watch` only when polling is intended. Use
+`beaker run pull <full-run-id>` for results.

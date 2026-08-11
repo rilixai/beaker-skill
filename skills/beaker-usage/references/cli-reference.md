@@ -52,11 +52,10 @@ beaker run trigger --ref <branch> --dataset <name@revision> \
   --use-harness-optimization --json
 ```
 
-Selected-model optimize-only:
+Production-system optimize-only:
 
 ```bash
 beaker run trigger --ref <branch> --dataset <name@revision> \
-  --optimization-model openai:<model> \
   --execution-mode optimize_only --json
 ```
 
@@ -70,7 +69,7 @@ beaker run trigger --ref <branch> --dataset <name@revision> \
   --benchmark-split TEST \
   --benchmark-max-cases 30 \
   --final-eval-split VAL \
-  --quality-tolerance 0.02 \
+  --test-all-candidates \
   --json
 ```
 
@@ -82,14 +81,16 @@ commits or working tree changes.
 | Flag | Contract |
 |---|---|
 | `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list` |
-| `--execution-mode` | `optimize_only`, `benchmark_only`, or `benchmark_and_optimize`; selected-model default is `benchmark_and_optimize` |
+| `--execution-mode` | `optimize_only` for the production system with no model flags, or `benchmark_and_optimize` for selected models; selected-model default is `benchmark_and_optimize` |
 | `--benchmark-split` | `VAL` or `TEST` |
 | `--benchmark-max-cases` | 1–1000 |
 | `--final-eval-split` | Repeatable `VAL` or `TEST` |
-| `--quality-tolerance` | 0–1 |
+| `--test-all-candidates` | Evaluate every persisted candidate on `TEST`; otherwise only the selected best candidate is test-evaluated |
 
 Do not combine selected-model flags with `--use-harness-optimization` or with
-an `optimization_config` supplied through `--config`.
+an `optimization_config` supplied through `--config`. Do not combine
+`--optimization-model` with `--execution-mode optimize_only`; optimize-only
+uses the production system. The CLI does not expose a benchmark-only mode.
 
 ## Run lifecycle
 
@@ -99,10 +100,10 @@ beaker run list --json
 beaker run list --status RUNNING --limit 25 --offset 0 --json
 
 # Check once.
-beaker run status <run-id> --once --json
+beaker run status <run-id> --json
 
 # Poll for at most 45 seconds.
-beaker run status <run-id> --poll-interval 15 --poll-timeout 45 --json
+beaker run status <run-id> --watch --poll-interval 15 --poll-timeout 45 --json
 
 # Cancel atomically.
 beaker run cancel <run-id> --json

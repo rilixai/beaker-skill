@@ -88,8 +88,11 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Harness Optimization", content)
         self.assertIn("Selected-model run", content)
         self.assertIn("optimize_only", content)
-        self.assertIn("benchmark_only", content)
         self.assertIn("benchmark_and_optimize", content)
+        self.assertIn("--watch", content)
+        self.assertNotIn("--once", content)
+        self.assertNotIn("benchmark_only", content)
+        self.assertNotIn("--quality-tolerance", content)
 
     def test_usage_skill_requires_explicit_remote_choices_and_authorization(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
@@ -144,7 +147,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("scoring_inference_target", skill)
         self.assertIn("scoring_inference_target", routing)
         self.assertIn("LLM-as-a-judge scoring", routing)
-        self.assertIn("local dry-runs", routing)
+        self.assertIn("local execution", routing)
 
     def test_skill_explains_nested_beaker_config_paths(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
@@ -155,6 +158,16 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("BEAKER_CONFIG_FILE", text)
             self.assertIn("services/invoices/.beaker/beaker.yaml", text)
             self.assertIn("relative to the Git root", " ".join(text.split()))
+
+    def test_setup_skill_uses_structural_smoke_validation(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+        content = "\n".join((skill, handoff))
+
+        self.assertIn("beaker run smoke --strict", content)
+        self.assertIn("does not execute a rollout, model call, or scoring call", content)
+        self.assertIn("beaker trace doctor --require-model-calls", content)
+        self.assertNotIn("beaker run dry-run", content)
 
     def test_skill_uses_current_login_and_agent_setup_commands(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")

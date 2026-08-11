@@ -2,14 +2,23 @@
 
 ## Local validation
 
-Run `beaker run dry-run` after each meaningful integration change, but only after real labeled examples are available. A passing dry-run proves the spec builds and one example executes and scores; a low score is an expected optimization baseline.
+Run `beaker run smoke --strict` after each meaningful integration change, but
+only after real labeled examples are available. A passing smoke check proves the
+config loads, the spec builds, the selected split has a valid case, and the
+targets, runner, and scorer are connected. It deliberately does not execute a
+rollout, model call, or scoring call.
 
 Interpret common failures:
 
-- `your runner raised`: inspect application/agent wiring.
+- spec build failure: inspect the target import and factory construction.
 - missing or empty split: fix the configured JSONL dataset.
 - strict placeholder failure: replace remaining generated TODOs.
-- tracing unavailable: install `beaker-sdk[tracing]` before using `--trace`.
+
+When execution evidence matters, first run `beaker trace instrument --check`.
+Exercise the repository's normal agent path under a local Beaker capture, then
+run `beaker trace doctor --require-model-calls` and inspect the receipt with
+`beaker trace inspect .beaker/traces`. Do not pass the removed `--trace` flag to
+`run smoke`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
@@ -33,9 +42,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
-  field, and direct provider routing is limited to the local dry-run fallback.
+  field, and direct provider routing is limited to the local-execution fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
-- Local dry-run passes when real data is available.
+- Structural smoke check passes when real data is available.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report
@@ -47,7 +56,8 @@ Summarize:
 - dataset and scoring contract;
 - how optimized prompts reach the application;
 - model-routing behavior;
-- local validation command and result;
+- structural validation command and result, plus any separately captured
+  runtime evidence;
 - exact hosted build/upload/run commands that remain.
 
 When a hosted run is triggered, include the full run UUID and UI link.
