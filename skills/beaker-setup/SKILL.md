@@ -6,7 +6,7 @@ license: MIT
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
 
 ## Keep Beaker isolated
 
@@ -99,7 +99,8 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
    targets, runner, and scorer wiring. Smoke does not execute `run_case` or the
    scorer and does not support `--trace`. When runtime evidence is needed,
    exercise the repository's existing application or evaluation path under a
-   local Beaker capture, then use `beaker trace doctor` and
+   local Beaker capture, then use
+   `beaker trace doctor --require-model-calls` and
    `beaker trace inspect`. Do not add tests or modify the user's existing test
    suite for Beaker validation.
 
@@ -221,11 +222,11 @@ Run a local validation only after real labeled examples are available:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-Smoke loads and parses the configured dataset but does not execute a rollout,
-model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
-code traceback when a check fails. When execution evidence matters, install
-`beaker-sdk[tracing]`, exercise the repository's existing application or
-evaluation path under a local Beaker capture, run `beaker trace doctor`, and
+Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
+code traceback when a check fails. When execution evidence matters, run
+`beaker trace instrument --check`, exercise the repository's existing
+application or evaluation path under a local Beaker capture, run
+`beaker trace doctor --require-model-calls`, and
 inspect `.beaker/traces` with `beaker trace inspect`.
 
 Read [validation-and-handoff.md](references/validation-and-handoff.md) before declaring setup complete or launching remotely.

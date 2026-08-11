@@ -129,13 +129,20 @@ provider API key solely for a judge that uses the runtime gateway.
 
 Use `runtime.trace` for concise application stages, artifacts, and handoffs; framework adapters should own model/tool spans. Preserve the application's existing instrumentation and avoid global instrumentation changes.
 
-For evidence-sensitive validation:
+First verify structural wiring:
 
 ```bash
-uv add 'beaker-sdk[tracing]'
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
-# Exercise the repository's normal agent/evaluation path under a local Beaker capture.
-beaker trace doctor
+```
+
+Smoke does not execute a model call. For runtime evidence, check whether model
+spans are wired; run `beaker trace instrument` first if the check fails. Then
+exercise the repository's normal application/evaluation path under a local
+Beaker capture and validate and inspect the resulting receipt:
+
+```bash
+beaker trace instrument --check
+beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 

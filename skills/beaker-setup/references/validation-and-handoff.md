@@ -22,7 +22,10 @@ Interpret common failures:
 The command prints each completed stage as `PASS` before a later failure, so use
 the last passing stage to narrow the problem. For runtime evidence, exercise the
 repository's existing application or evaluation path under a local Beaker
-capture; smoke does not support `--trace`.
+capture, then run `beaker trace doctor --require-model-calls` and inspect the
+receipt with `beaker trace inspect .beaker/traces`. Run
+`beaker trace instrument --check` first when instrumentation is uncertain;
+smoke does not support `--trace`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
@@ -60,7 +63,8 @@ Summarize:
 - dataset and scoring contract;
 - how optimized prompts reach the application;
 - model-routing behavior;
-- local validation command and result;
+- structural validation command and result, plus any separately captured
+  runtime evidence;
 - exact hosted build/upload/run commands that remain.
 
 When a hosted run is triggered, include the full run UUID and UI link.

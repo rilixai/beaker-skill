@@ -1,7 +1,7 @@
 {
   "name": "beaker-setup",
-  "version": "0.2.0",
-  "description": "Configure a repository for Beaker prompt optimization.",
+  "version": "0.3.1",
+  "description": "Configure and operate Beaker prompt optimization.",
   "author": {
     "name": "Beaker",
     "email": "matt@rilix.ai",
@@ -10,12 +10,12 @@
   "homepage": "https://github.com/rilixai/beaker-skill",
   "repository": "https://github.com/rilixai/beaker-skill",
   "license": "MIT",
-  "keywords": ["beaker", "prompt-optimization", "agent-skills", "setup"],
+  "keywords": ["beaker", "prompt-optimization", "agent-skills", "setup", "runs"],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Beaker Setup",
-    "shortDescription": "Set up Beaker prompt optimization.",
-    "longDescription": "Find a repository's real prompts, labeled data, scoring contract, and agent call; scaffold and validate a Beaker optimization spec.",
+    "displayName": "Beaker",
+    "shortDescription": "Set up and operate Beaker optimization.",
+    "longDescription": "Configure a repository for Beaker, then launch, monitor, inspect, pull, and cancel hosted prompt-optimization runs.",
     "developerName": "Beaker",
     "category": "Productivity",
     "capabilities": ["Read", "Write", "Shell"],
@@ -23,7 +23,9 @@
     "defaultPrompt": [
       "Set up Beaker in this repository.",
       "Finish this repository's Beaker spec.",
-      "Validate this Beaker integration locally."
+      "Validate this Beaker integration locally.",
+      "Launch a Beaker optimization run.",
+      "Check or cancel a Beaker run."
     ],
     "brandColor": "#2563EB"
   }
