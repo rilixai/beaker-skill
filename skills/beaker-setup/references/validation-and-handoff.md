@@ -4,21 +4,28 @@
 
 Run `beaker run smoke --strict` after each meaningful integration change, but
 only after real labeled examples are available. A passing smoke check proves the
-config loads, the spec builds, the selected split has a valid case, and the
-targets, runner, and scorer are connected. It deliberately does not execute a
-rollout, model call, or scoring call.
+config resolves, the spec builds, the dataset loads and parses, and the targets,
+runner, and scorer are connected. It does not execute `run_case`, call the
+scorer, make a model/tool call, or report a score.
 
 Interpret common failures:
 
-- spec build failure: inspect the target import and factory construction.
-- missing or empty split: fix the configured JSONL dataset.
+- `FAIL spec`: use the printed exception type and traceback to fix the factory
+  import, construction, or spec contract.
+- `FAIL dataset`: use the printed file/line and traceback to fix dataset
+  configuration, JSONL parsing, or case construction.
+- missing or empty split: add real examples to the requested split or select
+  the correct split.
+- missing runner/scorer callable: connect the required spec hook.
 - strict placeholder failure: replace remaining generated TODOs.
 
-When execution evidence matters, first run `beaker trace instrument --check`.
-Exercise the repository's normal agent path under a local Beaker capture, then
-run `beaker trace doctor --require-model-calls` and inspect the receipt with
-`beaker trace inspect .beaker/traces`. Do not pass the removed `--trace` flag to
-`run smoke`.
+The command prints each completed stage as `PASS` before a later failure, so use
+the last passing stage to narrow the problem. For runtime evidence, exercise the
+repository's existing application or evaluation path under a local Beaker
+capture, then run `beaker trace doctor --require-model-calls` and inspect the
+receipt with `beaker trace inspect .beaker/traces`. Run
+`beaker trace instrument --check` first when instrumentation is uncertain;
+smoke does not support `--trace`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
@@ -42,9 +49,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
-  field, and direct provider routing is limited to the local-execution fallback.
+  field, and direct provider routing is limited to the local application/evaluation fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
-- Structural smoke check passes when real data is available.
+- Local `beaker run smoke --strict` passes when real data is available.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report

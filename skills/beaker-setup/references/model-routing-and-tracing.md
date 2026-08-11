@@ -73,9 +73,10 @@ judge tokens and cost are included automatically in the run ledger and budget.
 Do not use the application's normal provider client when this target is
 available.
 
-The helper returns `None` during local execution because there is no hosted run
-gateway. Only in that case should the scorer retain its existing local provider
-client and credentials.
+The helper returns `None` during local application or evaluation runs because
+there is no hosted run gateway. Only in that case should the scorer retain its
+existing local provider client and credentials. The structural smoke check does
+not call the scorer.
 
 ```python
 from openai import AsyncOpenAI
@@ -117,11 +118,12 @@ async client when it is not OpenAI SDK-based. Keep `score_case` non-blocking.
 Keep the local fallback on the same judge model declared by the spec, translating
 only the provider-specific model syntax when the local SDK requires it.
 
-Exercise both routes through a local-capture or hosted-run workflow when feasible:
-with runtime gateway variables present, verify the judge uses the runtime
-target; without them, verify the local provider path remains usable. Do not add
-or modify tests for this validation. Hosted setup does not need a provider API
-key solely for a judge that uses the runtime gateway.
+Exercise both routes through an existing application/evaluation or trace
+workflow when feasible: with runtime gateway variables present, verify the judge
+uses the runtime target; without them, verify the local provider path remains
+usable. Do not add or modify tests for this validation. `beaker run smoke` is
+structural and does not execute either route. Hosted setup does not need a
+provider API key solely for a judge that uses the runtime gateway.
 
 ## Trace evidence
 
@@ -133,9 +135,10 @@ First verify structural wiring:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-Smoke does not execute a model call. For runtime evidence, detect whether model
-spans are wired, exercise the repository's normal agent path under a local
-Beaker capture, then validate and inspect the resulting receipt:
+Smoke does not execute a model call. For runtime evidence, check whether model
+spans are wired; run `beaker trace instrument` first if the check fails. Then
+exercise the repository's normal application/evaluation path under a local
+Beaker capture and validate and inspect the resulting receipt:
 
 ```bash
 beaker trace instrument --check
@@ -143,4 +146,7 @@ beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 
-Validate both the default-model branch and selected-model branch when feasible. Fail setup clearly if `runtime.model` is present but the selected client cannot be injected.
+Smoke verifies structural wiring only; it neither opens a capture nor executes a
+model call. Validate both the default-model branch and selected-model branch
+through the existing application/evaluation path when feasible. Fail setup
+clearly if `runtime.model` is present but the selected client cannot be injected.

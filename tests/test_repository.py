@@ -147,7 +147,20 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("scoring_inference_target", skill)
         self.assertIn("scoring_inference_target", routing)
         self.assertIn("LLM-as-a-judge scoring", routing)
-        self.assertIn("local execution", routing)
+        self.assertIn("local application or evaluation runs", routing)
+
+    def test_skill_uses_structural_smoke_validation(self) -> None:
+        skill_dir = SKILL.parent
+        content = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in [SKILL, *(skill_dir / "references").glob("*.md")]
+        )
+        self.assertNotIn("beaker run dry-run", content)
+        self.assertNotIn("smoke --trace", content)
+        self.assertIn("beaker run smoke --strict", content)
+        self.assertIn("does not execute `run_case`", content)
+        self.assertIn("PASS", content)
+        self.assertIn("FAIL", content)
 
     def test_skill_explains_nested_beaker_config_paths(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")

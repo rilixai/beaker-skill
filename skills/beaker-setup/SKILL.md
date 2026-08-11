@@ -6,7 +6,7 @@ license: MIT
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
 
 ## Keep Beaker isolated
 
@@ -86,7 +86,7 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
      canonical `provider:model`, then route hosted judge calls through
      `scoring_inference_target()` so gateway accounting and run budgets include
      them. The judge model must not follow `runtime.model`; retain the same
-     local judge model and normal provider client only for local execution where
+     local judge model and normal provider client only for local application or evaluation runs where
      the helper returns `None`. Omit the field for deterministic scorers. If an
      LLM judge exists but its intended model is not established, ask the
      developer rather than choosing a default.
@@ -94,12 +94,13 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
-6. Trace every optimized prompt into the real model call by inspecting the
-   evaluation path, then run `beaker run smoke --strict` to validate the config,
-   spec, dataset, targets, runner, and scorer wiring. Smoke is structural: it
-   does not execute a rollout, model call, or scoring call. When runtime evidence
-   is required, exercise the repository's normal agent path under a local Beaker
-   capture and inspect it with `beaker trace doctor --require-model-calls` and
+6. Inspect the real call path to verify every optimized prompt reaches its model
+   call, then run `beaker run smoke --strict` to validate config, spec, dataset,
+   targets, runner, and scorer wiring. Smoke does not execute `run_case` or the
+   scorer and does not support `--trace`. When runtime evidence is needed,
+   exercise the repository's existing application or evaluation path under a
+   local Beaker capture, then use
+   `beaker trace doctor --require-model-calls` and
    `beaker trace inspect`. Do not add tests or modify the user's existing test
    suite for Beaker validation.
 
@@ -221,11 +222,12 @@ Run a local validation only after real labeled examples are available:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-This command does not execute the runner or scorer. When execution evidence
-matters, run `beaker trace instrument --check`, exercise the repository's normal
-agent path under a local Beaker capture, run
-`beaker trace doctor --require-model-calls`, and inspect `.beaker/traces` with
-`beaker trace inspect`.
+Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
+code traceback when a check fails. When execution evidence matters, run
+`beaker trace instrument --check`, exercise the repository's existing
+application or evaluation path under a local Beaker capture, run
+`beaker trace doctor --require-model-calls`, and
+inspect `.beaker/traces` with `beaker trace inspect`.
 
 Read [validation-and-handoff.md](references/validation-and-handoff.md) before declaring setup complete or launching remotely.
 
@@ -257,10 +259,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
 - Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
-  provider clients are only the local-execution fallback.
+  provider clients are only the local application/evaluation fallback.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
-- Never require `runtime.model` for structural smoke checks or prompt-only optimization.
+- Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.
 - Treat `beaker spec build-from-github`, `beaker dataset upload`, and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
