@@ -2,14 +2,27 @@
 
 ## Local validation
 
-Run `beaker run dry-run` after each meaningful integration change, but only after real labeled examples are available. A passing dry-run proves the spec builds and one example executes and scores; a low score is an expected optimization baseline.
+Run `beaker run smoke --strict` after each meaningful integration change, but
+only after real labeled examples are available. A passing smoke check proves the
+config resolves, the spec builds, the dataset loads and parses, and the targets,
+runner, and scorer are connected. It does not execute `run_case`, call the
+scorer, make a model/tool call, or report a score.
 
 Interpret common failures:
 
-- `your runner raised`: inspect application/agent wiring.
-- missing or empty split: fix the configured JSONL dataset.
+- `FAIL spec`: use the printed exception type and traceback to fix the factory
+  import, construction, or spec contract.
+- `FAIL dataset`: use the printed file/line and traceback to fix dataset
+  configuration, JSONL parsing, or case construction.
+- missing or empty split: add real examples to the requested split or select
+  the correct split.
+- missing runner/scorer callable: connect the required spec hook.
 - strict placeholder failure: replace remaining generated TODOs.
-- tracing unavailable: install `beaker-sdk[tracing]` before using `--trace`.
+
+The command prints each completed stage as `PASS` before a later failure, so use
+the last passing stage to narrow the problem. For runtime evidence, exercise the
+repository's existing application or evaluation path under a local Beaker
+capture; smoke does not support `--trace`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
@@ -33,9 +46,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
-  field, and direct provider routing is limited to the local dry-run fallback.
+  field, and direct provider routing is limited to the local application/evaluation fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
-- Local dry-run passes when real data is available.
+- Local `beaker run smoke --strict` passes when real data is available.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report
