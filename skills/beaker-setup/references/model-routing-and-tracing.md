@@ -4,8 +4,16 @@
 
 Treat `runtime.model` as an explicit request for Beaker-controlled model
 selection in the evaluation path. Its absence means use the application's
-existing production-like client and model defaults. Keep all Beaker imports,
-gateway construction, and routing decisions inside `.beaker/`.
+existing production-like client and model defaults. Keep all Beaker imports for
+gateway construction and routing decisions inside `.beaker/`; trace-adapter
+imports are the narrow exception.
+
+The one narrow exception is **trace-adapter wiring**: application model call
+sites may import `beaker.tracing` and configure a supported adapter. This is
+safe because `current_trace()` returns a `NoopTrace` when no capture is active
+(no spans, exporter, or network), and Beaker remains a development/tooling
+dependency. This exception does not permit Beaker imports for model selection,
+gateway construction, or routing.
 
 Prefer these seams in order:
 
@@ -13,7 +21,8 @@ Prefer these seams in order:
 2. Add a small adapter beside the spec under `.beaker/`.
 3. Only if both fail, add optional keyword arguments to the nearest agent
    factory or eval function. Preserve existing defaults and do not import
-   Beaker from application code.
+   Beaker from application code, except for the trace-adapter wiring described
+   above.
 
 Do not modify a central LLM wrapper, production entrypoint, global environment
 routing, or deployment configuration for Beaker. If the application cannot be
@@ -127,7 +136,68 @@ provider API key solely for a judge that uses the runtime gateway.
 
 ## Trace evidence
 
-Use `runtime.trace` for concise application stages, artifacts, and handoffs; framework adapters should own model/tool spans. Preserve the application's existing instrumentation and avoid global instrumentation changes.
+Use `runtime.trace` in the spec for concise application stages, artifacts, and
+handoffs. At application model call sites, use
+`from beaker.tracing import current_trace`; `runtime.trace` is not available
+there. Preserve the application's existing instrumentation and avoid global
+instrumentation changes.
+
+Use an adapter first. Frameworks with an adapter under
+`beaker.tracing.integrations` must not be hand-annotated: the supported
+frameworks here are PydanticAI and LiteLLM. `beaker trace instrument` detects
+the framework and installs its extra; it does not replace the wiring guidance
+in this section. Install `beaker-sdk[pydantic-ai]` for PydanticAI or
+`beaker-sdk[litellm]` for LiteLLM (the command installs these as needed), rather
+than relying only on `beaker-sdk[tracing]`.
+
+For PydanticAI, pass the application's existing instrumentation through
+`existing=` so the adapter composes with it:
+
+```python
+from beaker.tracing import current_trace
+from beaker.tracing.integrations import pydantic_ai
+
+# PydanticAI 1.x
+agent = Agent(model, instrument=pydantic_ai.instrument(
+    current_trace(), existing=current_instrumentation
+))
+# PydanticAI 2.x
+agent = Agent(model, capabilities=pydantic_ai.capabilities(
+    current_trace(), existing=current_capabilities
+))
+```
+
+On 1.x, `existing` is the application's `instrument=` value; on 2.x it is
+the existing `capabilities=` list. Do not pass the adapter's `instrument(...)`
+result into `Instrumentation(settings=...)`: that API requires actual
+`InstrumentationSettings`, while the adapter returns the existing value
+unchanged when no capture is active, which would break production. Use
+`capabilities(...)` for the 2.x path. This preserves existing hooks,
+instrumentation, and exports without changing global PydanticAI settings.
+
+LiteLLM registration is case-scoped. Keep it around the calls, and flush
+afterward because LiteLLM logs after the call returns:
+
+```python
+from beaker.tracing import current_trace
+from beaker.tracing.integrations.litellm import registered
+
+async with registered(current_trace()) as trace_adapter:
+    await litellm.acompletion(model=model, messages=messages)
+    await trace_adapter.flush()
+```
+
+Use `with registered(current_trace()) as trace_adapter:` around synchronous
+`completion(...)` calls and call `trace_adapter.wait()` before leaving the
+case. An unflushed or unlogged call is dropped as a capture omission and
+downgrades the capture to `incomplete`; do not let the registration scope end
+before `flush()` or `wait()`.
+
+For frameworks with no adapter — including provider SDKs, LlamaIndex, and
+LangChain today — wrap the real model call with `trace.model_call(...)`.
+Use `inner=True` for a call made underneath an agent. Otherwise the capture
+can contain stages but zero model calls, causing
+`beaker trace doctor --require-model-calls` to fail.
 
 First verify structural wiring:
 
@@ -135,10 +205,9 @@ First verify structural wiring:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-Smoke does not execute a model call. For runtime evidence, check whether model
-spans are wired; run `beaker trace instrument` first if the check fails. Then
-exercise the repository's normal application/evaluation path under a local
-Beaker capture and validate and inspect the resulting receipt:
+Smoke opens no capture and executes no model call. Then exercise the
+repository's normal application/evaluation path under a local Beaker capture
+and validate and inspect the resulting receipt:
 
 ```bash
 beaker trace instrument --check
@@ -146,7 +215,8 @@ beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 
-Smoke verifies structural wiring only; it neither opens a capture nor executes a
-model call. Validate both the default-model branch and selected-model branch
+Smoke verifies structural wiring only; it neither opens a capture nor executes
+a model call. Validate both the default-model branch and selected-model branch
 through the existing application/evaluation path when feasible. Fail setup
-clearly if `runtime.model` is present but the selected client cannot be injected.
+clearly if `runtime.model` is present but the selected client cannot be
+injected. Do not add tests for this validation.

@@ -27,7 +27,10 @@ Allow files outside `.beaker/` only when required:
   the project supports that separation;
 - add the smallest optional application injection seam only when the spec and a
   `.beaker/` adapter cannot reuse an existing interface. Preserve identical
-  production defaults and keep all Beaker imports inside `.beaker/`.
+  production defaults and keep all non-tracing Beaker imports inside `.beaker/`.
+  The only application-code exception is narrowly scoped trace-adapter wiring:
+  `current_trace()` is a no-op outside a capture, and Beaker remains a
+  development/tooling dependency.
 
 Before changing application code, explain why spec-only integration is
 insufficient. Do not refactor production code for Beaker.
@@ -252,9 +255,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   `.beaker/`; stage conversions in an OS-managed temporary directory and upload
   them before cleanup.
 - Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth.
-- Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration.
+- Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped trace-adapter wiring at the real model call site.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
-- Never edit application code until spec-only and `.beaker/` adapter approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults and no Beaker imports.
+- Never edit application code until spec-only and `.beaker/` adapter approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed trace-adapter wiring.
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
 - Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
 - Never route normal production traffic through Beaker inference.
