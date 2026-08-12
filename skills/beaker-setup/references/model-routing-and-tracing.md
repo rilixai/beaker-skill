@@ -5,8 +5,7 @@
 Treat `runtime.model` as an explicit request for Beaker-controlled model
 selection in the evaluation path. Its absence means use the application's
 existing production-like client and model defaults. Keep all Beaker imports for
-gateway construction and routing decisions inside `.beaker/`; trace-adapter
-imports are the narrow exception.
+gateway construction and routing decisions inside `.beaker/`.
 
 The one narrow exception is **trace-adapter wiring**: application model call
 sites may import `beaker.tracing` and configure a supported adapter. This is
@@ -205,9 +204,9 @@ First verify structural wiring:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-Smoke opens no capture and executes no model call. Then exercise the
-repository's normal application/evaluation path under a local Beaker capture
-and validate and inspect the resulting receipt:
+Smoke verifies structural wiring only; it neither opens a capture nor executes
+a model call. Then exercise the repository's normal application/evaluation path
+under a local Beaker capture and validate and inspect the resulting receipt:
 
 ```bash
 beaker trace instrument --check
@@ -215,8 +214,7 @@ beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 
-Smoke verifies structural wiring only; it neither opens a capture nor executes
-a model call. Validate both the default-model branch and selected-model branch
+Validate both the default-model branch and selected-model branch
 through the existing application/evaluation path when feasible. Fail setup
 clearly if `runtime.model` is present but the selected client cannot be
 injected. Do not add tests for this validation.
