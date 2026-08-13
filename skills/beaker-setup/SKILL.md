@@ -228,11 +228,12 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
 code traceback when a check fails. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
-main candidate agent path inside `Spec.run_case` under a local Beaker capture,
-run `beaker trace doctor --require-model-calls`, and inspect `.beaker/traces`
-with `beaker trace inspect`.
-The candidate trace must come from candidate-agent execution; judge- or
-scorer-only calls do not satisfy runtime trace validation.
+candidate workflow rooted at the main workflow agent inside `Spec.run_case`
+under a local Beaker capture, then run
+`beaker trace doctor --require-model-calls` and inspect `.beaker/traces` with
+`beaker trace inspect`. Include the workflow's sub-agents, tools, retrievers,
+and nested model calls; a judge- or scorer-only capture does not satisfy
+runtime trace validation.
 
 Read [validation-and-handoff.md](references/validation-and-handoff.md) before declaring setup complete or launching remotely.
 
@@ -265,9 +266,13 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never route normal production traffic through Beaker inference.
 - Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
   provider clients are only the local application/evaluation fallback.
-- Never instrument scorer, judge, or evaluator model calls. Candidate tracing
-  covers only the main agent execution inside `Spec.run_case`; scorer traffic
-  is accounted for separately through `scoring_inference_target()`.
+- Never instrument scorer, rubric judge, evaluator, post-processing, or
+  post-rollout model calls. Candidate tracing covers the workflow rooted at the
+  main workflow agent inside `Spec.run_case`, including its sub-agents, tools,
+  retrievers, and nested model calls; `inner=True` remains valid underneath
+  that agent. Scope tracing at the candidate-workflow invocation boundary,
+  excluding those calls even when clients or wrappers are shared. Scorer
+  traffic is accounted for separately through `scoring_inference_target()`.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.

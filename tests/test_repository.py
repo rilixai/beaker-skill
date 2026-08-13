@@ -154,13 +154,15 @@ class RepositoryContractTests(unittest.TestCase):
         routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
         for content in (skill, routing):
             normalized = " ".join(content.split())
-            self.assertIn("main candidate agent", normalized)
-            self.assertIn("candidate trace", normalized)
+            self.assertIn("candidate workflow rooted at the main workflow agent", normalized)
+            self.assertIn("sub-agents, tools, retrievers, and nested model calls", normalized)
             self.assertIn("Spec.run_case", normalized)
         normalized_routing = " ".join(routing.split())
-        self.assertIn("Never instrument scorer, judge, or evaluator model calls", skill)
+        normalized_skill = " ".join(skill.split())
+        self.assertIn("Never instrument scorer, rubric judge, evaluator, post-processing, or post-rollout model calls", normalized_skill)
         self.assertIn("capture containing only judge or scorer calls", normalized_routing)
-        self.assertIn("Never add Beaker tracing to scorers, rubric judges, evaluators", normalized_routing)
+        self.assertIn("Never add Beaker tracing to scorers, rubric judges, evaluators, post-processing, or post-rollout model calls", normalized_routing)
+        self.assertIn("`inner=True` remains valid", normalized_routing)
 
     def test_skill_uses_structural_smoke_validation(self) -> None:
         skill_dir = SKILL.parent

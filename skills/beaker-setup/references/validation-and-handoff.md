@@ -21,10 +21,12 @@ Interpret common failures:
 
 The command prints each completed stage as `PASS` before a later failure, so use
 the last passing stage to narrow the problem. For runtime evidence, exercise
-the repository's main candidate agent path inside `Spec.run_case` under a local
-Beaker capture, then run `beaker trace doctor --require-model-calls` and inspect
-the receipt with `beaker trace inspect .beaker/traces`. A capture containing only
-scorer or judge calls does not satisfy runtime trace validation. Run
+the candidate workflow rooted at the main workflow agent inside `Spec.run_case`,
+including its sub-agents, tools, retrievers, and nested model calls, under a
+local Beaker capture. Then run `beaker trace doctor --require-model-calls` and
+inspect the receipt with `beaker trace inspect .beaker/traces`. A capture
+containing only scorer or judge calls does not satisfy runtime trace validation.
+Run
 `beaker trace instrument --check` first when instrumentation is uncertain;
 smoke does not support `--trace`.
 
@@ -45,8 +47,10 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
 - Every optimized prompt reaches its corresponding model call.
-- Runtime trace evidence comes from the main candidate agent path inside
-  `Spec.run_case` and excludes scorer and judge calls.
+- Runtime trace evidence comes from the candidate workflow rooted at the main
+  workflow agent inside `Spec.run_case`, including its sub-agents, tools,
+  retrievers, and nested model calls, and excludes scorer, judge, evaluator,
+  post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
 - The selected-model branch uses the narrowest injection seam.
 - Any LLM judge declares its fixed canonical model with

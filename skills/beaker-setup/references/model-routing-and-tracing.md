@@ -83,8 +83,8 @@ available.
 
 `Spec.llm_scorer_model` plus `scoring_inference_target()` is the accounting path
 for LLM-judge traffic; it does not authorize adding the judge to the candidate
-trace. Keep the judge out of candidate tracing even when it shares a client or
-LLM wrapper with the agent.
+workflow trace. Keep rubric judges and scorer calls out of that trace even
+when they share a client, wrapper, or framework with the agent.
 
 The helper returns `None` during local application or evaluation runs because
 there is no hosted run gateway. Only in that case should the scorer retain its
@@ -140,23 +140,26 @@ provider API key solely for a judge that uses the runtime gateway.
 
 ## Trace evidence
 
-### Trace only the candidate agent
+### Trace only the candidate workflow
 
-Instrument only model and tool calls made by the main candidate agent during
-`Spec.run_case`. Never add Beaker tracing to scorers, rubric judges, evaluators,
-or other post-rollout model calls, even when they use the same LiteLLM client or
-framework.
+Instrument the candidate workflow rooted at the main workflow agent inside
+`Spec.run_case`, including its sub-agents, tools, retrievers, and nested model
+calls. `inner=True` remains valid for calls made underneath that agent. Never
+add Beaker tracing to scorers, rubric judges, evaluators, post-processing, or
+post-rollout model calls, even when they use the same LiteLLM client, wrapper,
+or framework.
 
 Do not use `current_trace()`, `registered(...)`, `instrument(...)`,
-`capabilities(...)`, or `trace.model_call(...)` in scoring or judge code. If the
-agent and scorer share an LLM wrapper, scope tracing at the candidate-agent
-invocation boundary so scorer calls are excluded. For example, a LiteLLM
-`registered(...)` scope wraps only the agent call, not the judge call.
+`capabilities(...)`, or `trace.model_call(...)` in scorer, judge, evaluator, or
+post-processing code. If the workflow and scorer share an LLM wrapper, scope
+tracing at the candidate-workflow invocation boundary so those calls are
+excluded. For example, a LiteLLM `registered(...)` scope wraps the complete
+candidate workflow, not the judge call.
 
 LLM-judge traffic must still declare `Spec.llm_scorer_model` and use
 `scoring_inference_target()` during hosted runs. That provides scorer accounting
 and budget enforcement; it does not authorize adding the judge to the candidate
-trace.
+workflow trace.
 
 Use `runtime.trace` in the spec for concise application stages, artifacts, and
 handoffs. At application model call sites, use
@@ -164,7 +167,7 @@ handoffs. At application model call sites, use
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
 
-Use an adapter first, scoped only to the main candidate agent invocation.
+Use an adapter first, scoped only to the candidate-workflow invocation.
 Frameworks with an adapter under
 `beaker.tracing.integrations` must not be hand-annotated: the supported
 frameworks here are PydanticAI and LiteLLM. `beaker trace instrument` detects
@@ -238,9 +241,10 @@ beaker trace doctor --require-model-calls
 beaker trace inspect .beaker/traces
 ```
 
-Validate tracing by exercising the main candidate agent path inside
-`Spec.run_case`. A capture containing only judge or scorer calls does not
-satisfy runtime trace validation.
+Validate tracing by exercising the candidate workflow rooted at the main
+workflow agent inside `Spec.run_case`, including its sub-agents, tools,
+retrievers, and nested model calls. A capture containing only judge or scorer
+calls does not satisfy runtime trace validation.
 
 Validate both the default-model branch and selected-model branch
 through the existing application/evaluation path when feasible. Fail setup
