@@ -153,12 +153,14 @@ class RepositoryContractTests(unittest.TestCase):
         skill = SKILL.read_text(encoding="utf-8")
         routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
         for content in (skill, routing):
-            self.assertIn("main candidate agent", content)
-            self.assertIn("scorer", content)
-            self.assertIn("candidate trace", content)
+            normalized = " ".join(content.split())
+            self.assertIn("main candidate agent", normalized)
+            self.assertIn("candidate trace", normalized)
+            self.assertIn("Spec.run_case", normalized)
+        normalized_routing = " ".join(routing.split())
         self.assertIn("Never instrument scorer, judge, or evaluator model calls", skill)
-        self.assertIn("capture containing only judge or scorer calls", routing)
-        self.assertIn("Spec.run_case", routing)
+        self.assertIn("capture containing only judge or scorer calls", normalized_routing)
+        self.assertIn("Never add Beaker tracing to scorers, rubric judges, evaluators", normalized_routing)
 
     def test_skill_uses_structural_smoke_validation(self) -> None:
         skill_dir = SKILL.parent
