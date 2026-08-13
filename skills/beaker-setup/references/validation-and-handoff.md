@@ -26,8 +26,7 @@ including its sub-agents, tools, retrievers, and nested model calls, under a
 local Beaker capture. Then run `beaker trace doctor --require-model-calls` and
 inspect the receipt with `beaker trace inspect .beaker/traces`. A capture
 containing only scorer or judge calls does not satisfy runtime trace validation.
-Run
-`beaker trace instrument --check` first when instrumentation is uncertain;
+Run `beaker trace instrument --check` first when instrumentation is uncertain;
 smoke does not support `--trace`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
