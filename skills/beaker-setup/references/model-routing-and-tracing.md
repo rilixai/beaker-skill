@@ -240,8 +240,7 @@ beaker trace inspect .beaker/traces
 
 Validate tracing by exercising the main candidate agent path inside
 `Spec.run_case`. A capture containing only judge or scorer calls does not
-satisfy runtime trace validation. This candidate trace excludes scorer and judge
-calls.
+satisfy runtime trace validation.
 
 Validate both the default-model branch and selected-model branch
 through the existing application/evaluation path when feasible. Fail setup

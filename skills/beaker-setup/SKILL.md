@@ -227,11 +227,10 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
 code traceback when a check fails. When execution evidence matters, run
-`beaker trace instrument --check`, exercise the repository's existing
+`beaker trace instrument --check`, exercise the repository's
 main candidate agent path inside `Spec.run_case` under a local Beaker capture,
-run
-`beaker trace doctor --require-model-calls`, and
-inspect `.beaker/traces` with `beaker trace inspect`.
+run `beaker trace doctor --require-model-calls`, and inspect `.beaker/traces`
+with `beaker trace inspect`.
 The candidate trace must come from candidate-agent execution; judge- or
 scorer-only calls do not satisfy runtime trace validation.
 
