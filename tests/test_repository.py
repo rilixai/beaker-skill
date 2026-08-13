@@ -149,6 +149,17 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("LLM-as-a-judge scoring", routing)
         self.assertIn("local application or evaluation runs", routing)
 
+    def test_tracing_is_scoped_to_candidate_agent(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
+        for content in (skill, routing):
+            self.assertIn("main candidate agent", content)
+            self.assertIn("scorer", content)
+            self.assertIn("candidate trace", content)
+        self.assertIn("Never instrument scorer, judge, or evaluator model calls", skill)
+        self.assertIn("capture containing only judge or scorer calls", routing)
+        self.assertIn("Spec.run_case", routing)
+
     def test_skill_uses_structural_smoke_validation(self) -> None:
         skill_dir = SKILL.parent
         content = "\n".join(
