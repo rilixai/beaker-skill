@@ -144,11 +144,9 @@ provider API key solely for a judge that uses the runtime gateway.
 
 Instrument the candidate workflow rooted at the main workflow agent inside
 `Spec.run_case`, including its sub-agents, tools, retrievers, and nested model
-calls, each instrumented the same neutral way: a call made underneath another
-operation is a child span, so the OTel context carries the nesting and no span
-ever needs a Beaker inner/outer role. Never add Beaker tracing to scorers,
-rubric judges, evaluators, post-processing, or post-rollout model calls, even
-when they use the same LiteLLM client, wrapper, or framework.
+calls. Never add Beaker tracing to scorers, rubric judges, evaluators,
+post-processing, or post-rollout model calls, even when they use the same
+LiteLLM client, wrapper, or framework.
 
 Do not use `current_trace()`, `registered(...)`, `instrument(...)`,
 `capabilities(...)`, or `trace.model_call(...)` in scorer, judge, evaluator, or
