@@ -146,7 +146,7 @@ Instrument the candidate workflow rooted at the main workflow agent inside
 `Spec.run_case`, including its sub-agents, tools, retrievers, and nested model
 calls. Never add Beaker tracing to scorers, rubric judges, evaluators,
 post-processing, or post-rollout model calls, even when they use the same
-LiteLLM client, wrapper, or framework.
+client, wrapper, or framework.
 
 Do not use `current_trace()`, `registered(...)`, `instrument(...)`,
 `capabilities(...)`, or `trace.model_call(...)` in scorer, judge, evaluator, or
