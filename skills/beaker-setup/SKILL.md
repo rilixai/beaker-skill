@@ -269,10 +269,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never instrument scorer, rubric judge, evaluator, post-processing, or
   post-rollout model calls. Candidate tracing covers the workflow rooted at the
   main workflow agent inside `Spec.run_case`, including its sub-agents, tools,
-  retrievers, and nested model calls; `inner=True` remains valid underneath
-  that agent. Scope tracing at the candidate-workflow invocation boundary,
-  excluding those calls even when clients or wrappers are shared. Scorer
-  traffic is accounted for separately through `scoring_inference_target()`.
+  retrievers, and nested model calls. Scope tracing at the candidate-workflow
+  invocation boundary, excluding those calls even when clients or wrappers are
+  shared. Scorer traffic is accounted for separately through
+  `scoring_inference_target()`.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.

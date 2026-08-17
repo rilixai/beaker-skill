@@ -162,7 +162,8 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Never instrument scorer, rubric judge, evaluator, post-processing, or post-rollout model calls", normalized_skill)
         self.assertIn("capture containing only judge or scorer calls", normalized_routing)
         self.assertIn("Never add Beaker tracing to scorers, rubric judges, evaluators, post-processing, or post-rollout model calls", normalized_routing)
-        self.assertIn("`inner=True` remains valid", normalized_routing)
+        self.assertNotIn("inner=True", normalized_routing)
+        self.assertNotIn("inner=True", normalized_skill)
 
     def test_skill_uses_structural_smoke_validation(self) -> None:
         skill_dir = SKILL.parent
