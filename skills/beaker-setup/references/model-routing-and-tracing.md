@@ -144,10 +144,11 @@ provider API key solely for a judge that uses the runtime gateway.
 
 Instrument the candidate workflow rooted at the main workflow agent inside
 `Spec.run_case`, including its sub-agents, tools, retrievers, and nested model
-calls. `inner=True` remains valid for calls made underneath that agent. Never
-add Beaker tracing to scorers, rubric judges, evaluators, post-processing, or
-post-rollout model calls, even when they use the same LiteLLM client, wrapper,
-or framework.
+calls, each instrumented the same neutral way: a call made underneath another
+operation is a child span, so the OTel context carries the nesting and no span
+ever needs a Beaker inner/outer role. Never add Beaker tracing to scorers,
+rubric judges, evaluators, post-processing, or post-rollout model calls, even
+when they use the same LiteLLM client, wrapper, or framework.
 
 Do not use `current_trace()`, `registered(...)`, `instrument(...)`,
 `capabilities(...)`, or `trace.model_call(...)` in scorer, judge, evaluator, or
@@ -221,9 +222,9 @@ before `flush()` or `wait()`.
 
 For frameworks with no adapter — including provider SDKs, LlamaIndex, and
 LangChain today — wrap the real model call with `trace.model_call(...)`.
-Use `inner=True` for a call made underneath an agent. Otherwise the capture
-can contain stages but zero model calls, causing
-`beaker trace doctor --require-model-calls` to fail.
+Wrap nested calls the same way, inside the enclosing operation, so they are
+recorded as its child spans. Otherwise the capture can contain stages but zero
+model calls, causing `beaker trace doctor --require-model-calls` to fail.
 
 First verify structural wiring:
 
