@@ -18,6 +18,13 @@ Interpret common failures:
   the correct split.
 - missing runner/scorer callable: connect the required spec hook.
 - strict placeholder failure: replace remaining generated TODOs.
+- tracing warning: smoke warns, without changing its exit code (even with
+  `--strict`), when no framework adapter or `runtime.trace.model_call` is
+  wired in application code. Captures would record no model I/O. Wire tracing
+  as described in
+  [model-routing-and-tracing.md](model-routing-and-tracing.md) — `beaker trace
+  instrument` detects the framework and installs its extras — then re-run
+  smoke until the warning is gone.
 
 The command prints each completed stage as `PASS` before a later failure, so use
 the last passing stage to narrow the problem. For runtime evidence, exercise
@@ -57,7 +64,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
-- Local `beaker run smoke --strict` passes when real data is available.
+- Local `beaker run smoke --strict` passes when real data is available, and
+  its output shows no tracing warning.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report

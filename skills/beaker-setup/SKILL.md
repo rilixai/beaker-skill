@@ -96,7 +96,12 @@ ambiguous; use `--discover` to locate existing factories.
 6. Inspect the real call path to verify every optimized prompt reaches its model
    call, then run `beaker run smoke --strict` to validate config, spec, dataset,
    targets, runner, and scorer wiring. Smoke does not execute `run_case` or the
-   scorer and does not support `--trace`. When runtime evidence is needed,
+   scorer and does not support `--trace`. Smoke also warns, without failing,
+   when no framework adapter or `runtime.trace.model_call` is wired in
+   application code; treat that warning as a prompt to finish the tracing
+   wiring described in
+   [model-routing-and-tracing.md](references/model-routing-and-tracing.md),
+   not as a structural failure. When runtime evidence is needed,
    exercise the repository's existing application or evaluation path under a
    local Beaker capture, then use
    `beaker trace doctor --require-model-calls` and
@@ -219,7 +224,9 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
-code traceback when a check fails. When execution evidence matters, run
+code traceback when a check fails. A tracing warning in that output is
+non-blocking: it means model spans are not wired yet, so complete the tracing
+wiring before handoff. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
 candidate workflow rooted at the main workflow agent inside `Spec.run_case`
 under a local Beaker capture, then run
