@@ -210,7 +210,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("beaker login --agent", content)
         self.assertNotIn("--agent-name", content)
 
-    def test_agent_discovery_precedes_creation_and_scopes_are_opt_in(self) -> None:
+    def test_agent_discovery_precedes_creation_and_scope_is_silent(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
 
@@ -218,13 +218,20 @@ class RepositoryContractTests(unittest.TestCase):
             normalized = " ".join(text.split())
             self.assertIn("beaker auth status", normalized)
             self.assertIn("beaker agent list", normalized)
-            self.assertIn("no explicit scope", normalized)
             self.assertIn("reuse", normalized)
             self.assertIn("create a different agent", normalized)
-            self.assertIn("custom scope", normalized)
 
         self.assertLess(skill.index("beaker agent list"), skill.index('beaker agent setup "<Existing Agent'))
-        self.assertIn("Never set `scope_key` or pass `--scope-key` in an ordinary setup", skill)
+        self.assertIn(
+            "Never mention scope, `scope_key`, or `--scope-key` to the developer during setup",
+            " ".join(skill.split()),
+        )
+        self.assertNotIn("add a custom scope", skill)
+        self.assertNotIn("with a custom scope", skill)
+        self.assertIn("Scopes (only when the developer asks)", operations)
+        self.assertIn("scope_key", operations)
+        self.assertIn("--scope-key", operations)
+        self.assertIn("developer explicitly asks about scope isolation", " ".join(operations.split()))
 
     def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
