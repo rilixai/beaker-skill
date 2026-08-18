@@ -231,10 +231,10 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
 Smoke verifies structural wiring only; it neither opens a capture nor executes
-a model call. It warns, without failing, when no framework adapter or
-`runtime.trace.model_call` is wired in application code — resolve that warning
-with the wiring above before handoff. Then exercise the repository's normal
-application/evaluation path
+a model call. When no framework adapter or `runtime.trace.model_call` is wired
+in application code, `--strict` fails with `FAIL tracing` and a non-strict run
+prints a non-blocking warning — resolve it with the wiring above before
+handoff. Then exercise the repository's normal application/evaluation path
 under a local Beaker capture and validate and inspect the resulting receipt:
 
 ```bash
