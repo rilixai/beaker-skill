@@ -170,15 +170,16 @@ implicitly and can block on the browser in exactly the same way. Running
 
 ### Select the agent
 
-For internal identity matching, treat the optimization target plus repository
-association as the agent identity. A missing or different scope is never
-evidence that a new agent is needed.
+Review `beaker agent list` for an agent representing the same optimization
+target, considering its name, purpose, and repository association. Those form
+the agent's identity; a missing or different scope is never evidence that a new
+agent is needed.
 
 When a suitable agent already exists, stop before setup and ask the developer
 to choose one of these outcomes:
 
-1. reuse that agent;
-2. create a different agent with a distinct optimization-target name; or
+1. reuse that agent; or
+2. create a different agent with a distinct optimization-target name.
 
 Recommend reuse. Do not make this decision silently.
 
