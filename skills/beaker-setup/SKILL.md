@@ -8,6 +8,14 @@ license: MIT
 
 Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
 
+## Keep the onboarding loop explicit
+
+`beaker onboarding status` is the loop-control command for setup. Run it after
+every Beaker command and whenever it is unclear what to do next, then follow
+its single returned next action exactly. Do not ask the developer what to do
+next before consulting this command. If the returned action is developer-owned,
+relay that action verbatim and wait for the developer to perform it.
+
 ## Keep Beaker isolated
 
 Treat Beaker as development/evaluation tooling, not an application runtime.
@@ -129,6 +137,7 @@ create an agent:
 ```bash
 beaker auth status
 beaker login
+beaker onboarding status
 beaker github status
 beaker agent list
 ```
@@ -253,6 +262,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   setup, and never set them unless the developer explicitly asks for scope
   isolation.
 - Never silently choose among multiple plausible tasks.
+- Never ask the developer what to do next before running `beaker onboarding
+  status`; follow its returned action, and relay developer-owned actions
+  verbatim.
 - Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never place Beaker-owned code or files outside `.beaker/` when they can live there.
 - Never save generated JSONL dataset files in the user's repository or under

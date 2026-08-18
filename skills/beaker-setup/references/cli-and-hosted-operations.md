@@ -1,5 +1,22 @@
 # CLI and hosted operations
 
+## Onboarding loop
+
+Run `beaker onboarding status` after every command and whenever the next
+action is uncertain. Follow its one returned action. The ordered state checks
+are `beaker_installed`, `config_present`, `logged_in`, `github_connected`,
+`agent_selected`, `spec_integrated`, `dataset_available`, `tracing_wired`,
+`experiment_launched`, and `candidate_pr_shipped`.
+
+Use `beaker onboarding status --json` for automation. The response contains
+`steps`, `next`, and `errors`; every step contains `id`, `state`, `reason`,
+`owner`, and `next_action`, while `next` contains `id`, `owner`, and `action`.
+Exit `0` means the state was computed, including incomplete onboarding. Exit
+`2` means the status check failed. Offline or logged-out hosted checks are
+reported as `unknown`; run `beaker login` when it is the returned action.
+Tracing is advisory: `tracing_wired` does not block completion and is not
+selected while an earlier required step remains open.
+
 ## GitHub App access
 
 - `beaker github status` reports the organization's GitHub App installation

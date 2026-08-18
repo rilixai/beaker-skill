@@ -13,6 +13,11 @@ datasets, or Beaker config merely to launch or manage a run.
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
 interpreting status exit codes, pulling results, or handling a CLI error.
 
+At the start of the operate flow, and after every CLI command, run
+`beaker onboarding status`. When unsure what to do next, consult it before
+asking the developer. Follow its single returned action; relay
+developer-owned actions verbatim.
+
 ## Stay inside the connected project
 
 1. Locate the selected project's Beaker config. In a monorepo, do not assume
@@ -239,6 +244,8 @@ Cancellation is a state-changing operation:
   unless the developer explicitly supplies a scope.
 - Never treat status exit code `3` as a failed run.
 - Never lose the full run ID or UI link after launch.
+- Never ask the developer what to do next before running `beaker onboarding
+  status`; use its returned action and relay developer-owned actions verbatim.
 
 ## Report the outcome
 

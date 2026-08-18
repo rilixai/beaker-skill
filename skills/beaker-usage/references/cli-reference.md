@@ -3,6 +3,7 @@
 ## Contents
 
 - [Global command placement](#global-command-placement)
+- [Onboarding status](#onboarding-status)
 - [Discovery](#discovery)
 - [Launch commands](#launch-commands)
 - [Selected-model flags](#selected-model-flags)
@@ -21,6 +22,24 @@ beaker --config-file services/invoices/.beaker/beaker.yaml run list --json
 
 Agent selection precedence is explicit `--agent`, then `BEAKER_AGENT_KEY`, then
 the selected Beaker config. Usually omit `--agent` and preserve setup's choice.
+
+## Onboarding status
+
+```bash
+beaker onboarding status
+beaker onboarding status --json
+```
+
+Use this command after every CLI command and whenever the next action is
+unclear. It reports the ordered steps `beaker_installed`, `config_present`,
+`logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
+`dataset_available`, `tracing_wired`, `experiment_launched`, and
+`candidate_pr_shipped`. JSON contains `steps`, `next`, and `errors`; each step
+has `id`, `state`, `reason`, `owner`, and `next_action`, and `next` has `id`,
+`owner`, and `action`. Exit `0` means the state was computed, even if
+incomplete; exit `2` means the check failed. `tracing_wired` is advisory and
+does not take precedence over an open required step. Follow the returned
+action, and relay developer-owned actions verbatim.
 
 ## Discovery
 

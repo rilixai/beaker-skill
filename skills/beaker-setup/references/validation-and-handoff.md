@@ -1,5 +1,53 @@
 # Validation and handoff
 
+## Onboarding status
+
+Use `beaker onboarding status` after every CLI command and whenever the next
+action is unclear. It reports these ordered steps:
+
+1. `beaker_installed`
+2. `config_present`
+3. `logged_in`
+4. `github_connected`
+5. `agent_selected`
+6. `spec_integrated`
+7. `dataset_available`
+8. `tracing_wired`
+9. `experiment_launched`
+10. `candidate_pr_shipped`
+
+The human-readable output identifies each step as `PASS`, `TODO`, or
+`UNKNOWN`, then prints one `Next:` action. `--json` returns:
+
+```json
+{
+  "steps": [
+    {
+      "id": "config_present",
+      "state": "complete",
+      "reason": null,
+      "owner": "agent",
+      "next_action": "..."
+    }
+  ],
+  "next": {
+    "id": "logged_in",
+    "owner": "agent",
+    "action": "Run `beaker login`."
+  },
+  "errors": []
+}
+```
+
+`owner` is `agent` when the coding agent can perform the action and
+`developer` when it requires the human, such as GitHub App access, labeled
+data, agent-name approval, or authorization for a hosted run. Relay
+developer-owned actions verbatim. Exit code `0` means the state was computed,
+even when steps remain incomplete; exit code `2` means the check itself failed,
+such as a hosted API error. This lets an agent poll after every step without
+mistaking an incomplete onboarding for a broken command. `tracing_wired` is
+advisory and never takes precedence over an incomplete required step.
+
 ## Local validation
 
 Run `beaker run smoke --strict` after each meaningful integration change, but
