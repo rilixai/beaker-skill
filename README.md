@@ -1,7 +1,7 @@
 # Beaker Skills
 
 Portable agent guidance for setting up and operating
-[Beaker](https://pypi.org/project/beaker-sdk/) prompt optimization in a Python
+[Beaker](https://pypi.org/project/beaker-sdk/) optimization in a Python
 repository.
 
 The canonical Agent Skills are:
