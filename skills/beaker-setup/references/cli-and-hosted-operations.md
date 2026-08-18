@@ -29,8 +29,7 @@
   available agents by optimization target and repository association; scope
   configuration is not part of agent identity.
 - If a suitable agent exists, ask the developer whether to reuse it, create a
-  different agent, or reuse it with a custom scope. Recommend reusing it with
-  no explicit scope. Do not choose on the developer's behalf.
+  different agent. Recommend reuse. Do not choose on the developer's behalf.
 - `beaker agent setup "<Agent Name or key>"` selects an existing optimization
   target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and
   `BEAKER_AGENT_KEY` to `.beaker/.env`. Pass `--repo <owner/name>` only when the
@@ -44,12 +43,13 @@
 
 Do not ask the developer to paste API keys when CLI login is available. `BEAKER_AGENT_KEY` is an agent selector, not a credential-bound API key.
 
-## Scope defaults
+## Scopes (only when the developer asks)
 
-Leave `scope_key` absent or unset in `beaker.yaml` and omit `--scope-key` for a
-normal setup. Beaker then uses the selected agent's default scope. Scopes are
-an advanced, opt-in isolation mechanism; do not add one merely because setup is
-being run from another repository, config path, spec, or task.
+Only consult this section when the developer explicitly asks about scope
+isolation. For a normal setup, leave `scope_key` absent or unset in
+`beaker.yaml` and omit `--scope-key`. Beaker then uses the selected agent's
+default scope. Never add a scope merely because setup is being run from another
+repository, config path, spec, or task, and do not raise the topic yourself.
 
 If the developer explicitly chooses to add a scope to an existing agent, ask
 for or confirm its stable key. Configure it persistently with `scope_key` in

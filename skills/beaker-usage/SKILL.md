@@ -166,7 +166,6 @@ Recover or filter run IDs with:
 ```bash
 beaker run list --json
 beaker run list --status RUNNING --json
-beaker run list --scope-key <scope> --limit 25 --offset 0 --json
 ```
 
 Check a known run once with:
