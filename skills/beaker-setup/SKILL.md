@@ -239,8 +239,9 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
 code traceback when a check fails. A tracing warning in that output is
-non-blocking: it means model spans are not wired yet, so complete the tracing
-wiring before handoff. When execution evidence matters, run
+non-blocking to the CLI, but tracing is a setup-skill completion requirement:
+when onboarding returns `tracing_wired` as its final agent action, complete the
+wiring before handoff and rerun smoke. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
 candidate workflow rooted at the main workflow agent inside `Spec.run_case`
 under a local Beaker capture, then run

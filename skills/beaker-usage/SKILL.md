@@ -13,13 +13,16 @@ datasets, or Beaker config merely to launch or manage a run.
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
 interpreting status exit codes, pulling results, or handling a CLI error.
 
-At the start of the operate flow, and after every CLI command, run
-`beaker onboarding status`. When unsure what to do next, consult it before
-asking the developer. Follow the first incomplete agent-owned action; relay
-every known-incomplete action in `blocked_on_developer` verbatim to the
-developer and stop instead of attempting developer-owned work. An `unknown`
-step has not been checked yet and never means the developer must act. Tracing
-is the last agent-owned action when no other agent action remains.
+During setup validation and launch preparation, run `beaker onboarding status`
+at the start of the flow and after every CLI command, then follow its returned
+action. Relay every known-incomplete action in `blocked_on_developer` verbatim
+to the developer and stop instead of attempting developer-owned work. An
+`unknown` step has not been checked yet and never means the developer must act.
+Tracing is the last agent-owned action when no other agent action remains.
+When inspecting, monitoring, pulling, or cancelling a known run whose
+documented preconditions are already satisfied, operate the run directly
+without restarting onboarding discovery. Consult onboarding status there only
+if a command fails or the next action is unclear.
 
 ## Stay inside the connected project
 

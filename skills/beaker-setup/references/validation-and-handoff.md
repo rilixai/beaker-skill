@@ -5,15 +5,16 @@
 Use `beaker onboarding status` after every CLI command and whenever the next
 action is unclear. It reports these ordered steps:
 
-1. `beaker_installed`
+1. `beaker_dependency_declared`
 2. `config_present`
 3. `logged_in`
 4. `github_connected`
 5. `agent_selected`
 6. `spec_integrated`
-7. `tracing_wired`
-8. `dataset_available`
-9. `experiment_launched`
+7. `spec_validated`
+8. `tracing_wired`
+9. `dataset_available`
+10. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App
 installation is connected. `agent_selected` requires a selected Beaker agent
@@ -57,25 +58,35 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 `developer` when it requires the human, such as GitHub App access, labeled
 data, agent-name approval, or authorization for a hosted run. The next action
 is the first incomplete agent-owned step in canonical order. Developer-owned
-steps known to be incomplete are listed in `blocked_on_developer` in canonical
-order; relay those actions verbatim and stop rather than attempting them. An
-`unknown` step means the check has not completed yet, never that the developer
-must act. If no agent-owned step remains, the first known-incomplete
-developer-owned step becomes `next`. The `blocking` field is `false` only for
-advisory `tracing_wired`; it is `true` for all other steps. Tracing never
-blocks completion, but is returned as the final agent action once no other
-agent-owned step remains. Exit code `0` means the state was computed, even when
-steps remain incomplete; exit code `2` means the check itself failed, such as a
-hosted API error. This lets an agent poll after every step without mistaking an
-incomplete onboarding for a broken command.
+steps known to be incomplete (`todo`) are listed in `blocked_on_developer` in
+canonical order; relay those actions verbatim and stop rather than attempting
+them. An `unknown` step means the check has not completed yet, never that the
+developer must act, and it is not added to `blocked_on_developer`. If no
+agent-owned step remains, the first known-incomplete developer-owned step
+becomes `next`. The `blocking` field is `false` only for advisory
+`tracing_wired`; it is `true` for all other steps. Tracing never blocks
+completion, but is returned as the final agent action once no other
+agent-owned step remains. Exit code `0` means the state and an actionable
+`next` were computed, even when steps remain incomplete. Exit code `2` is
+reserved for a not-computed payload where an actionable `next` could not be
+produced, such as an unreadable Beaker config; selection and hosted errors
+remain in `errors` but return `0` when `next` is actionable.
+When onboarding is complete, `next.id` is `null` and `next.action` contains
+the completion message; the null id is an intentional completion shape, not a
+parse failure. For exit `2`, read `errors`, retry once, and if the failure
+persists relay the error to the developer.
 
 ## Local validation
 
 Run `beaker run smoke --strict` after each meaningful integration change, but
-only after real labeled examples are available. A passing smoke check proves the
-config resolves, the spec builds, the dataset loads and parses, and the targets,
-runner, and scorer are connected. It does not execute `run_case`, call the
-scorer, make a model/tool call, or report a score.
+only after real labeled examples are available. The `spec_validated` onboarding
+step performs this same local structural/readiness check only after
+`spec_integrated` is complete. It reports failures in the step reason and
+points back to `beaker run smoke --strict`; it does not print smoke output or
+write files. A passing smoke check proves the config resolves, the spec builds,
+the dataset loads and parses, and the targets, runner, and scorer are
+connected. It does not execute `run_case`, call the scorer, make a model/tool
+call, trigger hosted calls, or report a score.
 
 Interpret common failures:
 
@@ -134,7 +145,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   field, and direct provider routing is limited to the local application/evaluation fallback.
 - Secrets are confined to `.beaker/.env` or hosted secret storage.
 - Local `beaker run smoke --strict` passes when real data is available, and
-  its output shows no tracing warning.
+  its output shows no tracing warning after the final `tracing_wired` action
+  has been completed. If tracing detection is `UNKNOWN`, report that
+  verification uncertainty rather than treating it as a tracing failure.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report
