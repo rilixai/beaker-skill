@@ -1,6 +1,6 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch a hosted Beaker run, choose a GitHub branch or dataset, compare or optimize selected models, use Harness Optimization, list or inspect runs, monitor run status, download results, or cancel a run. Do not use to scaffold or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch Harness Optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, run a selected-model optimization, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
 license: MIT
 ---
 
@@ -79,37 +79,70 @@ Before a hosted launch:
    beaker dataset list --agent <selected-agent> --json
    ```
 
+   If the selected spec declares `spec.required_env`, compare those names with:
+
+   ```bash
+   beaker agent env list --agent <selected-agent>
+   ```
+
+   Do not read or print local secret values. If a declared hosted value is
+   missing, stop and use `$beaker-setup`; a run would fail before dispatch.
+
 4. Use the CLI's branch selection unless the developer supplied a ref. Without
    `--ref`, `beaker run trigger` uses the current checked-out branch when it
    belongs to the linked repository and exists on its remote, then falls back
    to the repository's GitHub default branch. The command prints the current
    branch when selected locally, or `default branch` when the server selects
-   the fallback. Use `--ref` only for an explicit override; unpushed local
-   commits and working tree changes are not included.
+   the fallback. Use `--ref <remote-branch>` only for an explicit remote branch
+   override, preferably one returned by `beaker github branches`. Unpushed
+   local commits and working tree changes are not included.
 5. Ask which dataset name or immutable `name@revision` to use unless it is
    already explicit. If the user chooses a bare name, explain that it resolves
    to that dataset's production revision. Never use a storage URI.
 
-If the user explicitly requests a tag or commit instead of a branch, allow it
-as `--ref` after restating that exact immutable ref.
+Hosted GitHub sources must be remote branches. Tags and commit SHAs passed to
+`--ref` return `422` because they cannot serve as pull-request base branches.
+If the developer supplies one, ask for a remote branch that points to the
+desired commit; do not launch with the tag or SHA.
 
-## Choose the run family explicitly
+## Separate the optimizer from the editable surface
 
-Do not infer the run family from the repository's model code. If the developer
-has not already specified it, ask which outcome they want:
+Inspect the selected `@spec` registration and `Spec.seed_targets` without
+editing them. The decorator selects what Beaker may edit; it does not select
+the optimizer.
 
-| Run family | Use when | CLI selection |
+| Editable surface | Spec contract | Default launch |
 |---|---|---|
-| Optimization | Optimize the configured production-system path, optionally without an initial benchmark | no model or Harness flags; use `--execution-mode optimize_only` only when explicitly requested |
-| Harness Optimization | Use the Codex-driven optimizer rather than the ordinary optimizer | `--use-harness-optimization` |
-| Selected-model run | Benchmark, optimize, and compare user-selected models | one to eight `--optimization-model provider:model` flags |
+| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Harness Optimization with no optimizer flag |
+| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Harness Optimization with no optimizer flag |
 
-Optimization preserves the spec's configured model behavior. Do not
-ask for models or add `--optimization-model` unless the developer selects a
-selected-model run.
+A plain GitHub-backed launch uses Harness Optimization by default for either
+editable surface. The seed starts with the configured production-system model
+behavior unless a supported launch-time model selection is explicit. During
+optimization, the optimizer may modify the editable harness, source, or resource —
+including model selection and model-call behavior — when that improves the
+objective.
 
-Harness Optimization and selected models are mutually exclusive. Never combine
-them.
+Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
+Named-resource mode passes the complete declared resources through
+`seed_targets`. Both use Harness by default.
+
+Selected-model flags choose a different optimizer workflow and are separate
+from the editable-surface setting. They require populated `seed_targets`; if
+the selected spec has none, stop and use `$beaker-setup` to make an explicit
+product decision. Do not silently add targets or change `repository` as a
+run-management side effect. Harness Optimization and selected-model flags are
+mutually exclusive; never combine them.
+
+Apply TEST candidate policy by editable surface:
+
+- Repository surface (`@spec()` or `@spec(repository=...)`): TEST evaluates
+  only the selected winner. The runtime ignores `--test-all-candidates` for
+  this surface, including Harness runs.
+- Named-resource surface (`@spec(repository=None)`):
+  `--test-all-candidates` applies to Harness specs and evaluates every
+  persisted candidate on TEST, including resources such as `wiki`. Without the
+  flag, only the selected winner is TEST-evaluated.
 
 `optimize_only` uses the production system and cannot be combined with
 `--optimization-model`, benchmark flags, or final-evaluation flags. If the
@@ -136,7 +169,8 @@ For a selected-model run:
    `TEST`; valid case counts are 1 through 1000.
 5. Add final evaluation splits or `--test-all-candidates` only when the
    developer supplies them or asks to configure them. Do not invent tuning
-   values.
+   values. Follow the editable-surface TEST policy above; do not offer
+   `--test-all-candidates` for the repository surface.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.
@@ -147,7 +181,7 @@ A hosted run can spend money and execute repository code. Before triggering,
 state the exact:
 
 - selected project and agent;
-- remote GitHub branch or explicit ref;
+- remote GitHub branch;
 - dataset reference;
 - run family;
 - selected models and execution mode, when applicable; and
@@ -160,21 +194,21 @@ do not ask for redundant confirmation. A request to inspect, plan, or show the
 command does not authorize launch.
 
 Omit `--ref` for the normal current-branch flow. Pass it only when the developer
-selects another branch, tag, or commit.
+selects another remote branch.
 
 Prefer JSON output so the run identity is unambiguous:
 
 ```bash
-# Optimization
+# Default Harness Optimization over the configured editable surface
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
+
+# Named-resource Harness with all persisted candidates evaluated on TEST
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
+  --test-all-candidates --json
 
 # Production-system optimization without an initial benchmark
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --execution-mode optimize_only --json
-
-# Harness Optimization
-beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
-  --use-harness-optimization --json
 
 # Selected-model run
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
@@ -250,15 +284,20 @@ Cancellation is a state-changing operation:
 
 ## Non-negotiable rules
 
-- Never launch without a resolved branch/ref, dataset, run family, and
+- Never launch without a resolved remote branch, dataset, run family, and
   developer authorization.
 - State which agent you selected, and use that same agent for dataset and run
   commands.
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with Harness Optimization.
+- Never infer the optimizer from `repository`; `repository=None` selects named
+  resources and still uses Harness by default.
+- Never use selected-model flags when `Spec.seed_targets` is absent.
 - Never combine selected models with `--execution-mode optimize_only`.
 - Never treat unpushed local changes as part of a hosted run.
+- Never pass a tag or commit SHA through `--ref`; hosted GitHub sources accept
+  remote branches only.
 - Never cancel a run without explicit authorization for the resolved run ID.
 - Never expose secrets or bypass the CLI with `curl` or private API calls.
 - Never change the spec, application, tests, datasets, agent, scope, or config
@@ -272,7 +311,7 @@ Cancellation is a state-changing operation:
 
 ## Report the outcome
 
-For a launch, report the branch/ref, dataset, run family, models/mode when
+For a launch, report the remote branch, dataset, run family, models/mode when
 applicable, full run ID, initial status, and UI URL. For status or cancellation,
 report the full run ID and authoritative state. For pulled results, report the
 destination and a concise result summary.

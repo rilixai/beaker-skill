@@ -1,4 +1,4 @@
 interface:
   display_name: "Beaker Setup"
-  short_description: "Set up Beaker optimization"
-  default_prompt: "Use $beaker-setup to configure this repository for Beaker optimization."
+  short_description: "Set up Beaker agent optimization in a repository"
+  default_prompt: "Use $beaker-setup to configure this repository for Beaker agent optimization."

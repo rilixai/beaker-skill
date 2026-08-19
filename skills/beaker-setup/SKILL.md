@@ -1,12 +1,16 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted runs can read the repository, validating with beaker run smoke, or preparing a hosted optimization run.
+description: Set up, configure, or onboard a Python repository for Beaker repository Harness Optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also preserve an existing logical-target spec only when it explicitly uses @spec(repository=None).
 license: MIT
 ---
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a repository Harness
+Optimization spec. Find the application entrypoint, candidate source, model
+call, scorer, and labeled data before completing the integration. Finish with
+a passing local structural smoke check when real labeled examples are
+available; launch remotely only when the developer requests it.
 
 ## Keep the onboarding loop explicit
 
@@ -90,7 +94,8 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
 
 ## Implement the real integration
 
-1. Identify the selected task's input, expected answer, scored fields, prompt targets, and application call path.
+1. Identify the selected task's input, expected answer, scored fields,
+   application call path, and the ordinary source files Beaker may improve.
 2. Derive dataset rows only from real evals, fixtures, files, hosted previews, or examples supplied by the developer. If none exist, stop and request labeled examples or an upload.
    When existing labeled data must be converted to JSONL for Beaker, keep the
    converter under `.beaker/`, stage its generated files with
@@ -99,8 +104,13 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
    under `.beaker/`. Existing source-of-truth datasets remain in their established
    locations.
 3. Replace every `TODO(beaker)` in the selected spec:
-   - `_seed_targets`: use the prompts currently sent by the application.
-   - `_run_case`: call the real agent/LLM and apply every optimized prompt.
+   - `@spec`: keep the default repository scope when all eligible ordinary
+     source may be optimized, or pass a tuple such as
+     `repository=("src/app", "config")` to restrict it. Do not add
+     `seed_targets` for repository optimization.
+   - `_run_case`: accept `targets=None`, import the real application normally,
+     and call the real agent/LLM. Each candidate repository is imported in a
+     fresh evaluator process.
    - scorer: match actual output and ground-truth fields and weights. If it
      uses an LLM judge, set `Spec.llm_scorer_model` to that agent's fixed
      canonical `provider:model`, then route hosted judge calls through
@@ -111,12 +121,18 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
      LLM judge exists but its intended model is not established, ask the
      developer rather than choosing a default.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
+     Repository-mode case inputs and `CaseResult.output`/`context` must be
+     JSON-normalizable because they cross the evaluator process boundary.
+   - `spec.required_env`: list only the names of application variables that
+     candidate evaluation needs. Keep local values in `.beaker/.env` and
+     hosted values in encrypted agent settings; never put values in YAML.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
-6. Inspect the real call path to verify every optimized prompt reaches its model
-   call, then run `beaker run smoke --strict` to validate config, spec, dataset,
-   targets, runner, and scorer wiring. Smoke does not execute `run_case` or the
+6. Inspect the real call path to verify `_run_case` executes the application
+   code inside the selected repository scope, then run `beaker run smoke
+   --strict` to validate config, spec, dataset, runner, and scorer wiring.
+   Smoke does not execute `run_case` or the
    scorer and does not support `--trace`. Smoke also warns, without failing,
    when no framework adapter or `runtime.trace.model_call` is wired in
    application code; treat that warning as a prompt to finish the tracing
@@ -130,6 +146,37 @@ option, not a way to distinguish repositories, specs, or repeated setup runs.
    suite for Beaker validation.
 
 Read [datasets-and-spec.md](references/datasets-and-spec.md) before deriving data or editing the spec.
+
+## Select the repository optimization surface
+
+`@spec()` now means repository Harness Optimization and is equivalent to
+`@spec(repository="all")`. The factory, loader, runner, scorer, evidence
+provider, and finalizer stay under `.beaker/` and are immutable evaluation
+policy. Ordinary application source is the candidate.
+
+Use a normalized tuple of source-relative files or directories to narrow the
+editable surface:
+
+```python
+@spec(
+    dataset_schema=DATASET_SCHEMA,
+    repository=("src/invoice_agent", "config/prompts"),
+)
+def build_spec(ctx: OptimizationContext) -> Spec:
+    return Spec(data_loader=loader, run_case=run_case, scorer=scorer)
+```
+
+Hidden paths, `.beaker`, dependency and lock files, build configuration,
+vendored or binary files, and files outside the declared scope are protected.
+Do not move evaluation policy into editable application source to bypass that
+boundary. Repository mode does not accept `Spec.seed_targets`; it passes
+`targets=None` to `run_case` and evaluates TEST only after selecting the
+winner.
+
+Use `@spec(repository=None)` only for an existing intentional logical-resource
+or prompt-target workflow. That mode requires `Spec.seed_targets`, and
+non-Harness or selected-model optimizer runs also require those targets. Do not
+silently convert one mode into the other.
 
 ## Route models without changing production defaults
 
@@ -235,6 +282,11 @@ where it runs. Never print, echo, or commit them. Read
 credentials, datasets, hosted environment variables, or runs. Consult its
 scopes section only when the developer explicitly asks for scope isolation.
 
+Before launching, compare `spec.required_env` with `beaker agent env list` for
+the selected agent. A hosted run with a missing or empty declared value fails
+before candidate dispatch. Set each missing value with `--value-stdin`, then
+start a new run.
+
 Run a local validation only after real labeled examples are available:
 
 ```bash
@@ -284,7 +336,12 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
 - Never edit application code until spec-only and `.beaker/` adapter approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed trace-adapter wiring.
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
-- Never leave target prompts only in `_seed_targets`; prove they reach the real model call.
+- Never add `seed_targets` to a repository-mode spec or assume `targets` is a
+  prompt bundle there; repository mode passes `None`.
+- Never leave `@spec(repository=None)` on an existing logical-target spec
+  without real `seed_targets` that reach the real model call.
+- Never place environment values in `beaker.yaml`; `spec.required_env` contains
+  names only.
 - Never route normal production traffic through Beaker inference.
 - Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
   provider clients are only the local application/evaluation fallback.
@@ -303,5 +360,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's
-  GitHub default branch. Use `--ref` only for an explicit override.
+  GitHub default branch. Use `--ref <remote-branch>` only for an explicit
+  remote branch override. Never pass a tag or commit SHA; the hosted source
+  must be a GitHub branch.
 - Target Python repositories with `pyproject.toml`.

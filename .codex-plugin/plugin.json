@@ -1,7 +1,7 @@
 {
   "name": "beaker-setup",
-  "version": "0.3.11",
-  "description": "Configure and operate Beaker prompt optimization.",
+  "version": "0.4.0",
+  "description": "Configure and operate Beaker agent optimization.",
   "author": {
     "name": "Beaker",
     "email": "matt@rilix.ai",
@@ -14,8 +14,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Beaker",
-    "shortDescription": "Set up and operate Beaker optimization.",
-    "longDescription": "Configure a repository for Beaker, then launch, monitor, inspect, pull, and cancel hosted prompt-optimization runs.",
+    "shortDescription": "Set up and operate Beaker agent optimization.",
+    "longDescription": "Configure a repository for Beaker, then launch, monitor, inspect, pull, and cancel hosted agent optimization runs.",
     "developerName": "Beaker",
     "category": "Productivity",
     "capabilities": ["Read", "Write", "Shell"],

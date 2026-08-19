@@ -32,8 +32,7 @@ Example:
 ```python
 from beaker import inference_target
 
-async def _run_case(*, case, targets, runtime):
-    prompts = targets.to_dict()
+async def _run_case(*, case, targets: None, runtime):
     if runtime.model:
         target = inference_target(runtime)
         model_or_client = build_framework_client(
@@ -43,11 +42,10 @@ async def _run_case(*, case, targets, runtime):
         )
         result = await run_agent_eval(
             case.input,
-            prompts=prompts,
             model_or_client=model_or_client,
         )
     else:
-        result = await run_agent_eval(case.input, prompts=prompts)
+        result = await run_agent_eval(case.input)
     return CaseResult(output=result.output)
 ```
 
@@ -58,6 +56,12 @@ The target speaks OpenAI Chat Completions, including SSE streaming with `stream:
 Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped
 Beaker gateway credentials. Never add global environment-driven routing for
 Beaker.
+
+This example is for the default repository mode. An intentional
+`@spec(repository=None)` logical-target spec instead receives its declared
+targets and must apply them to the real call. Non-Harness and selected-model
+optimizer runs require those `seed_targets`; do not use them with a
+repository-only spec.
 
 ## LLM-as-a-judge scoring
 
@@ -120,7 +124,7 @@ class LLMJudgeScorer:
 
 def build_spec() -> Spec:
     return Spec(
-        # ...the agent's seed targets, loader, and run_case...
+        # ...the repository-mode loader and run_case...
         scorer=LLMJudgeScorer(),
         llm_scorer_model=JUDGE_MODEL,
     )

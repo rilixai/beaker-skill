@@ -128,15 +128,43 @@ project root when credentials should live beside that project's config.
 
 ## Hosted environment variables
 
-Repository-local environment values do not become hosted runtime secrets. Manage required provider or application variables explicitly:
+Declare application variables needed by candidate evaluation as names under the
+selected YAML spec. Values never belong in YAML:
+
+```yaml
+spec:
+  target: beaker_spec:build_spec
+  required_env:
+    - DATABASE_URL
+    - SERVICE_TOKEN
+```
+
+Use uppercase POSIX-style names. A declaration may contain at most 50 unique
+names. `BEAKER_*`, runtime-control names such as `HOME`, `PATH`, and `PYTHONPATH`,
+and platform routing names such as `OPENAI_BASE_URL` are reserved
+and rejected. Every declared value is available to the candidate application
+during evaluation. Declare only values that the application actually needs,
+and prefer evaluation-scoped, least-privilege credentials with narrow access
+and a limited lifetime. Do not reuse production administrator, owner, or root
+credentials for candidate evaluation.
+
+Local values may live in the selected project's `.beaker/.env`. Repository-local
+values do not become hosted runtime secrets. Manage hosted values explicitly:
 
 ```bash
 beaker agent env list --agent <selected-agent>
-printf '%s' "$OPENAI_API_KEY" | beaker agent env set OPENAI_API_KEY --value-stdin --agent <selected-agent>
-beaker agent env delete OPENAI_API_KEY --agent <selected-agent>
+printf '%s' "$DATABASE_URL" | beaker agent env set DATABASE_URL --value-stdin --agent <selected-agent>
+beaker agent env delete DATABASE_URL --agent <selected-agent>
 ```
 
-Beaker lists names and hints only and does not return plaintext values. Never log or commit secret values.
+Use `--value-stdin`, not `--value`, so the secret does not enter shell history.
+Beaker lists names and non-revealing hints only and never returns plaintext
+values. Never log or commit secret values.
+
+At dispatch, Beaker copies only declared customer variables into each candidate
+evaluator. A missing or empty `required_env` value fails the run before
+candidate code starts. Set the value, verify its name with `beaker agent env
+list`, and start a new run; do not retry the failed run unchanged.
 
 ## Hosted data and run ordering
 
@@ -166,8 +194,10 @@ Beaker lists names and hints only and does not return plaintext values. Never lo
 
    Without `--ref`, the CLI uses the current checked-out branch when it belongs
    to the linked repository and exists on its remote, then falls back to the
-   repository's GitHub default branch. Pass `--ref` only for an explicit
-   override. The command prints the current branch when selected locally, or
+   repository's GitHub default branch. Pass `--ref <remote-branch>` only for an
+   explicit remote branch override. Tags and commit SHAs are rejected with
+   `422` because hosted sources must be branches that can serve as pull-request
+   bases. The command prints the current branch when selected locally, or
    `default branch` when the server selects the fallback.
 
 Trigger defaults to `.beaker/beaker.yaml`. Run it from the same project root

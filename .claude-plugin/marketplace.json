@@ -6,13 +6,13 @@
     "email": "matt@rilix.ai"
   },
   "metadata": {
-    "description": "Set up and operate Beaker prompt optimization in a repository.",
-    "version": "0.3.11"
+    "description": "Set up and operate Beaker agent optimization in a repository.",
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "beaker-setup",
-      "description": "Configure and operate Beaker prompt optimization.",
+      "description": "Configure and operate Beaker agent optimization.",
       "source": "./",
       "strict": false,
       "skills": ["./skills/beaker-setup", "./skills/beaker-usage"]

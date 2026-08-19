@@ -73,13 +73,19 @@ files, fixtures, snapshots, helpers, or test configuration for Beaker.
 
 | Spec component | Repository source of truth |
 |---|---|
-| `_seed_targets` | Current system prompts, templates, or prompt constants |
-| `_run_case` | Real async agent/LLM evaluation path; thread every target prompt into its call sites |
-| scorer | Prediction and ground-truth fields plus objective weights |
+| `@spec(repository=...)` | Eligible ordinary source files Beaker may improve; omitted means `"all"` |
+| `_run_case` | Real async application evaluation path; repository mode receives `targets=None` |
+| scorer | Prediction and ground-truth fields plus objective weights; it remains immutable under `.beaker/` |
 | `llm_scorer_model` | Optional fixed canonical `provider:model` for an LLM judge; omit for deterministic scoring |
 | data loader | Real labeled rows and their validation contract |
+| `spec.required_env` | Names of application variables needed during candidate evaluation; never their values |
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
+
+Repository-mode case inputs and `CaseResult.output`/`context` cross a process
+boundary and must be JSON-normalizable. The candidate process receives input
+without labels. The trusted controller retains ground truth and invokes the
+scorer after the candidate returns.
 
 Distinguish execution failure from a bad answer:
 
@@ -87,16 +93,31 @@ Distinguish execution failure from a bad answer:
 - Return `CaseResult(output=...)` when the application ran, even when output is empty or incorrect.
 - Do not convert every exception into an error-shaped output object.
 
-## Prove prompt application
+## Prove repository candidate execution
 
-For every `_seed_targets` entry, inspect the path into the real model call.
-Rebuild or clone constructor-bound agents per target bundle, or add a narrow
-`apply_targets`/factory seam. Use `beaker run smoke --strict` to validate the
-structural wiring; it does not execute the runner or prove prompt delivery.
+Inspect the import path from `_run_case` into the real model call. Repository
+Harness evaluates each proposed repository copy in a fresh process and imports
+ordinary application modules from that candidate. Keep the spec, loader,
+runner, scorer, evidence provider, and finalizer under `.beaker/`; do not place
+candidate implementation there. Use `beaker run smoke --strict` to validate the
+structural wiring; it does not execute the runner or prove candidate imports.
 When runtime proof is needed, exercise the repository's existing application
 or evaluation path under a local Beaker capture and inspect it with
 `beaker trace doctor --require-model-calls` and `beaker trace inspect`; do not
 add tests or test doubles.
+
+The default `@spec()` scope is all eligible ordinary UTF-8 source. Use
+`repository=("path", ...)` when the developer wants a smaller source-relative
+surface. Hidden paths, `.beaker`, dependency manifests, lock files, build
+configuration, vendored source, and binary files are protected. Repository
+mode has no `seed_targets`, passes `targets=None`, and reserves TEST evaluation
+for the selected winner.
+
+For a logical-target spec, preserve explicit `@spec(repository=None)`. That mode
+requires real `Spec.seed_targets`; inspect each prompt or named resource path into
+the application exactly as before. Selected-model and other non-Harness optimizer
+runs require this logical target contract and are not valid for the default
+repository-only spec.
 
 Do not place datasets under `.beaker/`. Existing labeled data is source material,
 not Beaker-owned tooling: leave it in its established location and reference it
