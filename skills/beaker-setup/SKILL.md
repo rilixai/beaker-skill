@@ -24,10 +24,11 @@ attempting them yourself, tracking what was already reported in this session.
 This report is not a halt: continue with the returned `next.action`. An
 `unknown` step has not been checked yet and never means that the developer
 must act. Stop and wait only when `next` itself is developer-owned; finish
-when `next.id` is `null`. Tracing is advisory but
-is returned as the final agent action once no other agent-owned step is
-incomplete. Do not ask the developer what to do next before consulting this
-command.
+when `next.id` is `null`. Tracing is advisory and never delays the required
+push. When the selected use case includes tracing, commit its wiring with the
+completed integration before pushing; `integration_pushed` is the final
+blocking agent-owned step.
+Do not ask the developer what to do next before consulting this command.
 
 ## Keep Beaker isolated
 
@@ -297,7 +298,7 @@ Smoke loads and parses the configured dataset. It does not execute a rollout, mo
 code traceback when a check fails. A tracing warning in that output is
 non-blocking to the CLI, but tracing is a setup-skill completion requirement:
 when onboarding returns `tracing_wired` as its final agent action, complete the
-wiring before handoff and rerun smoke. When execution evidence matters, run
+wiring as part of the integration before its final push, then rerun smoke. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
 candidate workflow rooted at the main workflow agent inside `Spec.run_case`
 under a local Beaker capture, then run
@@ -357,6 +358,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.
+- Before a hosted run, commit and push the completed Beaker integration to a
+  branch in the selected agent repository. Do not commit `*.env` or
+  other secret files. Include tracing changes when tracing applies, but do not
+  treat tracing as a prerequisite to the push.
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's
