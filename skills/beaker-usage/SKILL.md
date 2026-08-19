@@ -315,4 +315,4 @@ For a launch, report the remote branch, dataset, run family, models/mode when
 applicable, full run ID, initial status, and UI URL. For status or cancellation,
 report the full run ID and authoritative state. For pulled results, report the
 destination and a concise result summary.
-When talking to the developer, refer to runs as "run" or "experiment" (for example, `beaker run`), never "harness run" — "harness" is internal terminology.
+When talking to the developer, refer to runs as "run" or "experiment" (for example, `beaker run`).
