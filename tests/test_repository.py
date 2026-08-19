@@ -302,9 +302,13 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("beaker login --agent", content)
         self.assertNotIn("--agent-name", content)
 
-    def test_agent_discovery_handles_new_and_existing_users_and_scope_is_silent(self) -> None:
+    def test_agent_discovery_and_agent_page_run_history(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        cli_reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
+            encoding="utf-8"
+        )
 
         for text in (skill, operations):
             normalized = " ".join(text.split())
@@ -314,16 +318,21 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("If several agents could match, ask the developer", normalized)
 
         self.assertLess(skill.index("beaker agent list"), skill.index('beaker agent setup "<selected-agent>"'))
-        self.assertIn(
-            "Never mention scope, `scope_key`, or `--scope-key` to the developer during setup",
-            " ".join(skill.split()),
+        content = "\n".join((skill, operations, usage, cli_reference))
+        normalized = " ".join(content.split())
+        self.assertIn("Use the selected agent's page to view its runs and score trends", normalized)
+        self.assertIn("complete run history and score trends for completed runs", normalized)
+
+    def test_usage_documents_parallel_agent_runs_without_a_fixed_cap(self) -> None:
+        skill = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
+            encoding="utf-8"
         )
-        self.assertNotIn("add a custom scope", skill)
-        self.assertNotIn("with a custom scope", skill)
-        self.assertIn("Scopes (only when the developer asks)", operations)
-        self.assertIn("scope_key", operations)
-        self.assertIn("--scope-key", operations)
-        self.assertIn("developer explicitly asks about scope isolation", " ".join(operations.split()))
+        content = " ".join("\n".join((skill, reference)).split())
+
+        self.assertIn("An agent may have several active runs", content)
+        self.assertIn("There is no fixed per-agent active-run limit", content)
+        self.assertIn("already uses one of the requested models", content)
 
     def test_usage_states_and_preserves_the_selected_agent(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
