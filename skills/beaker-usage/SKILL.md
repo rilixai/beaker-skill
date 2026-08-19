@@ -15,10 +15,11 @@ interpreting status exit codes, pulling results, or handling a CLI error.
 
 During setup validation and launch preparation, run `beaker onboarding status`
 at the start of the flow and after every CLI command, then follow its returned
-action. Relay every known-incomplete action in `blocked_on_developer` verbatim
-to the developer without attempting developer-owned work, then continue with
-the returned `next.action`. An `unknown` step has not been checked yet and
-never means the developer must act. Stop and wait only when `next` itself is
+action. Relay only newly discovered actions in `blocked_on_developer` verbatim
+to the developer without attempting developer-owned work, tracking what was
+already reported in this session. This report is not a halt: continue with the
+returned `next.action`. An `unknown` step has not been checked yet and never
+means the developer must act. Stop and wait only when `next` itself is
 developer-owned.
 Tracing is the last agent-owned action when no other agent action remains.
 When inspecting, monitoring, pulling, or cancelling a known run whose

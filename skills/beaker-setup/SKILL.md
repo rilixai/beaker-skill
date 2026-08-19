@@ -13,12 +13,14 @@ Turn the repository's real LLM or agent task into a Beaker optimization spec. Fi
 `beaker onboarding status` is the loop-control command for setup. Run it after
 every Beaker command and whenever it is unclear what to do next, then follow
 its single returned next action exactly. The returned action is normally the
-first incomplete agent-owned step in canonical order. If `blocked_on_developer`
-lists developer-owned steps known to be incomplete, relay each listed action
-verbatim to the developer without attempting it yourself. This report is not
-a halt: continue with the returned `next.action`. An `unknown` step has not been checked yet and
-never means that the developer must act. Stop and wait only when `next` itself
-is developer-owned; finish when `next.id` is `null`. Tracing is advisory but
+first incomplete agent-owned step in canonical order. If
+`blocked_on_developer` lists developer-owned steps known to be incomplete,
+relay only newly discovered actions verbatim to the developer without
+attempting them yourself, tracking what was already reported in this session.
+This report is not a halt: continue with the returned `next.action`. An
+`unknown` step has not been checked yet and never means that the developer
+must act. Stop and wait only when `next` itself is developer-owned; finish
+when `next.id` is `null`. Tracing is advisory but
 is returned as the final agent action once no other agent-owned step is
 incomplete. Do not ask the developer what to do next before consulting this
 command.
