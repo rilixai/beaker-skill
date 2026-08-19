@@ -331,8 +331,9 @@ class RepositoryContractTests(unittest.TestCase):
         content = " ".join("\n".join((skill, reference)).split())
 
         self.assertIn("An agent may have several active runs", content)
-        self.assertIn("There is no fixed per-agent active-run limit", content)
-        self.assertIn("already uses one of the requested models", content)
+        self.assertIn("including runs that use the same selected model", content)
+        self.assertIn("Do not assume a fixed per-agent or per-model run limit", content)
+        self.assertNotIn("already uses one of the requested models", content)
 
     def test_usage_states_and_preserves_the_selected_agent(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")

@@ -218,10 +218,8 @@ beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
 the full ID and clickable UI URL to the developer. Never shorten the ID.
 
-An agent may have several active runs. Do not assume a fixed per-agent run
-limit. A selected-model launch can still be rejected when another active run
-on that agent already uses one of the requested models. Report that conflict
-and do not retry unchanged.
+An agent may have several active runs, including runs that use the same
+selected model. Do not assume a fixed per-agent or per-model run limit.
 
 ## List and inspect runs
 

@@ -214,10 +214,6 @@ invocation. A timeout message may also appear on stderr with exit code `3`.
   from that result.
 - **Run remains `PREPARING_BUILD` or `QUEUED`:** report the state and do not
   retrigger.
-- **Requested model is already active:** the agent may run work in parallel,
-  but two active runs cannot use the same selected-model lane. Report the
-  conflict and do not retry unchanged. There is no fixed per-agent active-run
-  limit to diagnose or work around.
 - **Run is `FAILED`:** report `error_message` and the UI link. Do not edit the
   integration unless the developer asks to diagnose or repair it.
 - **Cancellation rejects a terminal run:** report the authoritative terminal
