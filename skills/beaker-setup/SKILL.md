@@ -357,11 +357,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.
-- Before any hosted operation, including dataset upload or a hosted run, commit
-  and push the completed Beaker integration to a branch in the selected agent
-  repository. Do not commit `*.env` or other secret files. Include tracing
-  changes when tracing applies, but do not treat tracing as a prerequisite to
-  the push.
+- Before starting a hosted optimization run, commit and push the completed
+  Beaker integration to a branch in the selected agent repository. Do not
+  commit `*.env` or other secret files. Include tracing changes when tracing
+  applies, but do not treat tracing as a prerequisite to the push.
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's

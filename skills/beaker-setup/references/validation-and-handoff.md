@@ -72,7 +72,8 @@ itself is developer-owned; if no agent-owned step remains, the first known-incom
 developer-owned step becomes `next`. The `blocking` field is `false` only for advisory
 `tracing_wired`; it is `true` for all other steps. Tracing never blocks
 completion. `integration_pushed` is the final blocking agent-owned step and
-must be complete before hosted work. Exit code `0` means the state and an actionable
+must be complete before a hosted optimization run. It is not required before
+dataset upload. Exit code `0` means the state and an actionable
 `next` were computed, even when steps remain incomplete. Exit code `2` is
 reserved for a not-computed payload where an actionable `next` could not be
 produced, such as an unreadable Beaker config; selection and hosted errors

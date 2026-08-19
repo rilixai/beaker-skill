@@ -23,7 +23,7 @@ means the developer must act. Stop and wait only when `next` itself is
 developer-owned.
 `integration_pushed` is the final blocking agent-owned step: commit and push
 the completed integration to a branch in the selected agent repository before
-hosted work. If tracing applies, include it in that push, but do not treat it
+a hosted optimization run. If tracing applies, include it in that push, but do not treat it
 as a prerequisite; never commitsecret files.
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
