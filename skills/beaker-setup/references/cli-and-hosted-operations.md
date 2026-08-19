@@ -92,15 +92,39 @@ project root when credentials should live beside that project's config.
 
 ## Hosted environment variables
 
-Repository-local environment values do not become hosted runtime secrets. Manage required provider or application variables explicitly:
+Declare application variables needed by candidate evaluation as names under the
+selected YAML spec. Values never belong in YAML:
+
+```yaml
+spec:
+  target: beaker_spec:build_spec
+  required_env:
+    - DATABASE_URL
+    - SERVICE_TOKEN
+```
+
+Use uppercase POSIX-style names. A declaration may contain at most 50 unique
+names. `BEAKER_*`, runtime-control names such as `HOME`, `PATH`, and `PYTHONPATH`,
+and platform routing names such as `OPENAI_BASE_URL` are reserved
+and rejected. Declare only values that the application actually reads.
+
+Local values may live in the selected project's `.beaker/.env`. Repository-local
+values do not become hosted runtime secrets. Manage hosted values explicitly:
 
 ```bash
 beaker agent env list --agent <selected-agent>
-printf '%s' "$OPENAI_API_KEY" | beaker agent env set OPENAI_API_KEY --value-stdin --agent <selected-agent>
-beaker agent env delete OPENAI_API_KEY --agent <selected-agent>
+printf '%s' "$DATABASE_URL" | beaker agent env set DATABASE_URL --value-stdin --agent <selected-agent>
+beaker agent env delete DATABASE_URL --agent <selected-agent>
 ```
 
-Beaker lists names and hints only and does not return plaintext values. Never log or commit secret values.
+Use `--value-stdin`, not `--value`, so the secret does not enter shell history.
+Beaker lists names and non-revealing hints only and never returns plaintext
+values. Never log or commit secret values.
+
+At dispatch, Beaker copies only declared customer variables into each candidate
+evaluator. A missing or empty `required_env` value fails the run before
+candidate code starts. Set the value, verify its name with `beaker agent env
+list`, and start a new run; do not retry the failed run unchanged.
 
 ## Hosted data and run ordering
 

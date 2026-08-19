@@ -1,6 +1,6 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch a hosted Beaker run, choose a GitHub branch or dataset, compare or optimize selected models, use Harness Optimization, list or inspect runs, monitor run status, download results, or cancel a run. Do not use to scaffold or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch the default repository Harness Optimization run, choose a GitHub branch or dataset, run an intentional logical-target or selected-model optimization, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
 license: MIT
 ---
 
@@ -65,6 +65,15 @@ Before a hosted launch:
    beaker dataset list --agent <selected-agent> --json
    ```
 
+   If the selected spec declares `spec.required_env`, compare those names with:
+
+   ```bash
+   beaker agent env list --agent <selected-agent>
+   ```
+
+   Do not read or print local secret values. If a declared hosted value is
+   missing, stop and use `$beaker-setup`; a run would fail before dispatch.
+
 4. Use the CLI's branch selection unless the developer supplied a ref. Without
    `--ref`, `beaker run trigger` uses the current checked-out branch when it
    belongs to the linked repository and exists on its remote, then falls back
@@ -79,23 +88,32 @@ Before a hosted launch:
 If the user explicitly requests a tag or commit instead of a branch, allow it
 as `--ref` after restating that exact immutable ref.
 
-## Choose the run family explicitly
+## Match the run family to the spec mode
 
-Do not infer the run family from the repository's model code. If the developer
-has not already specified it, ask which outcome they want:
+Inspect the selected `@spec` registration without editing it. `@spec()` or
+`@spec(repository=...)` is repository mode. Only explicit
+`@spec(repository=None)` is logical-target mode.
 
 | Run family | Use when | CLI selection |
 |---|---|---|
-| Optimization | Optimize the configured production-system path, optionally without an initial benchmark | no model or Harness flags; use `--execution-mode optimize_only` only when explicitly requested |
-| Harness Optimization | Use the Codex-driven optimizer rather than the ordinary optimizer | `--use-harness-optimization` |
-| Selected-model run | Benchmark, optimize, and compare user-selected models | one to eight `--optimization-model provider:model` flags |
+| Repository Harness Optimization | Default for `@spec()` or `@spec(repository=...)`; optimize ordinary application source | no Harness flag is needed; `--use-harness-optimization` is only an explicit restatement |
+| Logical-target optimization | Existing `@spec(repository=None)` with real `Spec.seed_targets`; use the GEPA/bootstrap loop only when explicitly requested | `--config '{"use_harness_optimization": false}'` |
+| Selected-model run | Benchmark, optimize, and compare one to eight models for a logical-target spec with real `Spec.seed_targets` | repeat `--optimization-model provider:model` |
 
-Optimization preserves the spec's configured model behavior. Do not
-ask for models or add `--optimization-model` unless the developer selects a
-selected-model run.
+A plain GitHub-backed launch now uses Harness Optimization by default. It
+preserves the configured production-system model behavior unless another
+supported model selection is explicit. Do not add
+`--use-harness-optimization` to ordinary commands just to get the default.
 
-Harness Optimization and selected models are mutually exclusive. Never combine
-them.
+Repository Harness mode has no `seed_targets`; `run_case` receives
+`targets=None`. Selected-model and other non-Harness optimizer runs require
+logical targets. If the developer requests selected models for a repository-only
+spec, stop and use `$beaker-setup` to make an explicit product decision; do not
+silently add seed targets or change the decorator mode.
+
+Harness Optimization and selected-model flags are mutually exclusive. Never
+combine them. A `use_harness_optimization=false` opt-out is valid only for an
+intentional logical-target spec and must be explicit.
 
 `optimize_only` uses the production system and cannot be combined with
 `--optimization-model`, benchmark flags, or final-evaluation flags. If the
@@ -122,7 +140,8 @@ For a selected-model run:
    `TEST`; valid case counts are 1 through 1000.
 5. Add final evaluation splits or `--test-all-candidates` only when the
    developer supplies them or asks to configure them. Do not invent tuning
-   values.
+   values. Repository Harness ignores all-candidate TEST evaluation and tests
+   only the selected winner; do not offer `--test-all-candidates` for it.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.
@@ -151,16 +170,16 @@ selects another branch, tag, or commit.
 Prefer JSON output so the run identity is unambiguous:
 
 ```bash
-# Optimization
+# Default repository Harness Optimization
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
 
 # Production-system optimization without an initial benchmark
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --execution-mode optimize_only --json
 
-# Harness Optimization
+# Intentional logical-target optimizer loop
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
-  --use-harness-optimization --json
+  --config '{"use_harness_optimization": false}' --json
 
 # Selected-model run
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
@@ -243,6 +262,10 @@ Cancellation is a state-changing operation:
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with Harness Optimization.
+- Never opt out of Harness unless the spec explicitly uses
+  `@spec(repository=None)` with real `seed_targets` and the developer requested
+  the logical-target optimizer.
+- Never use selected-model flags with a repository-only spec.
 - Never combine selected models with `--execution-mode optimize_only`.
 - Never treat unpushed local changes as part of a hosted run.
 - Never cancel a run without explicit authorization for the resolved run ID.

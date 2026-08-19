@@ -84,7 +84,8 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, content)
 
-        self.assertIn("| Optimization |", content)
+        self.assertIn("| Repository Harness Optimization |", content)
+        self.assertIn("| Logical-target optimization |", content)
         self.assertIn("Harness Optimization", content)
         self.assertIn("Selected-model run", content)
         self.assertIn("optimize_only", content)
@@ -93,6 +94,60 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("--once", content)
         self.assertNotIn("benchmark_only", content)
         self.assertNotIn("--quality-tolerance", content)
+
+    def test_skills_cover_repository_harness_sdk_contract(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(
+            encoding="utf-8"
+        )
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, datasets, usage, reference))
+        normalized = " ".join(content.split())
+
+        self.assertIn('`@spec()` now means repository Harness Optimization', setup)
+        self.assertIn('@spec(repository="all")', setup)
+        self.assertIn('repository=("src/app", "config")', setup)
+        self.assertIn("`@spec(repository=None)`", content)
+        self.assertIn("`targets=None`", content)
+        self.assertIn("Repository mode does not accept `Spec.seed_targets`", setup)
+        self.assertIn("JSON-normalizable", content)
+        self.assertIn("fresh evaluator process", normalized)
+        self.assertIn("TEST only after selecting the winner", normalized)
+
+    def test_skills_cover_required_evaluation_environment(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        content = "\n".join((setup, operations, usage))
+        normalized = " ".join(content.split())
+
+        self.assertIn("spec.required_env", content)
+        self.assertIn("required_env:", operations)
+        self.assertIn("names only", normalized)
+        self.assertIn("at most 50 unique names", normalized)
+        self.assertIn("`BEAKER_*`, `MODAL_*`", operations)
+        self.assertIn("beaker agent env list", content)
+        self.assertIn("beaker agent env set DATABASE_URL --value-stdin", operations)
+        self.assertIn("fails the run before", normalized)
+
+    def test_plain_hosted_launch_defaults_to_repository_harness(self) -> None:
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((usage, reference))
+        normalized = " ".join(content.split())
+
+        self.assertIn("A plain GitHub-backed launch now uses Harness Optimization by default", normalized)
+        self.assertIn("no Harness flag is needed", normalized)
+        self.assertIn('--config \'{"use_harness_optimization": false}\'', content)
+        self.assertIn("Selected-model and other non-Harness optimizer runs require logical targets", normalized)
+        self.assertIn("repository Harness always tests only the selected winner", normalized)
 
     def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")

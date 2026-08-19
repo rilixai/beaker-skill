@@ -4,8 +4,9 @@
 
 Run `beaker run smoke --strict` after each meaningful integration change, but
 only after real labeled examples are available. A passing smoke check proves the
-config resolves, the spec loads, the dataset loads and parses, and the targets,
-runner, and scorer are connected. It does not execute `run_case`, call the
+config resolves, the spec loads, the dataset loads and parses, and the runner
+and scorer are connected. The CLI may still label one structural stage
+`targets`. It does not execute `run_case`, call the
 scorer, make a model/tool call, or report a score.
 
 Interpret common failures:
@@ -52,7 +53,12 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   dependency when the project supports that separation.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
-- Every optimized prompt reaches its corresponding model call.
+- The `@spec(repository=...)` scope contains the intended application source,
+  and `_run_case` imports and executes that source with `targets=None`.
+- Repository-mode inputs and `CaseResult.output`/`context` are
+  JSON-normalizable, and the spec has no `seed_targets`.
+- An intentional `@spec(repository=None)` logical-target spec has real
+  `seed_targets` that reach the corresponding model calls.
 - Runtime trace evidence comes from the candidate workflow rooted at the main
   workflow agent inside `Spec.run_case`, including its sub-agents, tools,
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
@@ -63,7 +69,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
-- Secrets are confined to `.beaker/.env` or hosted secret storage.
+- `spec.required_env` contains only required variable names. Values are
+  confined to `.beaker/.env` or hosted encrypted agent settings, and every
+  declared hosted value is present before launch.
 - Local `beaker run smoke --strict` passes when real data is available, and
   its output shows no tracing warning.
 - Hosted operations occur only after their preconditions and user authorization.
@@ -75,7 +83,8 @@ Summarize:
 - files created or changed;
 - selected optimization target;
 - dataset and scoring contract;
-- how optimized prompts reach the application;
+- the repository optimization scope and how `_run_case` reaches candidate
+  application code;
 - model-routing behavior;
 - structural validation command and result, plus any separately captured
   runtime evidence;

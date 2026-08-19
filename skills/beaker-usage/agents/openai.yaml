@@ -1,4 +1,4 @@
 interface:
   display_name: "Beaker Usage"
   short_description: "Launch and manage hosted Beaker runs"
-  default_prompt: "Use $beaker-usage to launch or manage a hosted Beaker optimization run."
+  default_prompt: "Use $beaker-usage to launch or manage a hosted Beaker agent optimization run."
