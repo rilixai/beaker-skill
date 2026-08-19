@@ -36,7 +36,8 @@ Offline or logged-out hosted checks are reported as `unknown`; run
 (`blocking: false`) and does not delay the required push. When tracing is
 included, commit its wiring with the integration. `integration_pushed` verifies
 that the current local commit is present on a branch in the selected agent
-repository; it is required before hosted work.
+repository; it is required before any hosted operation, including dataset
+upload and a hosted run.
 
 ## GitHub App access
 
