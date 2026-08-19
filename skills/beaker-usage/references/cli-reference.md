@@ -56,7 +56,10 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
 Repository mode uses `@spec()` or `@spec(repository=...)`, has no
 `seed_targets`, passes `targets=None`, and TEST-evaluates only the selected
 winner. Named-resource mode uses `@spec(repository=None)` and supplies each
-complete named resource through `Spec.seed_targets`.
+complete named resource through `Spec.seed_targets`. For named-resource Harness
+specs, `--test-all-candidates` evaluates every persisted candidate on TEST;
+without it, only the selected winner is TEST-evaluated. Repository-surface
+Harness always evaluates only the winner on TEST and ignores the flag.
 
 Production-system optimize-only:
 
@@ -95,7 +98,7 @@ points to the intended commit instead.
 | `--benchmark-split` | `VAL` or `TEST` |
 | `--benchmark-max-cases` | 1–1000 |
 | `--final-eval-split` | Repeatable `VAL` or `TEST` |
-| `--test-all-candidates` | In selected-model optimizer runs, evaluate every persisted candidate on `TEST`; otherwise optimization always tests only the selected winner |
+| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource Harness specs (`repository=None`), including resources such as `wiki`, and for selected-model runs; repository-surface Harness ignores the flag and always tests only the winner |
 
 Do not combine selected-model flags with `--use-harness-optimization` or with
 an `optimization_config` supplied through `--config`. Do not combine

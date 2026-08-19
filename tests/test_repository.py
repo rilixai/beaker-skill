@@ -154,7 +154,12 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("use_harness_optimization=false", content)
         self.assertNotIn('"use_harness_optimization": false', content)
         self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
-        self.assertIn("Repository Harness ignores all-candidate TEST evaluation", normalized)
+        self.assertIn("Repository-surface Harness always evaluates only the winner", normalized)
+        self.assertIn("Apply TEST candidate policy by editable surface", normalized)
+        self.assertIn("The runtime ignores `--test-all-candidates` for this surface", normalized)
+        self.assertIn("`--test-all-candidates` applies to Harness specs", normalized)
+        self.assertIn("including resources such as `wiki`", normalized)
+        self.assertIn("Named-resource Harness with all persisted candidates evaluated on TEST", normalized)
 
     def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")

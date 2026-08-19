@@ -104,9 +104,7 @@ the optimizer.
 
 A plain GitHub-backed launch uses Harness Optimization by default for either
 editable surface. It preserves the configured production-system model behavior
-unless another supported model selection is explicit. Do not infer
-GEPA/bootstrap from `repository=None`, and do not add an optimizer flag to an
-ordinary Harness command.
+unless another supported model selection is explicit.
 
 Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
 Named-resource mode passes the complete declared resources through
@@ -118,6 +116,16 @@ the selected spec has none, stop and use `$beaker-setup` to make an explicit
 product decision. Do not silently add targets or change `repository` as a
 run-management side effect. Harness Optimization and selected-model flags are
 mutually exclusive; never combine them.
+
+Apply TEST candidate policy by editable surface:
+
+- Repository surface (`@spec()` or `@spec(repository=...)`): TEST evaluates
+  only the selected winner. The runtime ignores `--test-all-candidates` for
+  this surface, including Harness runs.
+- Named-resource surface (`@spec(repository=None)`):
+  `--test-all-candidates` applies to Harness specs and evaluates every
+  persisted candidate on TEST, including resources such as `wiki`. Without the
+  flag, only the selected winner is TEST-evaluated.
 
 `optimize_only` uses the production system and cannot be combined with
 `--optimization-model`, benchmark flags, or final-evaluation flags. If the
@@ -144,8 +152,8 @@ For a selected-model run:
    `TEST`; valid case counts are 1 through 1000.
 5. Add final evaluation splits or `--test-all-candidates` only when the
    developer supplies them or asks to configure them. Do not invent tuning
-   values. Repository Harness ignores all-candidate TEST evaluation and tests
-   only the selected winner; do not offer `--test-all-candidates` for it.
+   values. Follow the editable-surface TEST policy above; do not offer
+   `--test-all-candidates` for the repository surface.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.
@@ -176,6 +184,10 @@ Prefer JSON output so the run identity is unambiguous:
 ```bash
 # Default Harness Optimization over the configured editable surface
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
+
+# Named-resource Harness with all persisted candidates evaluated on TEST
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
+  --test-all-candidates --json
 
 # Production-system optimization without an initial benchmark
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
