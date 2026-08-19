@@ -104,7 +104,7 @@ specs, `--test-all-candidates` evaluates every persisted candidate on TEST;
 without it, only the selected winner is TEST-evaluated. Repository-surface
 Harness always evaluates only the winner on TEST and ignores the flag.
 The seed starts with the configured production-system model behavior, but
-Harness may change model selection or model-call behavior within the editable
+optimization may change model selection or model-call behavior within the editable
 surface when that improves the objective.
 
 Production-system optimize-only:
