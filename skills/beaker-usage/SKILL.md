@@ -117,8 +117,11 @@ the optimizer.
 | Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Harness Optimization with no optimizer flag |
 
 A plain GitHub-backed launch uses Harness Optimization by default for either
-editable surface. It preserves the configured production-system model behavior
-unless another supported model selection is explicit.
+editable surface. The seed starts with the configured production-system model
+behavior unless a supported launch-time model selection is explicit. During
+optimization, the optimizer may modify the editable harness, source, or resource —
+including model selection and model-call behavior — when that improves the
+objective.
 
 Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
 Named-resource mode passes the complete declared resources through

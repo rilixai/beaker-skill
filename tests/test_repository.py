@@ -147,6 +147,9 @@ class RepositoryContractTests(unittest.TestCase):
         normalized = " ".join(content.split())
 
         self.assertIn("A plain GitHub-backed launch uses Harness Optimization by default", normalized)
+        self.assertIn("The seed starts with the configured production-system model behavior", normalized)
+        self.assertIn("including model selection and model-call behavior", normalized)
+        self.assertIn("when that improves the objective", normalized)
         self.assertIn("Named resources", content)
         self.assertIn("supplies each complete named resource", normalized)
         self.assertIn("Both use Harness by default", normalized)
