@@ -84,7 +84,7 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, content)
 
-        self.assertIn("Ordinary prompt optimization", content)
+        self.assertIn("| Optimization |", content)
         self.assertIn("Harness Optimization", content)
         self.assertIn("Selected-model run", content)
         self.assertIn("optimize_only", content)
@@ -94,11 +94,28 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("benchmark_only", content)
         self.assertNotIn("--quality-tolerance", content)
 
+    def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
+        content = "\n".join((setup, operations, usage, reference))
+        normalized = " ".join(content.split())
+
+        self.assertIn("beaker run trigger", content)
+        self.assertIn("current checked-out branch", normalized)
+        self.assertIn("repository's GitHub default branch", normalized)
+        self.assertIn("prints the current branch", normalized)
+        self.assertIn("`default branch`", normalized)
+
     def test_usage_skill_requires_explicit_remote_choices_and_authorization(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
         normalized = " ".join(skill.split())
 
-        self.assertIn("Ask which remote GitHub branch to use", normalized)
+        self.assertIn("Use the CLI's branch selection", normalized)
+        self.assertIn("Use `--ref` only for an explicit override", normalized)
         self.assertIn("unpushed local commits", normalized)
         self.assertIn("Ask which dataset", normalized)
         self.assertIn("Ask the developer which one to eight", normalized)
@@ -204,13 +221,13 @@ class RepositoryContractTests(unittest.TestCase):
         content = "\n".join((skill, operations))
 
         self.assertIn("beaker login", content)
-        self.assertIn('beaker agent setup "<Existing Agent Name or key>"', skill)
+        self.assertIn('beaker agent setup "<selected-agent>"', skill)
         self.assertIn('beaker agent setup "<New Agent Name>"', skill)
         self.assertIn("beaker agent edit", operations)
         self.assertNotIn("beaker login --agent", content)
         self.assertNotIn("--agent-name", content)
 
-    def test_agent_discovery_precedes_creation_and_scope_is_silent(self) -> None:
+    def test_agent_discovery_handles_new_and_existing_users_and_scope_is_silent(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
 
@@ -218,10 +235,10 @@ class RepositoryContractTests(unittest.TestCase):
             normalized = " ".join(text.split())
             self.assertIn("beaker auth status", normalized)
             self.assertIn("beaker agent list", normalized)
-            self.assertIn("reuse", normalized)
-            self.assertIn("create a different agent", normalized)
+            self.assertIn("Most new users will not have an agent yet", normalized)
+            self.assertIn("If several agents could match, ask the developer", normalized)
 
-        self.assertLess(skill.index("beaker agent list"), skill.index('beaker agent setup "<Existing Agent'))
+        self.assertLess(skill.index("beaker agent list"), skill.index('beaker agent setup "<selected-agent>"'))
         self.assertIn(
             "Never mention scope, `scope_key`, or `--scope-key` to the developer during setup",
             " ".join(skill.split()),
@@ -232,6 +249,19 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("scope_key", operations)
         self.assertIn("--scope-key", operations)
         self.assertIn("developer explicitly asks about scope isolation", " ".join(operations.split()))
+
+    def test_usage_states_and_preserves_the_selected_agent(self) -> None:
+        skill = USAGE_SKILL.read_text(encoding="utf-8")
+        reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((skill, reference))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Tell the developer which agent you selected", normalized)
+        self.assertIn("--agent <selected-agent>", content)
+        self.assertIn("use that same agent for dataset and run commands", normalized)
+        self.assertIn("`PREPARING_BUILD` or `QUEUED`", content)
 
     def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")

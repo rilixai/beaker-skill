@@ -53,18 +53,17 @@ final agent action once no other agent-owned step remains.
   is expected.
 - On `timed out waiting for GitHub access to <repo>`, re-run `beaker github
   connect --repo <owner/name>` rather than re-running agent setup.
-- `beaker spec build-from-github --installation-id` overrides the stored
-  installation. Do not pass it during setup; it exists for operator recovery.
 
 ## Authentication and agent selection
 
 - `beaker auth status` checks the user-level login; `beaker login` creates it.
-- After login, run `beaker agent list` before setup or creation. Compare the
-  available agents by optimization target and repository association; scope
-  configuration is not part of agent identity.
-- If a suitable agent exists, ask the developer whether to reuse it, create a
-  different agent. Recommend reuse. Do not choose on the developer's behalf.
-- `beaker agent setup "<Agent Name or key>"` selects an existing optimization
+- After login, run `beaker agent list` before setup or creation. Most new users
+  will not have an agent yet. If none exists, confirm what they want to optimize
+  and create one with a clear name for that target.
+- If one existing agent clearly matches the task, use it. If several agents
+  could match, ask the developer which one to use. State which agent you
+  selected.
+- `beaker agent setup "<selected-agent>"` selects an existing optimization
   target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and
   `BEAKER_AGENT_KEY` to `.beaker/.env`. Pass `--repo <owner/name>` only when the
   existing target needs a repository association.
@@ -92,8 +91,8 @@ for or confirm its stable key. Configure it persistently with `scope_key` in
 Organization admins can use the user-level login to edit an active agent's mutable metadata without rewriting repo-local credentials:
 
 ```bash
-beaker agent edit "<Agent Name or key>" --name "<New Name>"
-beaker agent edit "<Agent Name or key>" --config-path services/invoices/.beaker/beaker.yaml
+beaker agent edit "<selected-agent>" --name "<New Name>"
+beaker agent edit "<selected-agent>" --config-path services/invoices/.beaker/beaker.yaml
 ```
 
 At least one of `--name` or `--config-path` is required. The agent key and GitHub repository cannot be changed with `agent edit`; `--config-path` must be relative to the Git root.
@@ -130,30 +129,24 @@ project root when credentials should live beside that project's config.
 Repository-local environment values do not become hosted runtime secrets. Manage required provider or application variables explicitly:
 
 ```bash
-beaker agent env list --agent <agent-key>
-printf '%s' "$OPENAI_API_KEY" | beaker agent env set OPENAI_API_KEY --value-stdin --agent <agent-key>
-beaker agent env delete OPENAI_API_KEY --agent <agent-key>
+beaker agent env list --agent <selected-agent>
+printf '%s' "$OPENAI_API_KEY" | beaker agent env set OPENAI_API_KEY --value-stdin --agent <selected-agent>
+beaker agent env delete OPENAI_API_KEY --agent <selected-agent>
 ```
 
 Beaker lists names and hints only and does not return plaintext values. Never log or commit secret values.
 
-## Hosted build, data, and run ordering
+## Hosted data and run ordering
 
 1. Ensure the target agent exists and that `beaker github status --repo
    <owner/name>` reports the repository as readable. If it does not, have the
    developer run `beaker github connect --repo <owner/name>` before continuing.
-2. Before the first dataset upload, build a READY spec when necessary:
+2. Upload and inspect the dataset:
 
    ```bash
-   beaker spec build-from-github --ref <branch>
-   ```
-
-3. Upload and inspect the dataset:
-
-   ```bash
-   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split val=<n> --agent <agent-key>
-   beaker dataset list --agent <agent-key>
-   beaker dataset show <dataset-name> --agent <agent-key>
+   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split val=<n> --agent <selected-agent>
+   beaker dataset list --agent <selected-agent>
+   beaker dataset show <dataset-name> --agent <selected-agent>
    ```
 
    The upload command requires a directory or JSONL file path. If a conversion
@@ -163,16 +156,24 @@ Beaker lists names and hints only and does not return plaintext values. Never lo
    source-of-truth dataset directories may be uploaded from their established
    locations without being copied.
 
-4. Trigger only with explicit developer authorization:
+3. Trigger only with explicit developer authorization:
 
    ```bash
-   beaker run trigger --ref <branch> --dataset <dataset-name>
+   beaker run trigger --agent <selected-agent> --dataset <dataset-name>
    ```
 
-Both build and trigger default to `.beaker/beaker.yaml`. Run them from the same
-project root used for setup, or carry the same `--config-file` or
+   Without `--ref`, the CLI uses the current checked-out branch when it belongs
+   to the linked repository and exists on its remote, then falls back to the
+   repository's GitHub default branch. Pass `--ref` only for an explicit
+   override. The command prints the current branch when selected locally, or
+   `default branch` when the server selects the fallback.
+
+Trigger defaults to `.beaker/beaker.yaml`. Run it from the same project root
+used for setup, or carry the same `--config-file` or
 `BEAKER_CONFIG_FILE` selection through. The stored `beaker_config_path` lets
 hosted operations resolve the same nested YAML.
+
+Use the same selected agent for dataset inspection, upload, and launch.
 
 Dataset uploads create immutable revisions and normally promote the new revision to `production`. Re-uploading identical files is a no-op. Select data by name, `name@revision`, artifact id, or `config_defaults.dataset_ref`; never expose storage URIs.
 

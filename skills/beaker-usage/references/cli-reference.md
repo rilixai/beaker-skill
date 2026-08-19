@@ -20,8 +20,8 @@ command group:
 beaker --config-file services/invoices/.beaker/beaker.yaml run list --json
 ```
 
-Agent selection precedence is explicit `--agent`, then `BEAKER_AGENT_KEY`, then
-the selected Beaker config. Usually omit `--agent` and preserve setup's choice.
+Select an agent before a dataset or run command. State which agent you selected,
+then pass it with `--agent` so every command uses the same one.
 
 ## Onboarding status
 
@@ -68,10 +68,11 @@ failure persists relay the error to the developer.
 
 ```bash
 beaker auth status
+beaker agent list
 beaker github status --repo <owner/repository>
 beaker github branches --repo <owner/repository> --json
-beaker dataset list --json
-beaker dataset show <dataset-name-or-revision> --json
+beaker dataset list --agent <selected-agent> --json
+beaker dataset show <dataset-name-or-revision> --agent <selected-agent> --json
 beaker model list --available-only --json
 ```
 
@@ -81,30 +82,36 @@ created during setup.
 
 ## Launch commands
 
-Ordinary prompt optimization:
+Without `--ref`, the CLI uses the current checked-out branch when it belongs to
+the linked repository and exists on its remote. Otherwise, it uses the
+repository's GitHub default branch. The command prints the current branch when
+selected locally, or `default branch` when the server selects the fallback.
+Pass `--ref` only to override this selection.
+
+Optimization:
 
 ```bash
-beaker run trigger --ref <branch> --dataset <name@revision> --json
+beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
 ```
 
 Harness Optimization:
 
 ```bash
-beaker run trigger --ref <branch> --dataset <name@revision> \
+beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --use-harness-optimization --json
 ```
 
 Production-system optimize-only:
 
 ```bash
-beaker run trigger --ref <branch> --dataset <name@revision> \
+beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --execution-mode optimize_only --json
 ```
 
 Selected-model benchmark and optimization:
 
 ```bash
-beaker run trigger --ref <branch> --dataset <name@revision> \
+beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --optimization-model openai:<model-a> \
   --optimization-model anthropic:<model-b> \
   --execution-mode benchmark_and_optimize \
@@ -115,8 +122,8 @@ beaker run trigger --ref <branch> --dataset <name@revision> \
   --json
 ```
 
-`--ref` reads the remote GitHub ref. It does not push or include local-only
-commits or working tree changes.
+`--ref` overrides the automatic branch selection with a remote GitHub ref. It
+does not push or include local-only commits or working tree changes.
 
 ## Selected-model flags
 
@@ -180,12 +187,12 @@ invocation. A timeout message may also appear on stderr with exit code `3`.
 - **No datasets:** stop and use `$beaker-setup`; do not invent or upload
   synthetic optimization data.
 - **No available models:** selected-model execution is not ready. Ask the
-  developer to configure provider credentials or choose ordinary optimization.
+  developer to configure provider credentials or choose optimization.
 - **Unsupported or unavailable model:** rerun
   `beaker model list --available-only --json` and ask the developer to choose
   from that result.
-- **Run remains `PREPARING_BUILD` or `QUEUED`:** report the state. It may be
-  building the GitHub ref or preparing optimization setup; do not retrigger.
+- **Run remains `PREPARING_BUILD` or `QUEUED`:** report the state and do not
+  retrigger.
 - **Run is `FAILED`:** report `error_message` and the UI link. Do not edit the
   integration unless the developer asks to diagnose or repair it.
 - **Cancellation rejects a terminal run:** report the authoritative terminal

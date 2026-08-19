@@ -1,6 +1,6 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker prompt-optimization integration. Use when the developer asks to launch a hosted Beaker run, choose a GitHub branch or dataset, compare or optimize selected models, use Harness Optimization, list or inspect runs, monitor run status, download results, or cancel a run. Do not use to scaffold or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch a hosted Beaker run, choose a GitHub branch or dataset, compare or optimize selected models, use Harness Optimization, list or inspect runs, monitor run status, download results, or cancel a run. Do not use to scaffold or repair the Beaker spec; use beaker-setup for setup work.
 license: MIT
 ---
 
@@ -61,25 +61,34 @@ Before a hosted launch:
    Use `beaker login` only when status says the login is missing or expired.
    GitHub installation or repository access requires developer action; do not
    try to grant it yourself.
-2. List GitHub App-visible branches and hosted datasets as JSON:
+2. List the available agents. If one clearly matches the task, select it. If
+   several could match, ask the developer which one to use. Tell the developer
+   which agent you selected before uploading data or launching a run.
+
+   ```bash
+   beaker agent list
+   ```
+
+3. List GitHub App-visible branches and the selected agent's hosted datasets:
 
    ```bash
    beaker github branches --repo <owner/repository> --json
-   beaker dataset list --json
+   beaker dataset list --agent <selected-agent> --json
    ```
 
-3. Ask which remote GitHub branch to use unless the developer already supplied
-   one. Never silently use the current local branch, the default branch, or a
-   guessed branch. Verify the chosen branch appears in the GitHub branch
-   response. `--ref` resolves GitHub state; unpushed local commits and working
-   tree changes are not included.
-4. Ask which dataset name or immutable `name@revision` to use unless it is
+4. Use the CLI's branch selection unless the developer supplied a ref. Without
+   `--ref`, `beaker run trigger` uses the current checked-out branch when it
+   belongs to the linked repository and exists on its remote, then falls back
+   to the repository's GitHub default branch. The command prints the current
+   branch when selected locally, or `default branch` when the server selects
+   the fallback. Use `--ref` only for an explicit override; unpushed local
+   commits and working tree changes are not included.
+5. Ask which dataset name or immutable `name@revision` to use unless it is
    already explicit. If the user chooses a bare name, explain that it resolves
    to that dataset's production revision. Never use a storage URI.
 
 If the user explicitly requests a tag or commit instead of a branch, allow it
-as `--ref` after restating that exact immutable ref. The normal workflow asks
-for a branch.
+as `--ref` after restating that exact immutable ref.
 
 ## Choose the run family explicitly
 
@@ -88,11 +97,11 @@ has not already specified it, ask which outcome they want:
 
 | Run family | Use when | CLI selection |
 |---|---|---|
-| Ordinary prompt optimization | Optimize the configured production-system path, optionally without an initial benchmark | no model or Harness flags; use `--execution-mode optimize_only` only when explicitly requested |
+| Optimization | Optimize the configured production-system path, optionally without an initial benchmark | no model or Harness flags; use `--execution-mode optimize_only` only when explicitly requested |
 | Harness Optimization | Use the Codex-driven optimizer rather than the ordinary optimizer | `--use-harness-optimization` |
 | Selected-model run | Benchmark, optimize, and compare user-selected models | one to eight `--optimization-model provider:model` flags |
 
-Ordinary optimization preserves the spec's configured model behavior. Do not
+Optimization preserves the spec's configured model behavior. Do not
 ask for models or add `--optimization-model` unless the developer selects a
 selected-model run.
 
@@ -147,22 +156,25 @@ this now" that already contains every required choice counts as authorization;
 do not ask for redundant confirmation. A request to inspect, plan, or show the
 command does not authorize launch.
 
+Omit `--ref` for the normal current-branch flow. Pass it only when the developer
+selects another branch, tag, or commit.
+
 Prefer JSON output so the run identity is unambiguous:
 
 ```bash
-# Ordinary prompt optimization
-beaker run trigger --ref <branch> --dataset <dataset-ref> --json
+# Optimization
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
 
 # Production-system optimization without an initial benchmark
-beaker run trigger --ref <branch> --dataset <dataset-ref> \
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --execution-mode optimize_only --json
 
 # Harness Optimization
-beaker run trigger --ref <branch> --dataset <dataset-ref> \
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --use-harness-optimization --json
 
 # Selected-model run
-beaker run trigger --ref <branch> --dataset <dataset-ref> \
+beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --optimization-model <provider:model> \
   --execution-mode benchmark_and_optimize --json
 ```
@@ -223,7 +235,7 @@ Cancellation is a state-changing operation:
 3. Cancel only when the developer explicitly asks to cancel or stop that run.
    If the request names the exact run and says to cancel it, that is sufficient
    authorization; do not ask twice.
-4. Execute the atomic cancellation command without building a direct API call:
+4. Run the cancellation command:
 
    ```bash
    beaker run cancel <full-run-id> --json
@@ -235,8 +247,10 @@ Cancellation is a state-changing operation:
 
 ## Non-negotiable rules
 
-- Never launch without an explicit branch/ref, dataset, run family, and
+- Never launch without a resolved branch/ref, dataset, run family, and
   developer authorization.
+- State which agent you selected, and use that same agent for dataset and run
+  commands.
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with Harness Optimization.

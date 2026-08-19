@@ -83,7 +83,7 @@ only after real labeled examples are available. The `spec_validated` onboarding
 step performs this same local structural/readiness check only after
 `spec_integrated` is complete. It reports failures in the step reason and
 points back to `beaker run smoke --strict`; it does not print smoke output or
-write files. A passing smoke check proves the config resolves, the spec builds,
+write files. A passing smoke check proves the config resolves, the spec loads,
 the dataset loads and parses, and the targets, runner, and scorer are
 connected. It does not execute `run_case`, call the scorer, make a model/tool
 call, trigger hosted calls, or report a score.
@@ -161,6 +161,6 @@ Summarize:
 - model-routing behavior;
 - structural validation command and result, plus any separately captured
   runtime evidence;
-- exact hosted build/upload/run commands that remain.
+- exact hosted upload/run commands that remain.
 
 When a hosted run is triggered, include the full run UUID and UI link.

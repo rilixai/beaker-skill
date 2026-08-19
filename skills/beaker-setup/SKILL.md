@@ -1,12 +1,12 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository as a Beaker prompt-optimization consumer while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted builds can read the repository, validating with beaker run smoke, or preparing a hosted optimization run.
+description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating tooling under .beaker, leaving production runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, configuring beaker.yaml at the repository root or in a nested project, connecting real prompts and labeled datasets, wiring an agent or LLM evaluation path, connecting the Beaker GitHub App so hosted runs can read the repository, validating with beaker run smoke, or preparing a hosted optimization run.
 license: MIT
 ---
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; build or launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a Beaker optimization spec. Find the actual prompt, model call, scorer, and labeled data before completing the integration. Finish with a passing local structural smoke check when real labeled examples are available; launch remotely only when the developer requests it.
 
 ## Keep the onboarding loop explicit
 
@@ -52,7 +52,7 @@ insufficient. Do not refactor production code for Beaker.
 
 1. Inspect the repository for `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt definitions, model/agent calls, evals, and labeled fixtures. In a monorepo, identify the package or service being optimized before choosing the config location; do not assume the Git root.
 2. If multiple tasks are plausible, summarize them and ask which one to optimize first.
-3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent setup, validation, builds, and runs:
+3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent setup, validation, and runs:
 
    ```bash
    cd services/invoices
@@ -80,7 +80,11 @@ credentials or placeholder datasets.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
-## Build the real integration
+Leave `scope_key` absent or unset in `beaker.yaml` by default. Ordinary setups
+use the selected agent's default scope; a custom scope is an advanced isolation
+option, not a way to distinguish repositories, specs, or repeated setup runs.
+
+## Implement the real integration
 
 1. Identify the selected task's input, expected answer, scored fields, prompt targets, and application call path.
 2. Derive dataset rows only from real evals, fixtures, files, hosted previews, or examples supplied by the developer. If none exist, stop and request labeled examples or an upload.
@@ -135,16 +139,13 @@ Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) whe
 
 ## Authenticate, discover the agent, and validate
 
-After the optimization target is known, authenticate, confirm GitHub access, and
-inspect the organization's existing agents before running any command that could
-create an agent:
+After the optimization target is known, authenticate and confirm GitHub access:
 
 ```bash
 beaker auth status
 beaker login
 beaker onboarding status
 beaker github status
-beaker agent list
 ```
 
 Skip `beaker login` only when `beaker auth status` confirms the stored session
@@ -152,9 +153,9 @@ is valid.
 
 ### Connect the Beaker GitHub App
 
-Hosted builds and runs read the repository through the Beaker GitHub App, so the
-organization needs an installation before `beaker agent setup`, `beaker spec
-build-from-github`, or `beaker run trigger`.
+Hosted runs read the repository through the Beaker GitHub App, so the
+organization needs an installation before `beaker agent setup` or `beaker run
+trigger`.
 
 `beaker github status` is read-only and never opens a browser. Run it first;
 exit code 0 means connected, 1 means the connection or repository access is
@@ -189,31 +190,30 @@ implicitly and can block on the browser in exactly the same way. Running
 
 ### Select the agent
 
-Review `beaker agent list` for an agent representing the same optimization
-target, considering its name, purpose, and repository association. Those form
-the agent's identity; a missing or different scope is never evidence that a new
-agent is needed.
-
-When a suitable agent already exists, stop before setup and ask the developer
-to choose one of these outcomes:
-
-1. reuse that agent; or
-2. create a different agent with a distinct optimization-target name.
-
-Recommend reuse. Do not make this decision silently.
-
-After the developer selects an existing agent, run:
+Check the existing agents:
 
 ```bash
-beaker agent setup "<Existing Agent Name or key>"
+beaker agent list
+```
+
+Most new users will not have an agent yet. If none exists, confirm what the
+developer wants to optimize and create an agent with a clear name for that
+target. Do not use a generic repository name.
+
+If an existing agent clearly matches the task, use it. If several agents could
+match, ask the developer which one to use. Tell the developer which agent you
+selected before uploading data or launching a run.
+
+Select an existing agent with:
+
+```bash
+beaker agent setup "<selected-agent>"
 ```
 
 Pass `--repo <owner/name>` only when the selected agent still needs that
-repository association. If no suitable agent exists, or the developer
-explicitly chooses a different agent, confirm the new optimization-target name
-and then run `beaker agent setup "<New Agent Name>" --repo <owner/name>`.
-Because an unknown name creates an agent, never use a guessed or merely
-repo-derived name before completing discovery and obtaining that choice.
+repository association. To create an agent after confirming its name, run
+`beaker agent setup "<New Agent Name>" --repo <owner/name>`. An unknown name
+creates an agent, so do not guess one.
 
 Run `beaker agent setup` from the same selected project root and pass the same
 global `--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If
@@ -228,8 +228,8 @@ run can then find a config such as
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
-credentials, datasets, hosted environment variables, builds, or runs. Consult
-its scopes section only when the developer explicitly asks for scope isolation.
+credentials, datasets, hosted environment variables, or runs. Consult its
+scopes section only when the developer explicitly asks for scope isolation.
 
 Run a local validation only after real labeled examples are available:
 
@@ -256,9 +256,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Never create a generic repository-named Beaker agent; name the optimization target.
-- Never create or select an agent before a valid user login and `beaker agent
-  list` discovery. If a suitable agent exists, ask whether to reuse it or create
-  a distinct agent.
+- Check for existing agents after login. If one clearly matches, use it. If
+  several could match, ask the developer which one to use.
 - Never attempt to grant GitHub access on the developer's behalf, and never
   guess or pass `--installation-id`; surface the install URL and wait for the
   developer to confirm.
@@ -297,5 +296,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Never trigger a hosted optimization run unless the developer explicitly asks.
-- Treat `beaker spec build-from-github`, `beaker dataset upload`, and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
+- Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
+- Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
+  it prefers the current linked remote branch and falls back to the repository's
+  GitHub default branch. Use `--ref` only for an explicit override.
 - Target Python repositories with `pyproject.toml`.
