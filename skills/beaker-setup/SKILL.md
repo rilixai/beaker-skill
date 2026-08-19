@@ -15,8 +15,8 @@ every Beaker command and whenever it is unclear what to do next, then follow
 its single returned next action exactly. The returned action is normally the
 first incomplete agent-owned step in canonical order. If `blocked_on_developer`
 lists developer-owned steps known to be incomplete, relay each listed action
-verbatim to the developer without attempting it yourself, then continue with
-the returned `next.action`. An `unknown` step has not been checked yet and
+verbatim to the developer without attempting it yourself. This report is not
+a halt: continue with the returned `next.action`. An `unknown` step has not been checked yet and
 never means that the developer must act. Stop and wait only when `next` itself
 is developer-owned; finish when `next.id` is `null`. Tracing is advisory but
 is returned as the final agent action once no other agent-owned step is

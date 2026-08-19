@@ -59,8 +59,8 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 data, agent-name approval, or authorization for a hosted run. The next action
 is the first incomplete agent-owned step in canonical order. Developer-owned
 steps known to be incomplete (`todo`) are listed in `blocked_on_developer` in
-canonical order; relay those actions verbatim without attempting them, then
-continue with the returned `next.action`. An `unknown` step means the check has
+canonical order; relay those actions verbatim without attempting them. This
+report is not a halt: continue with the returned `next.action`. An `unknown` step means the check has
 not completed yet, never that the developer must act, and it is not added to
 `blocked_on_developer`. Stop and wait only when `next` itself is
 developer-owned; if no agent-owned step remains, the first known-incomplete

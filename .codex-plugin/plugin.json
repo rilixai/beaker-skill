@@ -1,6 +1,6 @@
 {
   "name": "beaker-setup",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Configure and operate Beaker prompt optimization.",
   "author": {
     "name": "Beaker",
