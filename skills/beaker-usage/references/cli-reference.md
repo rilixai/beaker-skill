@@ -39,12 +39,17 @@ pull request is developer-owned follow-up work outside the onboarding loop.
 `github_connected` checks only the organization's GitHub App installation;
 `agent_selected` also requires a selected agent with a non-empty repository
 association that the App can read.
-JSON contains `steps`, `next`, and `errors`; each step
-has `id`, `state`, `reason`, `owner`, and `next_action`, and `next` has `id`,
-`owner`, and `action`. Exit `0` means the state was computed, even if
-incomplete; exit `2` means the check failed. `tracing_wired` is advisory and
-does not take precedence over an open required step. Follow the returned
-action, and relay developer-owned actions verbatim.
+JSON contains `steps`, `next`, `blocked_on_developer`, and `errors`; each step
+has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`; `next` has
+`id`, `owner`, and `action`; and `blocked_on_developer` lists developer-owned
+incomplete steps with their relayable actions. `next` is the first incomplete
+agent-owned step in canonical order. Relay every blocked developer action
+verbatim and stop rather than attempting it; if no agent-owned step remains,
+`next` is the first incomplete developer-owned step. Exit `0` means the state
+was computed, even if incomplete; exit `2` means the check failed.
+`tracing_wired` has `blocking: false` and is returned as the final agent action
+once no other agent-owned step remains. Follow the returned action, and relay
+developer-owned actions verbatim.
 
 ## Discovery
 

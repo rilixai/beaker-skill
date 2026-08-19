@@ -23,8 +23,8 @@ Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
 onboarding loop.
 
-The human-readable output identifies each step as `PASS`, `TODO`, or
-`UNKNOWN`, then prints one `Next:` action. `--json` returns:
+The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
+`ADVISORY`, then prints one `Next:` action. `--json` returns:
 
 ```json
 {
@@ -34,7 +34,8 @@ The human-readable output identifies each step as `PASS`, `TODO`, or
       "state": "complete",
       "reason": null,
       "owner": "agent",
-      "next_action": "..."
+      "next_action": "...",
+      "blocking": true
     }
   ],
   "next": {
@@ -42,18 +43,29 @@ The human-readable output identifies each step as `PASS`, `TODO`, or
     "owner": "agent",
     "action": "Run `beaker login`."
   },
+  "blocked_on_developer": [
+    {
+      "id": "github_connected",
+      "action": "Ask the developer to install the Beaker GitHub App for the organization."
+    }
+  ],
   "errors": []
 }
 ```
 
 `owner` is `agent` when the coding agent can perform the action and
 `developer` when it requires the human, such as GitHub App access, labeled
-data, agent-name approval, or authorization for a hosted run. Relay
-developer-owned actions verbatim. Exit code `0` means the state was computed,
-even when steps remain incomplete; exit code `2` means the check itself failed,
-such as a hosted API error. This lets an agent poll after every step without
-mistaking an incomplete onboarding for a broken command. `tracing_wired` is
-advisory and never takes precedence over an incomplete required step.
+data, agent-name approval, or authorization for a hosted run. The next action
+is the first incomplete agent-owned step in canonical order. Developer-owned
+incomplete steps are listed in `blocked_on_developer` in canonical order; relay
+those actions verbatim and stop rather than attempting them. If no agent-owned
+step remains, the first incomplete developer-owned step becomes `next`. The
+`blocking` field is `false` only for advisory `tracing_wired`; it is `true` for
+all other steps. Tracing never blocks completion, but is returned as the final
+agent action once no other agent-owned step remains. Exit code `0` means the
+state was computed, even when steps remain incomplete; exit code `2` means the
+check itself failed, such as a hosted API error. This lets an agent poll after
+every step without mistaking an incomplete onboarding for a broken command.
 
 ## Local validation
 
