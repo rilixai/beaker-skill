@@ -33,7 +33,7 @@ beaker onboarding status --json
 Use this command after every CLI command and whenever the next action is
 unclear. It reports the ordered steps `beaker_installed`, `config_present`,
 `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
-`dataset_available`, `tracing_wired`, and `experiment_launched`. Onboarding is
+`tracing_wired`, `dataset_available`, and `experiment_launched`. Onboarding is
 complete once `experiment_launched` is complete. Shipping a winning candidate
 pull request is developer-owned follow-up work outside the onboarding loop.
 `github_connected` checks only the organization's GitHub App installation;

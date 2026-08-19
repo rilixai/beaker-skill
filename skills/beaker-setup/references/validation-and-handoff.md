@@ -11,8 +11,8 @@ action is unclear. It reports these ordered steps:
 4. `github_connected`
 5. `agent_selected`
 6. `spec_integrated`
-7. `dataset_available`
-8. `tracing_wired`
+7. `tracing_wired`
+8. `dataset_available`
 9. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App

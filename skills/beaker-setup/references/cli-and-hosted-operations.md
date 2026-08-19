@@ -5,7 +5,7 @@
 Run `beaker onboarding status` after every command and whenever the next
 action is uncertain. Follow its one returned action. The ordered state checks
 are `beaker_installed`, `config_present`, `logged_in`, `github_connected`,
-`agent_selected`, `spec_integrated`, `dataset_available`, `tracing_wired`,
+`agent_selected`, `spec_integrated`, `tracing_wired`, `dataset_available`,
 and `experiment_launched`. Onboarding is complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
