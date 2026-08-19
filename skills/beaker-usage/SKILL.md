@@ -24,7 +24,7 @@ developer-owned.
 `integration_pushed` is the final blocking agent-owned step: commit and push
 the completed integration to a branch in the selected agent repository before
 a hosted optimization run. If tracing applies, include it in that push, but do not treat it
-as a prerequisite; never commitsecret files.
+as a prerequisite; never commit secret files.
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
 without restarting onboarding discovery. Consult onboarding status there only
