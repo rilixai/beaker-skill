@@ -9,6 +9,9 @@ are `beaker_installed`, `config_present`, `logged_in`, `github_connected`,
 and `experiment_launched`. Onboarding is complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
+`github_connected` checks only the organization's GitHub App installation;
+`agent_selected` also requires a selected agent with a non-empty repository
+association that the App can read.
 
 Use `beaker onboarding status --json` for automation. The response contains
 `steps`, `next`, and `errors`; every step contains `id`, `state`, `reason`,

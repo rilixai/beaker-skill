@@ -36,6 +36,9 @@ unclear. It reports the ordered steps `beaker_installed`, `config_present`,
 `dataset_available`, `tracing_wired`, and `experiment_launched`. Onboarding is
 complete once `experiment_launched` is complete. Shipping a winning candidate
 pull request is developer-owned follow-up work outside the onboarding loop.
+`github_connected` checks only the organization's GitHub App installation;
+`agent_selected` also requires a selected agent with a non-empty repository
+association that the App can read.
 JSON contains `steps`, `next`, and `errors`; each step
 has `id`, `state`, `reason`, `owner`, and `next_action`, and `next` has `id`,
 `owner`, and `action`. Exit `0` means the state was computed, even if

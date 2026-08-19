@@ -15,6 +15,10 @@ action is unclear. It reports these ordered steps:
 8. `tracing_wired`
 9. `experiment_launched`
 
+`github_connected` reports only whether the organization's Beaker GitHub App
+installation is connected. `agent_selected` requires a selected Beaker agent
+with a non-empty repository association that the App can read.
+
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
 onboarding loop.
