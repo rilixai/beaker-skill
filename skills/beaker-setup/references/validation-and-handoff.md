@@ -59,11 +59,12 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 data, agent-name approval, or authorization for a hosted run. The next action
 is the first incomplete agent-owned step in canonical order. Developer-owned
 steps known to be incomplete (`todo`) are listed in `blocked_on_developer` in
-canonical order; relay those actions verbatim and stop rather than attempting
-them. An `unknown` step means the check has not completed yet, never that the
-developer must act, and it is not added to `blocked_on_developer`. If no
-agent-owned step remains, the first known-incomplete developer-owned step
-becomes `next`. The `blocking` field is `false` only for advisory
+canonical order; relay those actions verbatim without attempting them, then
+continue with the returned `next.action`. An `unknown` step means the check has
+not completed yet, never that the developer must act, and it is not added to
+`blocked_on_developer`. Stop and wait only when `next` itself is
+developer-owned; if no agent-owned step remains, the first known-incomplete
+developer-owned step becomes `next`. The `blocking` field is `false` only for advisory
 `tracing_wired`; it is `true` for all other steps. Tracing never blocks
 completion, but is returned as the final agent action once no other
 agent-owned step remains. Exit code `0` means the state and an actionable

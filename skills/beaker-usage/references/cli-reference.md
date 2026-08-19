@@ -49,10 +49,11 @@ has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`; `next` has
 `id`, `owner`, and `action`; and `blocked_on_developer` lists developer-owned
 known-incomplete (`todo`) steps with their relayable actions. `next` is the
 first incomplete agent-owned step in canonical order. Relay every blocked
-developer action verbatim and stop rather than attempting it; an `unknown`
-step has not been checked yet and never means the developer must act, so it is
-not listed in `blocked_on_developer`. If no agent-owned step remains, `next` is
-the first known-incomplete developer-owned step. Exit `0` means the state and
+developer action verbatim without attempting it, then continue with the
+returned `next.action`; an `unknown` step has not been checked yet and never
+means the developer must act, so it is not listed in `blocked_on_developer`.
+Stop and wait only when `next` itself is developer-owned. If no agent-owned
+step remains, `next` is the first known-incomplete developer-owned step. Exit `0` means the state and
 an actionable `next` were computed, even if incomplete; exit `2` is reserved
 for a not-computed payload where no actionable `next` could be produced.
 Selection and hosted errors remain in `errors` but return `0` when `next` is
