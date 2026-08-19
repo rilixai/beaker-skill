@@ -338,5 +338,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's
-  GitHub default branch. Use `--ref` only for an explicit override.
+  GitHub default branch. Use `--ref <remote-branch>` only for an explicit
+  remote branch override. Never pass a tag or commit SHA; the hosted source
+  must be a GitHub branch.
 - Target Python repositories with `pyproject.toml`.

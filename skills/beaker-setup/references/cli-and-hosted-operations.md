@@ -106,7 +106,11 @@ spec:
 Use uppercase POSIX-style names. A declaration may contain at most 50 unique
 names. `BEAKER_*`, runtime-control names such as `HOME`, `PATH`, and `PYTHONPATH`,
 and platform routing names such as `OPENAI_BASE_URL` are reserved
-and rejected. Declare only values that the application actually reads.
+and rejected. Every declared value is available to the candidate application
+during evaluation. Declare only values that the application actually needs,
+and prefer evaluation-scoped, least-privilege credentials with narrow access
+and a limited lifetime. Do not reuse production administrator, owner, or root
+credentials for candidate evaluation.
 
 Local values may live in the selected project's `.beaker/.env`. Repository-local
 values do not become hosted runtime secrets. Manage hosted values explicitly:
@@ -154,8 +158,10 @@ list`, and start a new run; do not retry the failed run unchanged.
 
    Without `--ref`, the CLI uses the current checked-out branch when it belongs
    to the linked repository and exists on its remote, then falls back to the
-   repository's GitHub default branch. Pass `--ref` only for an explicit
-   override. The command prints the current branch when selected locally, or
+   repository's GitHub default branch. Pass `--ref <remote-branch>` only for an
+   explicit remote branch override. Tags and commit SHAs are rejected with
+   `422` because hosted sources must be branches that can serve as pull-request
+   bases. The command prints the current branch when selected locally, or
    `default branch` when the server selects the fallback.
 
 Trigger defaults to `.beaker/beaker.yaml`. Run it from the same project root

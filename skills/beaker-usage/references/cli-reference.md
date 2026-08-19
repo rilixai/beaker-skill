@@ -44,28 +44,19 @@ Without `--ref`, the CLI uses the current checked-out branch when it belongs to
 the linked repository and exists on its remote. Otherwise, it uses the
 repository's GitHub default branch. The command prints the current branch when
 selected locally, or `default branch` when the server selects the fallback.
-Pass `--ref` only to override this selection.
+Pass `--ref <remote-branch>` only to override this selection with another
+remote branch, preferably one returned by `beaker github branches`.
 
-Default repository Harness Optimization:
+Default Harness Optimization over the configured editable surface:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
 ```
 
-`--use-harness-optimization` may restate this default, but is not required.
 Repository mode uses `@spec()` or `@spec(repository=...)`, has no
 `seed_targets`, passes `targets=None`, and TEST-evaluates only the selected
-winner.
-
-Intentional logical-target optimization with the GEPA/bootstrap loop:
-
-```bash
-beaker run trigger --agent <selected-agent> --dataset <name@revision> \
-  --config '{"use_harness_optimization": false}' --json
-```
-
-Use this opt-out only for `@spec(repository=None)` with real
-`Spec.seed_targets`.
+winner. Named-resource mode uses `@spec(repository=None)` and supplies each
+complete named resource through `Spec.seed_targets`.
 
 Production-system optimize-only:
 
@@ -74,7 +65,8 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --execution-mode optimize_only --json
 ```
 
-Selected-model benchmark and optimization for a logical-target spec:
+Selected-model benchmark and optimization for a spec with populated
+`seed_targets`:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> \
@@ -88,8 +80,11 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --json
 ```
 
-`--ref` overrides the automatic branch selection with a remote GitHub ref. It
-does not push or include local-only commits or working tree changes.
+`--ref` overrides the automatic selection with a remote GitHub branch. It does
+not push or include local-only commits or working tree changes. Tags and commit
+SHAs are not valid hosted sources; the server returns `422` with
+`<owner/repository>@<ref> is not a GitHub branch.` Ask for a remote branch that
+points to the intended commit instead.
 
 ## Selected-model flags
 
@@ -100,15 +95,14 @@ does not push or include local-only commits or working tree changes.
 | `--benchmark-split` | `VAL` or `TEST` |
 | `--benchmark-max-cases` | 1–1000 |
 | `--final-eval-split` | Repeatable `VAL` or `TEST` |
-| `--test-all-candidates` | In logical-target optimizer runs, evaluate every persisted candidate on `TEST`; repository Harness always tests only the selected winner |
+| `--test-all-candidates` | In selected-model optimizer runs, evaluate every persisted candidate on `TEST`; otherwise optimization always tests only the selected winner |
 
 Do not combine selected-model flags with `--use-harness-optimization` or with
 an `optimization_config` supplied through `--config`. Do not combine
 `--optimization-model` with `--execution-mode optimize_only`; optimize-only
 uses the production system. Selected-model runs require an explicit
-`@spec(repository=None)` logical-target spec with `seed_targets`; the default
-repository-only spec is incompatible. The CLI does not expose a benchmark-only
-mode.
+spec with populated `seed_targets`; do not infer compatibility from the
+`repository` setting. The CLI does not expose a benchmark-only mode.
 
 ## Run lifecycle
 
@@ -153,13 +147,16 @@ invocation. A timeout message may also appear on stderr with exit code `3`.
 - **Not logged in:** run `beaker login`, then retry GitHub branch discovery.
 - **Repository is unreadable:** ask the developer or organization owner to
   update the GitHub App installation. Use `$beaker-setup` for connection work.
+- **Source is not a GitHub branch (`422`):** the supplied `--ref` is a tag,
+  commit SHA, or unknown branch. Select a remote branch returned by `beaker
+  github branches`; do not retry with the tag or SHA.
 - **No datasets:** stop and use `$beaker-setup`; do not invent or upload
   synthetic optimization data.
 - **Missing required evaluation environment variables:** the run fails before
   candidate dispatch. Use `$beaker-setup` to set each declared name with
   `beaker agent env set NAME --value-stdin`, then start a new run.
-- **Non-Harness optimizer requires `Spec.seed_targets`:** the selected-model or
-  explicit Harness opt-out was used with a repository-only spec. Stop and use
+- **Selected-model optimizer requires `Spec.seed_targets`:** selected-model
+  flags were used with a spec that has no targets. Stop and use
   `$beaker-setup`; do not mutate the spec as a run-management side effect.
 - **No available models:** selected-model execution is not ready. Ask the
   developer to configure provider credentials or choose optimization.

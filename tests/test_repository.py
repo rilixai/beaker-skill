@@ -84,8 +84,8 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, content)
 
-        self.assertIn("| Repository Harness Optimization |", content)
-        self.assertIn("| Logical-target optimization |", content)
+        self.assertIn("| Repository |", content)
+        self.assertIn("| Named resources |", content)
         self.assertIn("Harness Optimization", content)
         self.assertIn("Selected-model run", content)
         self.assertIn("optimize_only", content)
@@ -134,8 +134,11 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("beaker agent env list", content)
         self.assertIn("beaker agent env set DATABASE_URL --value-stdin", operations)
         self.assertIn("fails the run before", normalized)
+        self.assertIn("available to the candidate application during evaluation", normalized)
+        self.assertIn("evaluation-scoped, least-privilege credentials", normalized)
+        self.assertIn("Declare only values that the application actually needs", normalized)
 
-    def test_plain_hosted_launch_defaults_to_repository_harness(self) -> None:
+    def test_plain_hosted_launch_defaults_to_harness_across_surfaces(self) -> None:
         usage = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
             encoding="utf-8"
@@ -143,11 +146,15 @@ class RepositoryContractTests(unittest.TestCase):
         content = "\n".join((usage, reference))
         normalized = " ".join(content.split())
 
-        self.assertIn("A plain GitHub-backed launch now uses Harness Optimization by default", normalized)
-        self.assertIn("no Harness flag is needed", normalized)
-        self.assertIn('--config \'{"use_harness_optimization": false}\'', content)
-        self.assertIn("Selected-model and other non-Harness optimizer runs require logical targets", normalized)
-        self.assertIn("repository Harness always tests only the selected winner", normalized)
+        self.assertIn("A plain GitHub-backed launch uses Harness Optimization by default", normalized)
+        self.assertIn("Named resources", content)
+        self.assertIn("supplies each complete named resource", normalized)
+        self.assertIn("Both use Harness by default", normalized)
+        self.assertIn("`repository=None` selects named resources and still uses Harness by default", normalized)
+        self.assertNotIn("use_harness_optimization=false", content)
+        self.assertNotIn('"use_harness_optimization": false', content)
+        self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
+        self.assertIn("Repository Harness ignores all-candidate TEST evaluation", normalized)
 
     def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")
@@ -164,14 +171,19 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("repository's GitHub default branch", normalized)
         self.assertIn("prints the current branch", normalized)
         self.assertIn("`default branch`", normalized)
+        self.assertIn("remote branch override", normalized)
+        self.assertIn("Tags and commit SHAs", content)
+        self.assertIn("hosted sources must be branches", normalized)
 
     def test_usage_skill_requires_explicit_remote_choices_and_authorization(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
         normalized = " ".join(skill.split())
 
         self.assertIn("Use the CLI's branch selection", normalized)
-        self.assertIn("Use `--ref` only for an explicit override", normalized)
-        self.assertIn("unpushed local commits", normalized)
+        self.assertIn("Use `--ref <remote-branch>` only for an explicit remote branch override", normalized)
+        self.assertIn("Unpushed local commits", normalized)
+        self.assertIn("Tags and commit SHAs passed to `--ref` return `422`", normalized)
+        self.assertIn("Never pass a tag or commit SHA through `--ref`", normalized)
         self.assertIn("Ask which dataset", normalized)
         self.assertIn("Ask the developer which one to eight", normalized)
         self.assertIn("Launch only after explicit developer authorization", normalized)
