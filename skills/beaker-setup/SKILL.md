@@ -88,9 +88,7 @@ credentials or placeholder datasets.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
-Leave `scope_key` absent or unset in `beaker.yaml` by default. Ordinary setups
-use the selected agent's default scope; a custom scope is an advanced isolation
-option, not a way to distinguish repositories, specs, or repeated setup runs.
+Use the selected agent's page to view its runs and score trends.
 
 ## Implement the real integration
 
@@ -279,8 +277,7 @@ run can then find a config such as
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
-credentials, datasets, hosted environment variables, or runs. Consult its
-scopes section only when the developer explicitly asks for scope isolation.
+credentials, datasets, hosted environment variables, or runs.
 
 Before launching, compare `spec.required_env` with `beaker agent env list` for
 the selected agent. A hosted run with a missing or empty declared value fails
@@ -319,9 +316,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   developer to confirm.
 - Never kill, background, or loop-retry `beaker github connect` or `beaker agent
   setup` while it waits for the browser grant; it is polling, not hung.
-- Never mention scope, `scope_key`, or `--scope-key` to the developer during
-  setup, and never set them unless the developer explicitly asks for scope
-  isolation.
+- Treat the selected agent as the direct owner of its runs and run history.
+  Create another agent only for a confirmed, distinct optimization target.
 - Never silently choose among multiple plausible tasks.
 - Never ask the developer what to do next before running `beaker onboarding
   status`; follow its returned action, and relay developer-owned actions

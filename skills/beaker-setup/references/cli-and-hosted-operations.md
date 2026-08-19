@@ -78,18 +78,6 @@ final agent action once no other agent-owned step remains.
 
 Do not ask the developer to paste API keys when CLI login is available. `BEAKER_AGENT_KEY` is an agent selector, not a credential-bound API key.
 
-## Scopes (only when the developer asks)
-
-Only consult this section when the developer explicitly asks about scope
-isolation. For a normal setup, leave `scope_key` absent or unset in
-`beaker.yaml` and omit `--scope-key`. Beaker then uses the selected agent's
-default scope. Never add a scope merely because setup is being run from another
-repository, config path, spec, or task, and do not raise the topic yourself.
-
-If the developer explicitly chooses to add a scope to an existing agent, ask
-for or confirm its stable key. Configure it persistently with `scope_key` in
-`beaker.yaml`, or use `--scope-key <scope-key>` only for the relevant run.
-
 Organization admins can use the user-level login to edit an active agent's mutable metadata without rewriting repo-local credentials:
 
 ```bash

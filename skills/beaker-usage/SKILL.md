@@ -185,8 +185,7 @@ state the exact:
 - dataset reference;
 - run family;
 - selected models and execution mode, when applicable; and
-- non-default benchmark, evaluation, candidate-testing, budget, or scope
-  settings.
+- non-default benchmark, evaluation, candidate-testing, or budget settings.
 
 Launch only after explicit developer authorization. A request such as "launch
 this now" that already contains every required choice counts as authorization;
@@ -219,7 +218,13 @@ beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
 the full ID and clickable UI URL to the developer. Never shorten the ID.
 
+An agent may have several active runs, including runs that use the same
+selected model. Do not assume a fixed per-agent or per-model run limit.
+
 ## List and inspect runs
+
+Use the selected agent's page to view its complete run history and score trends
+for completed runs.
 
 Recover or filter run IDs with:
 
@@ -300,10 +305,8 @@ Cancellation is a state-changing operation:
   remote branches only.
 - Never cancel a run without explicit authorization for the resolved run ID.
 - Never expose secrets or bypass the CLI with `curl` or private API calls.
-- Never change the spec, application, tests, datasets, agent, scope, or config
-  as a side effect of run management.
-- Never add a custom scope for an ordinary run. Preserve the configured default
-  unless the developer explicitly supplies a scope.
+- Never change the spec, application, tests, datasets, agent, or config as a
+  side effect of run management.
 - Never treat status exit code `3` as a failed run.
 - Never lose the full run ID or UI link after launch.
 - Never ask the developer what to do next before running `beaker onboarding

@@ -173,8 +173,8 @@ beaker run cancel <run-id> --json
 beaker run pull <run-id> --output-dir .beaker/results/<run-id>
 ```
 
-Run-list filters include `--scope-key`, `--status`, `--trigger-reason`,
-`--limit` from 1 through 100, and non-negative `--offset`.
+Run-list filters include `--status`, `--trigger-reason`, `--limit` from 1
+through 100, and non-negative `--offset`.
 
 ## Status exit codes
 
