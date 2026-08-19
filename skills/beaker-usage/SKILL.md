@@ -16,9 +16,10 @@ interpreting status exit codes, pulling results, or handling a CLI error.
 At the start of the operate flow, and after every CLI command, run
 `beaker onboarding status`. When unsure what to do next, consult it before
 asking the developer. Follow the first incomplete agent-owned action; relay
-every action in `blocked_on_developer` verbatim to the developer and stop
-instead of attempting developer-owned work. Tracing is the last agent-owned
-action when no other agent action remains.
+every known-incomplete action in `blocked_on_developer` verbatim to the
+developer and stop instead of attempting developer-owned work. An `unknown`
+step has not been checked yet and never means the developer must act. Tracing
+is the last agent-owned action when no other agent action remains.
 
 ## Stay inside the connected project
 

@@ -57,15 +57,17 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 `developer` when it requires the human, such as GitHub App access, labeled
 data, agent-name approval, or authorization for a hosted run. The next action
 is the first incomplete agent-owned step in canonical order. Developer-owned
-incomplete steps are listed in `blocked_on_developer` in canonical order; relay
-those actions verbatim and stop rather than attempting them. If no agent-owned
-step remains, the first incomplete developer-owned step becomes `next`. The
-`blocking` field is `false` only for advisory `tracing_wired`; it is `true` for
-all other steps. Tracing never blocks completion, but is returned as the final
-agent action once no other agent-owned step remains. Exit code `0` means the
-state was computed, even when steps remain incomplete; exit code `2` means the
-check itself failed, such as a hosted API error. This lets an agent poll after
-every step without mistaking an incomplete onboarding for a broken command.
+steps known to be incomplete are listed in `blocked_on_developer` in canonical
+order; relay those actions verbatim and stop rather than attempting them. An
+`unknown` step means the check has not completed yet, never that the developer
+must act. If no agent-owned step remains, the first known-incomplete
+developer-owned step becomes `next`. The `blocking` field is `false` only for
+advisory `tracing_wired`; it is `true` for all other steps. Tracing never
+blocks completion, but is returned as the final agent action once no other
+agent-owned step remains. Exit code `0` means the state was computed, even when
+steps remain incomplete; exit code `2` means the check itself failed, such as a
+hosted API error. This lets an agent poll after every step without mistaking an
+incomplete onboarding for a broken command.
 
 ## Local validation
 

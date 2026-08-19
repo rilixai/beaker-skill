@@ -17,14 +17,16 @@ Use `beaker onboarding status --json` for automation. The response contains
 `steps`, `next`, `blocked_on_developer`, and `errors`; every step contains
 `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`, while `next`
 contains `id`, `owner`, and `action`. The next action is the first incomplete
-agent-owned step in canonical order. Relay every `blocked_on_developer` action
-verbatim to the developer and stop rather than attempting it; if no agent
-step remains, `next` is the first incomplete developer-owned step. Exit `0`
-means the state was computed, including incomplete onboarding. Exit `2` means
-the status check failed. Offline or logged-out hosted checks are reported as
-`unknown`; run `beaker login` when it is the returned action. Tracing is
-advisory (`blocking: false`): it does not block completion, but is returned as
-the final agent action once no other agent-owned step remains.
+agent-owned step in canonical order. Relay every known-incomplete action in
+`blocked_on_developer` verbatim to the developer and stop rather than
+attempting it; an `unknown` step has not been checked yet and never means that
+the developer must act. If no agent step remains, `next` is the first known-
+incomplete developer-owned step. Exit `0` means the state was computed,
+including incomplete onboarding. Exit `2` means the status check failed.
+Offline or logged-out hosted checks are reported as `unknown`; run
+`beaker login` when it is the returned action. Tracing is advisory
+(`blocking: false`): it does not block completion, but is returned as the
+final agent action once no other agent-owned step remains.
 
 ## GitHub App access
 
