@@ -14,7 +14,10 @@ action is unclear. It reports these ordered steps:
 7. `dataset_available`
 8. `tracing_wired`
 9. `experiment_launched`
-10. `candidate_pr_shipped`
+
+Onboarding is complete once `experiment_launched` is complete. Shipping a
+winning candidate pull request is developer-owned follow-up work outside the
+onboarding loop.
 
 The human-readable output identifies each step as `PASS`, `TODO`, or
 `UNKNOWN`, then prints one `Next:` action. `--json` returns:
