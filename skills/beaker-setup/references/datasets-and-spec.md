@@ -95,8 +95,8 @@ Distinguish execution failure from a bad answer:
 
 ## Prove repository candidate execution
 
-Inspect the import path from `_run_case` into the real model call. Repository
-Harness evaluates each proposed repository copy in a fresh process and imports
+Inspect the import path from `_run_case` into the real model call. The default
+optimization evaluates each proposed repository copy in a fresh process and imports
 ordinary application modules from that candidate. Keep the spec, loader,
 runner, scorer, evidence provider, and finalizer under `.beaker/`; do not place
 candidate implementation there. Use `beaker run smoke --strict` to validate the
@@ -115,8 +115,8 @@ for the selected winner.
 
 For a logical-target spec, preserve explicit `@spec(repository=None)`. That mode
 requires real `Spec.seed_targets`; inspect each prompt or named resource path into
-the application exactly as before. Selected-model and other non-Harness optimizer
-runs require this logical target contract and are not valid for the default
+the application exactly as before. Selected-model runs require this logical
+target contract and are not valid for the default
 repository-only spec.
 
 Do not place datasets under `.beaker/`. Existing labeled data is source material,

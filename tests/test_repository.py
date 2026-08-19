@@ -86,7 +86,8 @@ class RepositoryContractTests(unittest.TestCase):
 
         self.assertIn("| Repository |", content)
         self.assertIn("| Named resources |", content)
-        self.assertIn("Harness Optimization", content)
+        self.assertIn("Default optimization", content)
+        self.assertNotIn("Harness Optimization", content)
         self.assertIn("Selected-model run", content)
         self.assertIn("optimize_only", content)
         self.assertIn("benchmark_and_optimize", content)
@@ -95,7 +96,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("benchmark_only", content)
         self.assertNotIn("--quality-tolerance", content)
 
-    def test_skills_cover_repository_harness_sdk_contract(self) -> None:
+    def test_skills_cover_repository_sdk_contract(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")
         datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(
             encoding="utf-8"
@@ -107,7 +108,7 @@ class RepositoryContractTests(unittest.TestCase):
         content = "\n".join((setup, datasets, usage, reference))
         normalized = " ".join(content.split())
 
-        self.assertIn('`@spec()` now means repository Harness Optimization', setup)
+        self.assertIn("`@spec()` now means repository optimization", setup)
         self.assertIn('@spec(repository="all")', setup)
         self.assertIn('repository=("src/app", "config")', setup)
         self.assertIn("`@spec(repository=None)`", content)
@@ -138,7 +139,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("evaluation-scoped, least-privilege credentials", normalized)
         self.assertIn("Declare only values that the application actually needs", normalized)
 
-    def test_plain_hosted_launch_defaults_to_harness_across_surfaces(self) -> None:
+    def test_plain_hosted_launch_defaults_to_optimization_across_surfaces(self) -> None:
         usage = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
             encoding="utf-8"
@@ -146,23 +147,25 @@ class RepositoryContractTests(unittest.TestCase):
         content = "\n".join((usage, reference))
         normalized = " ".join(content.split())
 
-        self.assertIn("A plain GitHub-backed launch uses Harness Optimization by default", normalized)
+        self.assertIn(
+            "A plain GitHub-backed launch uses the default optimization for either editable surface",
+            normalized,
+        )
         self.assertIn("The seed starts with the configured production-system model behavior", normalized)
         self.assertIn("including model selection and model-call behavior", normalized)
         self.assertIn("when that improves the objective", normalized)
         self.assertIn("Named resources", content)
         self.assertIn("supplies each complete named resource", normalized)
-        self.assertIn("Both use Harness by default", normalized)
-        self.assertIn("`repository=None` selects named resources and still uses Harness by default", normalized)
+        self.assertIn("Both use the default optimization", normalized)
         self.assertNotIn("use_harness_optimization=false", content)
         self.assertNotIn('"use_harness_optimization": false', content)
         self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
-        self.assertIn("Repository-surface Harness always evaluates only the winner", normalized)
+        self.assertIn("Repository-surface default optimization always evaluates only the winner", normalized)
         self.assertIn("Apply TEST candidate policy by editable surface", normalized)
         self.assertIn("The runtime ignores `--test-all-candidates` for this surface", normalized)
-        self.assertIn("`--test-all-candidates` applies to Harness specs", normalized)
+        self.assertIn("`--test-all-candidates` applies to the default optimization", normalized)
         self.assertIn("including resources such as `wiki`", normalized)
-        self.assertIn("Named-resource Harness with all persisted candidates evaluated on TEST", normalized)
+        self.assertIn("Named-resource default optimization with all persisted candidates evaluated on TEST", normalized)
 
     def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")
@@ -196,7 +199,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Ask the developer which one to eight", normalized)
         self.assertIn("Launch only after explicit developer authorization", normalized)
         self.assertIn("Never cancel a run without explicit authorization", normalized)
-        self.assertIn("Never combine selected models with Harness Optimization", normalized)
+        self.assertIn("Never combine selected models with the default optimization", normalized)
 
     def test_usage_skill_preserves_agent_operational_details(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")

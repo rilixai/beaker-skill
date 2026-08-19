@@ -1,6 +1,6 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch Harness Optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, run a selected-model optimization, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch the default optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, run a selected-model optimization, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
 license: MIT
 ---
 
@@ -113,34 +113,34 @@ the optimizer.
 
 | Editable surface | Spec contract | Default launch |
 |---|---|---|
-| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Harness Optimization with no optimizer flag |
-| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Harness Optimization with no optimizer flag |
+| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Default optimization (no optimizer flag) |
+| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Default optimization (no optimizer flag) |
 
-A plain GitHub-backed launch uses Harness Optimization by default for either
-editable surface. The seed starts with the configured production-system model
-behavior unless a supported launch-time model selection is explicit. During
-optimization, the optimizer may modify the editable harness, source, or resource —
-including model selection and model-call behavior — when that improves the
+A plain GitHub-backed launch uses the default optimization for either editable
+surface. The seed starts with the configured production-system model behavior
+unless a supported launch-time model selection is explicit. During
+optimization, the optimizer may modify the editable source or resource,
+including model selection and model-call behavior, when that improves the
 objective.
 
 Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
 Named-resource mode passes the complete declared resources through
-`seed_targets`. Both use Harness by default.
+`seed_targets`. Both use the default optimization.
 
 Selected-model flags choose a different optimizer workflow and are separate
 from the editable-surface setting. They require populated `seed_targets`; if
 the selected spec has none, stop and use `$beaker-setup` to make an explicit
 product decision. Do not silently add targets or change `repository` as a
-run-management side effect. Harness Optimization and selected-model flags are
-mutually exclusive; never combine them.
+run-management side effect. The default optimization and selected-model flags
+are mutually exclusive; never combine them.
 
 Apply TEST candidate policy by editable surface:
 
 - Repository surface (`@spec()` or `@spec(repository=...)`): TEST evaluates
   only the selected winner. The runtime ignores `--test-all-candidates` for
-  this surface, including Harness runs.
+  this surface, including default optimization runs.
 - Named-resource surface (`@spec(repository=None)`):
-  `--test-all-candidates` applies to Harness specs and evaluates every
+  `--test-all-candidates` applies to the default optimization and evaluates every
   persisted candidate on TEST, including resources such as `wiki`. Without the
   flag, only the selected winner is TEST-evaluated.
 
@@ -199,10 +199,10 @@ selects another remote branch.
 Prefer JSON output so the run identity is unambiguous:
 
 ```bash
-# Default Harness Optimization over the configured editable surface
+# Default optimization over the configured editable surface
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
 
-# Named-resource Harness with all persisted candidates evaluated on TEST
+# Named-resource default optimization with all persisted candidates evaluated on TEST
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --test-all-candidates --json
 
@@ -290,9 +290,9 @@ Cancellation is a state-changing operation:
   commands.
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
-- Never combine selected models with Harness Optimization.
+- Never combine selected models with the default optimization.
 - Never infer the optimizer from `repository`; `repository=None` selects named
-  resources and still uses Harness by default.
+  resources and still uses the default optimization.
 - Never use selected-model flags when `Spec.seed_targets` is absent.
 - Never combine selected models with `--execution-mode optimize_only`.
 - Never treat unpushed local changes as part of a hosted run.
@@ -315,3 +315,4 @@ For a launch, report the remote branch, dataset, run family, models/mode when
 applicable, full run ID, initial status, and UI URL. For status or cancellation,
 report the full run ID and authoritative state. For pulled results, report the
 destination and a concise result summary.
+When talking to the developer, refer to runs as "run" or "experiment" (for example, `beaker run`), never "harness run" — "harness" is internal terminology.

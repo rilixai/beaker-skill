@@ -1,9 +1,8 @@
 # Beaker Skills
 
 Portable agent guidance for setting up and operating
-[Beaker](https://pypi.org/project/beaker-sdk/) repository Harness Optimization
-in a Python repository, with explicit support for existing logical-target
-specs.
+[Beaker](https://pypi.org/project/beaker-sdk/) optimization runs in a Python
+repository, with explicit support for existing logical-target specs.
 
 The canonical Agent Skills are:
 
