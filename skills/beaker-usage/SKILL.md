@@ -13,6 +13,20 @@ datasets, or Beaker config merely to launch or manage a run.
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
 interpreting status exit codes, pulling results, or handling a CLI error.
 
+During setup validation and launch preparation, run `beaker onboarding status`
+at the start of the flow and after every CLI command, then follow its returned
+action. Relay only newly discovered actions in `blocked_on_developer` verbatim
+to the developer without attempting developer-owned work, tracking what was
+already reported in this session. This report is not a halt: continue with the
+returned `next.action`. An `unknown` step has not been checked yet and never
+means the developer must act. Stop and wait only when `next` itself is
+developer-owned.
+Tracing is the last agent-owned action when no other agent action remains.
+When inspecting, monitoring, pulling, or cancelling a known run whose
+documented preconditions are already satisfied, operate the run directly
+without restarting onboarding discovery. Consult onboarding status there only
+if a command fails or the next action is unclear.
+
 ## Stay inside the connected project
 
 1. Locate the selected project's Beaker config. In a monorepo, do not assume
@@ -289,6 +303,8 @@ Cancellation is a state-changing operation:
   unless the developer explicitly supplies a scope.
 - Never treat status exit code `3` as a failed run.
 - Never lose the full run ID or UI link after launch.
+- Never ask the developer what to do next before running `beaker onboarding
+  status`; use its returned action and relay developer-owned actions verbatim.
 
 ## Report the outcome
 

@@ -1,5 +1,41 @@
 # CLI and hosted operations
 
+## Onboarding loop
+
+Run `beaker onboarding status` after every command and whenever the next
+action is uncertain. Follow its one returned action. The ordered state checks
+are `beaker_dependency_declared`, `config_present`, `logged_in`,
+`github_connected`, `agent_selected`, `spec_integrated`, `spec_validated`,
+`tracing_wired`, `dataset_available`, and `experiment_launched`. Onboarding is
+complete once `experiment_launched`
+is complete. Shipping a winning candidate pull request is developer-owned
+follow-up work outside the onboarding loop.
+`github_connected` checks only the organization's GitHub App installation;
+`agent_selected` also requires a selected agent with a non-empty repository
+association that the App can read.
+
+Use `beaker onboarding status --json` for automation. The response contains
+`steps`, `next`, `blocked_on_developer`, and `errors`; every step contains
+`id`, `state`, `reason`, `owner`, `next_action`, and `blocking`, while `next`
+contains `id`, `owner`, and `action`. The next action is the first incomplete
+agent-owned step in canonical order. Relay only newly discovered actions in
+`blocked_on_developer` verbatim to the developer without attempting them, and
+track which actions were already reported in this session. This report is not
+a halt: continue with the returned `next.action`; an `unknown` step has not
+been checked yet and never means that the developer must act. Stop and wait
+only when `next` itself is developer-owned. If no agent step remains, `next` is
+the first known-incomplete developer-owned step. Exit `0` means the state and
+an actionable `next` were computed, including incomplete onboarding. Exit `2` is reserved
+for a not-computed payload where an actionable `next` could not be produced.
+Selection and hosted errors remain in `errors` but return `0` when `next` is
+actionable. On exit `2`, read `errors`, retry once, and if it persists relay
+the error to the developer. When onboarding is complete, `next.id` is `null`
+and `next.action` contains the completion message.
+Offline or logged-out hosted checks are reported as `unknown`; run
+`beaker login` when it is the returned action. Tracing is advisory
+(`blocking: false`): it does not block completion, but is returned as the
+final agent action once no other agent-owned step remains.
+
 ## GitHub App access
 
 - `beaker github status` reports the organization's GitHub App installation

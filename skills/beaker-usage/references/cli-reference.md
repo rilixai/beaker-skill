@@ -3,6 +3,7 @@
 ## Contents
 
 - [Global command placement](#global-command-placement)
+- [Onboarding status](#onboarding-status)
 - [Discovery](#discovery)
 - [Launch commands](#launch-commands)
 - [Selected-model flags](#selected-model-flags)
@@ -21,6 +22,48 @@ beaker --config-file services/invoices/.beaker/beaker.yaml run list --json
 
 Select an agent before a dataset or run command. State which agent you selected,
 then pass it with `--agent` so every command uses the same one.
+
+## Onboarding status
+
+```bash
+beaker onboarding status
+beaker onboarding status --json
+```
+
+Use this command during setup validation and launch preparation, after each
+CLI command and whenever the next action is unclear. For inspecting,
+monitoring, pulling, or cancelling a known run with its preconditions met,
+run only the relevant command and consult onboarding status only after a
+failure or when the next action is unclear. It reports the ordered steps
+`beaker_dependency_declared`,
+`config_present`, `logged_in`, `github_connected`, `agent_selected`,
+`spec_integrated`, `spec_validated`, `tracing_wired`, `dataset_available`, and
+`experiment_launched`. Onboarding is
+complete once `experiment_launched` is complete. Shipping a winning candidate
+pull request is developer-owned follow-up work outside the onboarding loop.
+`github_connected` checks only the organization's GitHub App installation;
+`agent_selected` also requires a selected agent with a non-empty repository
+association that the App can read.
+JSON contains `steps`, `next`, `blocked_on_developer`, and `errors`; each step
+has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`; `next` has
+`id`, `owner`, and `action`; and `blocked_on_developer` lists developer-owned
+known-incomplete (`todo`) steps with their relayable actions. `next` is the
+first incomplete agent-owned step in canonical order. Relay every blocked
+developer action verbatim without attempting it, then continue with the
+returned `next.action`; an `unknown` step has not been checked yet and never
+means the developer must act, so it is not listed in `blocked_on_developer`.
+Stop and wait only when `next` itself is developer-owned. If no agent-owned
+step remains, `next` is the first known-incomplete developer-owned step. Exit `0` means the state and
+an actionable `next` were computed, even if incomplete; exit `2` is reserved
+for a not-computed payload where no actionable `next` could be produced.
+Selection and hosted errors remain in `errors` but return `0` when `next` is
+actionable.
+`tracing_wired` has `blocking: false` and is returned as the final agent action
+once no other agent-owned step remains. Follow the returned action, and relay
+developer-owned actions verbatim.
+When onboarding is complete, `next.id` is `null` and `next.action` contains
+the completion message. For exit `2`, read `errors`, retry once, and if the
+failure persists relay the error to the developer.
 
 ## Discovery
 

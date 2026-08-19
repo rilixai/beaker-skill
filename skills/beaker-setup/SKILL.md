@@ -12,6 +12,23 @@ call, scorer, and labeled data before completing the integration. Finish with
 a passing local structural smoke check when real labeled examples are
 available; launch remotely only when the developer requests it.
 
+## Keep the onboarding loop explicit
+
+`beaker onboarding status` is the loop-control command for setup. Run it after
+every Beaker command and whenever it is unclear what to do next, then follow
+its single returned next action exactly. The returned action is normally the
+first incomplete agent-owned step in canonical order. If
+`blocked_on_developer` lists developer-owned steps known to be incomplete,
+relay only newly discovered actions verbatim to the developer without
+attempting them yourself, tracking what was already reported in this session.
+This report is not a halt: continue with the returned `next.action`. An
+`unknown` step has not been checked yet and never means that the developer
+must act. Stop and wait only when `next` itself is developer-owned; finish
+when `next.id` is `null`. Tracing is advisory but
+is returned as the final agent action once no other agent-owned step is
+incomplete. Do not ask the developer what to do next before consulting this
+command.
+
 ## Keep Beaker isolated
 
 Treat Beaker as development/evaluation tooling, not an application runtime.
@@ -178,6 +195,7 @@ After the optimization target is known, authenticate and confirm GitHub access:
 ```bash
 beaker auth status
 beaker login
+beaker onboarding status
 beaker github status
 ```
 
@@ -277,8 +295,9 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
 code traceback when a check fails. A tracing warning in that output is
-non-blocking: it means model spans are not wired yet, so complete the tracing
-wiring before handoff. When execution evidence matters, run
+non-blocking to the CLI, but tracing is a setup-skill completion requirement:
+when onboarding returns `tracing_wired` as its final agent action, complete the
+wiring before handoff and rerun smoke. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
 candidate workflow rooted at the main workflow agent inside `Spec.run_case`
 under a local Beaker capture, then run
@@ -304,6 +323,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   setup, and never set them unless the developer explicitly asks for scope
   isolation.
 - Never silently choose among multiple plausible tasks.
+- Never ask the developer what to do next before running `beaker onboarding
+  status`; follow its returned action, and relay developer-owned actions
+  verbatim.
 - Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never place Beaker-owned code or files outside `.beaker/` when they can live there.
 - Never save generated JSONL dataset files in the user's repository or under
