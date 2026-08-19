@@ -175,7 +175,7 @@ winner.
 
 Use `@spec(repository=None)` only for an existing intentional logical-resource
 or prompt-target workflow. That mode requires `Spec.seed_targets`, and
-Selected-model optimizer runs also require those targets. Do not
+selected-model optimizer runs also require those targets. Do not
 silently convert one mode into the other.
 
 ## Route models without changing production defaults
