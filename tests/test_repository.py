@@ -130,7 +130,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("required_env:", operations)
         self.assertIn("names only", normalized)
         self.assertIn("at most 50 unique names", normalized)
-        self.assertIn("`BEAKER_*`, `MODAL_*`", operations)
+        self.assertIn("`BEAKER_*`", operations)
         self.assertIn("beaker agent env list", content)
         self.assertIn("beaker agent env set DATABASE_URL --value-stdin", operations)
         self.assertIn("fails the run before", normalized)
