@@ -29,7 +29,7 @@ those detected agents without opening the agent-selection menu, and `--global`
 makes the skill available across projects.
 
 > [!NOTE]
-> **Known issue:** with `--global --yes`, the `skills` CLI may report
+> **Known issue (as of 2026-08-20):** with `--global --yes`, the `skills` CLI may report
 > `Failed to install 1 ... PromptScript: PromptScript does not support global
 > skill installation`. This is harmless and can be ignored: the skill still
 > installs globally for every other detected agent, and PromptScript reads
