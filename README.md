@@ -28,6 +28,15 @@ The `skills` CLI detects the agents installed on your machine. `--yes` accepts
 those detected agents without opening the agent-selection menu, and `--global`
 makes the skill available across projects.
 
+> [!NOTE]
+> **Known issue (as of 2026-08-20):** with `--global --yes`, the `skills` CLI may report
+> `Failed to install 1 ... PromptScript: PromptScript does not support global
+> skill installation`. This is harmless and can be ignored: the skill still
+> installs globally for every other detected agent, and PromptScript reads
+> project-local `.agents/skills` anyway. It is a `skills` CLI bug tracked
+> upstream at
+> [vercel-labs/skills#1352](https://github.com/vercel-labs/skills/issues/1352).
+
 Install globally for a specific agent:
 
 ```bash
