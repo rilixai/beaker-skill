@@ -6,7 +6,7 @@ Run `beaker onboarding status` after every command and whenever the next
 action is uncertain. Follow its one returned action. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
 `github_connected`, `agent_selected`, `spec_integrated`, `spec_validated`,
-`tracing_wired`, `dataset_available`, and `experiment_launched`. Onboarding is
+`tracing_wired`, `integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
 complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
@@ -33,8 +33,11 @@ the error to the developer. When onboarding is complete, `next.id` is `null`
 and `next.action` contains the completion message.
 Offline or logged-out hosted checks are reported as `unknown`; run
 `beaker login` when it is the returned action. Tracing is advisory
-(`blocking: false`): it does not block completion, but is returned as the
-final agent action once no other agent-owned step remains.
+(`blocking: false`) and does not delay the required push. When tracing is
+included, commit its wiring with the integration. `integration_pushed` verifies
+that the current local commit is present on a branch in the selected agent
+repository; it is required before a hosted optimization run, not before dataset
+upload.
 
 ## GitHub App access
 
@@ -179,6 +182,9 @@ list`, and start a new run; do not retry the failed run unchanged.
    ```bash
    beaker run trigger --agent <selected-agent> --dataset <dataset-name>
    ```
+
+   Before triggering, commit and push the completed integration to the branch
+   you intend to use. Do not stage secret files.
 
    Without `--ref`, the CLI uses the current checked-out branch when it belongs
    to the linked repository and exists on its remote, then falls back to the

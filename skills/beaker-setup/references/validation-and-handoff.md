@@ -13,12 +13,16 @@ action is unclear. It reports these ordered steps:
 6. `spec_integrated`
 7. `spec_validated`
 8. `tracing_wired`
-9. `dataset_available`
-10. `experiment_launched`
+9. `integration_pushed`
+10. `dataset_available`
+11. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App
 installation is connected. `agent_selected` requires a selected Beaker agent
 with a non-empty repository association that the App can read.
+`integration_pushed` confirms that the current checkout's `HEAD` is pushed to
+a branch in that selected repository. If tracing is part of the integration,
+include it in the commit that is pushed; never commit secret file. Tracing remains advisory and does not block this step.
 
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
@@ -67,8 +71,9 @@ and it is not added to `blocked_on_developer`. Stop and wait only when `next`
 itself is developer-owned; if no agent-owned step remains, the first known-incomplete
 developer-owned step becomes `next`. The `blocking` field is `false` only for advisory
 `tracing_wired`; it is `true` for all other steps. Tracing never blocks
-completion, but is returned as the final agent action once no other
-agent-owned step remains. Exit code `0` means the state and an actionable
+completion. `integration_pushed` is the final blocking agent-owned step and
+must be complete before a hosted optimization run. It is not required before
+dataset upload. Exit code `0` means the state and an actionable
 `next` were computed, even when steps remain incomplete. Exit code `2` is
 reserved for a not-computed payload where an actionable `next` could not be
 produced, such as an unreadable Beaker config; selection and hosted errors
@@ -154,10 +159,12 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - `spec.required_env` contains only required variable names. Values are
   confined to `.beaker/.env` or hosted encrypted agent settings, and every
   declared hosted value is present before launch.
-- Local `beaker run smoke --strict` passes when real data is available, and
-  its output shows no tracing warning after the final `tracing_wired` action
-  has been completed. If tracing detection is `UNKNOWN`, report that
-  verification uncertainty rather than treating it as a tracing failure.
+- When tracing applies, local `beaker run smoke --strict` passes with no
+  tracing warning before the integration is committed and pushed. If tracing
+  detection is `UNKNOWN`, report that verification uncertainty rather than
+  treating it as a tracing failure; it does not block the push.
+- The completed integration is committed and pushed to a branch in the
+  selected agent repository; secrets are not staged.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report

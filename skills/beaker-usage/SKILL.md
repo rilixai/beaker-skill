@@ -21,7 +21,10 @@ already reported in this session. This report is not a halt: continue with the
 returned `next.action`. An `unknown` step has not been checked yet and never
 means the developer must act. Stop and wait only when `next` itself is
 developer-owned.
-Tracing is the last agent-owned action when no other agent action remains.
+`integration_pushed` is the final blocking agent-owned step: commit and push
+the completed integration to a branch in the selected agent repository before
+a hosted optimization run. If tracing applies, include it in that push, but do not treat it
+as a prerequisite; never commit secret files.
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
 without restarting onboarding discovery. Consult onboarding status there only
