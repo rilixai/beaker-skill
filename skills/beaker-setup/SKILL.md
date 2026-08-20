@@ -1,16 +1,16 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker repository Harness Optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also preserve an existing logical-target spec only when it explicitly uses @spec(repository=None).
+description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also preserve an existing logical-target spec only when it explicitly uses @spec(repository=None).
 license: MIT
 ---
 
 # Beaker setup
 
-Turn the repository's real LLM or agent task into a repository Harness
-Optimization spec. Find the application entrypoint, candidate source, model
-call, scorer, and labeled data before completing the integration. Finish with
-a passing local structural smoke check when real labeled examples are
-available; launch remotely only when the developer requests it.
+Turn the repository's real LLM or agent task into a repository optimization
+spec. Find the application entrypoint, candidate source, model call, scorer,
+and labeled data before completing the integration. Finish with a passing local
+structural smoke check when real labeled examples are available; launch
+remotely only when the developer requests it.
 
 ## Keep the onboarding loop explicit
 
@@ -148,7 +148,7 @@ Read [datasets-and-spec.md](references/datasets-and-spec.md) before deriving dat
 
 ## Select the repository optimization surface
 
-`@spec()` now means repository Harness Optimization and is equivalent to
+`@spec()` now means repository optimization and is equivalent to
 `@spec(repository="all")`. The factory, loader, runner, scorer, evidence
 provider, and finalizer stay under `.beaker/` and are immutable evaluation
 policy. Ordinary application source is the candidate.
@@ -174,7 +174,7 @@ winner.
 
 Use `@spec(repository=None)` only for an existing intentional logical-resource
 or prompt-target workflow. That mode requires `Spec.seed_targets`, and
-non-Harness or selected-model optimizer runs also require those targets. Do not
+selected-model optimizer runs also require those targets. Do not
 silently convert one mode into the other.
 
 ## Route models without changing production defaults

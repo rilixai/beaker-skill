@@ -59,9 +59,8 @@ Beaker.
 
 This example is for the default repository mode. An intentional
 `@spec(repository=None)` logical-target spec instead receives its declared
-targets and must apply them to the real call. Non-Harness and selected-model
-optimizer runs require those `seed_targets`; do not use them with a
-repository-only spec.
+targets and must apply them to the real call. Selected-model optimizer runs
+require those `seed_targets`; do not use them with a repository-only spec.
 
 ## LLM-as-a-judge scoring
 
