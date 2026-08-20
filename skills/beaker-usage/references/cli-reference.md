@@ -153,8 +153,6 @@ an `optimization_config` supplied through `--config`. Do not combine
 uses the production system. Selected-model runs require an explicit
 spec with populated `seed_targets`; do not infer compatibility from the
 `repository` setting. The CLI does not expose a benchmark-only mode.
-`--use-harness-optimization` explicitly selects the default optimization; it is
-already the default.
 
 ## Run lifecycle
 
