@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also preserve an existing logical-target spec only when it explicitly uses @spec(repository=None).
+description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
 license: MIT
 ---
 
@@ -24,10 +24,12 @@ attempting them yourself, tracking what was already reported in this session.
 This report is not a halt: continue with the returned `next.action`. An
 `unknown` step has not been checked yet and never means that the developer
 must act. Stop and wait only when `next` itself is developer-owned; finish
-when `next.id` is `null`. Tracing is advisory and never delays the required
-push. When the selected use case includes tracing, commit its wiring with the
-completed integration before pushing; `integration_pushed` is the final
-blocking agent-owned step.
+when `next.id` is `null`. Tracing is optional and advisory: when the selected
+use case includes tracing, make a best effort to wire it and commit its wiring
+with the completed integration before pushing, but never let it block or delay
+the required push. `integration_pushed` is the final blocking agent-owned
+step; the later `dataset_available` and `experiment_launched` steps may be
+completed by the developer, including through the platform UI.
 Do not ask the developer what to do next before consulting this command.
 
 ## Keep Beaker isolated
@@ -278,7 +280,7 @@ run can then find a config such as
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
-credentials, datasets, hosted environment variables, or runs.
+working with credentials, datasets, hosted environment variables, or runs.
 
 Before launching, compare `spec.required_env` with `beaker agent env list` for
 the selected agent. A hosted run with a missing or empty declared value fails
@@ -293,8 +295,9 @@ beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 
 Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
 code traceback when a check fails. A tracing warning in that output is
-non-blocking to the CLI. When tracing applies, complete its wiring as part of
-the integration before the required final push, then rerun smoke. When execution evidence matters, run
+non-blocking to the CLI. When tracing applies, make a best effort to complete
+its wiring as part of the integration before the required final push, then
+rerun smoke; do not let tracing block the push. When execution evidence matters, run
 `beaker trace instrument --check`, exercise the repository's
 candidate workflow rooted at the main workflow agent inside `Spec.run_case`
 under a local Beaker capture, then run
@@ -355,8 +358,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never trigger a hosted optimization run unless the developer explicitly asks.
 - Before starting a hosted optimization run, commit and push the completed
   Beaker integration to a branch in the selected agent repository. Do not
-  commit `*.env` or other secret files. Include tracing changes when tracing
-  applies, but do not treat tracing as a prerequisite to the push.
+  commit `*.env` or other secret files. Make a best effort to include tracing
+  changes when tracing applies, but never let tracing block the push.
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's

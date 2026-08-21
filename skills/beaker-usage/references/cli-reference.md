@@ -48,8 +48,9 @@ JSON contains `steps`, `next`, `blocked_on_developer`, and `errors`; each step
 has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`; `next` has
 `id`, `owner`, and `action`; and `blocked_on_developer` lists developer-owned
 known-incomplete (`todo`) steps with their relayable actions. `next` is the
-first incomplete agent-owned step in canonical order. Relay every blocked
-developer action verbatim without attempting it, then continue with the
+first incomplete agent-owned step in canonical order. Relay only newly
+discovered blocked developer actions verbatim without attempting them,
+tracking what was already reported in this session, then continue with the
 returned `next.action`; an `unknown` step has not been checked yet and never
 means the developer must act, so it is not listed in `blocked_on_developer`.
 Stop and wait only when `next` itself is developer-owned. If no agent-owned
@@ -58,11 +59,13 @@ an actionable `next` were computed, even if incomplete; exit `2` is reserved
 for a not-computed payload where no actionable `next` could be produced.
 Selection and hosted errors remain in `errors` but return `0` when `next` is
 actionable.
-`tracing_wired` has `blocking: false`, so it is advisory and does not delay the
-required push. When tracing is included, complete its wiring as part of the
-integration before pushing. `integration_pushed` is the final blocking
-agent-owned step; it must be complete before a hosted optimization run, 
-but is not mandatory for dataset upload.
+`tracing_wired` has `blocking: false`, so it is optional and advisory: when
+tracing is included, make a best effort to complete its wiring as part of the
+integration before pushing, but never let it delay the required push.
+`integration_pushed` is the final blocking agent-owned step; it must be
+complete before a hosted optimization run, but is not mandatory for dataset
+upload. The later `dataset_available` and `experiment_launched` steps may be
+completed by the developer, including through the platform UI.
 Follow the returned action, and relay developer-owned actions verbatim.
 When onboarding is complete, `next.id` is `null` and `next.action` contains
 the completion message. For exit `2`, read `errors`, retry once, and if the

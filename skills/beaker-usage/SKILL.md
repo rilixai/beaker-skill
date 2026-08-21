@@ -23,8 +23,11 @@ means the developer must act. Stop and wait only when `next` itself is
 developer-owned.
 `integration_pushed` is the final blocking agent-owned step: commit and push
 the completed integration to a branch in the selected agent repository before
-a hosted optimization run. If tracing applies, include it in that push, but do not treat it
-as a prerequisite; never commit secret files.
+a hosted optimization run; the later `dataset_available` and
+`experiment_launched` steps may be completed by the developer, including
+through the platform UI. Tracing is optional: if it applies, make a best
+effort to include it in that push, but never let it block the push; never
+commit secret files.
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
 without restarting onboarding discovery. Consult onboarding status there only
@@ -162,8 +165,8 @@ For a selected-model run:
    beaker model list --available-only --json
    ```
 
-2. Ask the developer which one to eight canonical `provider:model` values to
-   use. Offer only values returned by the command. Do not substitute a similar
+2. Ask the developer which models to use (one to eight canonical
+   `provider:model` values). Offer only values returned by the command. Do not substitute a similar
    model, infer a default, or choose based on cost or speed without direction.
 3. Selected-model runs use `benchmark_and_optimize`; it is also the CLI default
    when models are supplied. The CLI does not expose benchmark-only execution.
