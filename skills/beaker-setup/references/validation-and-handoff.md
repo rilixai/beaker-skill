@@ -21,10 +21,18 @@ action is unclear. It reports these ordered steps:
 installation is connected. `agent_selected` requires a selected Beaker agent
 with a non-empty repository association that the App can read.
 `integration_pushed` confirms that the current checkout's `HEAD` is pushed to
-a branch in that selected repository. If tracing is part of the integration,
-make a best effort to include it in the commit that is pushed; never commit
-secret files. Tracing remains optional and advisory and does not block this
-step.
+a branch in that selected repository. It is agent-owned: commit and push
+without asking the developer to confirm, unless the developer told you not to
+take autonomous actions, to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch such
+as `beaker/20260821-1339-invoice-extraction`, never to `main`, `master`, or the
+default branch unless the developer asks. The step's action names the
+branch: the current branch when it is already this agent's integration branch
+from the last hour, so retries reuse it, and a freshly stamped
+`beaker/<YYYYMMDD-HHMM>-<agent-name>` otherwise. When the checkout sits on a
+trunk branch, the step reason repeats that branch suggestion. If tracing is
+part of the integration, make a best effort to include it in the commit that is
+pushed; never commit secret files. Tracing remains optional and advisory and
+does not block this step.
 
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
@@ -176,8 +184,10 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   blocks the push. If tracing detection is `UNKNOWN`, report that verification
   uncertainty rather than treating it as a tracing failure; it does not block
   the push.
-- The completed integration is committed and pushed to a branch in the
-  selected agent repository; secrets are not staged.
+- The completed integration is committed and pushed by the agent, without
+  asking the developer unless the developer disallowed autonomous actions, to a
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in
+  the selected agent repository; secrets are not staged.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report

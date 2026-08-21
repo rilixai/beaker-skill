@@ -53,7 +53,14 @@ Steps and completion:
   the integration before pushing, but never let it delay the required push.
 - `integration_pushed` is the final blocking agent-owned step; it must be
   complete before a hosted optimization run, but is not mandatory for dataset
-  upload. The agent normally completes the later `dataset_available` and
+  upload. Commit and push it without asking the developer to confirm, unless
+  they told you not to take autonomous actions, to the branch named in the
+  step's action: the current branch when it is already the selected agent's
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
+  reuses it, and a newly stamped one otherwise. When the checkout sits on
+  `main`, `master`, `trunk`, or `develop`, the step reason repeats that branch
+  suggestion rather than accepting a default-branch push. The agent normally
+  completes the later `dataset_available` and
   `experiment_launched` steps too, but the developer may also complete them,
   including through the platform UI.
 
