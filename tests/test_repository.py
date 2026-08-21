@@ -254,7 +254,7 @@ class RepositoryContractTests(unittest.TestCase):
             normalized_skill,
         )
         self.assertIn(
-            "ask the developer which one to optimize; never make that decision implicitly",
+            "ask the developer which metric to optimize; never make that decision implicitly",
             normalized_skill,
         )
         self.assertIn("confirmed by the developer", normalized_datasets)
