@@ -44,6 +44,14 @@ git commit -m "Add Beaker optimization integration"
 git push -u origin HEAD
 ```
 
+When the checkout is already on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch
+for the selected agent whose timestamp is less than an hour old, reuse it
+instead of creating another one: a retry after a failed or incomplete
+integration belongs on the branch already pushed. Older branches, branches for
+another agent, and any other branch mean cutting a fresh one. `beaker
+onboarding status` names the branch to use in the `integration_pushed` action;
+follow it.
+
 Never push the integration to `main`, `master`, or the repository's default
 branch, and never open a pull request, unless the developer explicitly asks
 for it. Stage only integration files; never stage any other

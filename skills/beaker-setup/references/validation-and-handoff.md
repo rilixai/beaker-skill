@@ -25,8 +25,11 @@ a branch in that selected repository. It is agent-owned: commit and push
 without asking the developer to confirm, to a
 `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch such as
 `beaker/20260821-1339-invoice-extraction`, never to `main`, `master`, or the
-default branch unless the developer explicitly asks. When the checkout sits on
-a trunk branch, the step reason repeats that branch suggestion. If tracing is
+default branch unless the developer explicitly asks. The step's action names the
+branch: the current branch when it is already this agent's integration branch
+from the last hour, so retries reuse it, and a freshly stamped
+`beaker/<YYYYMMDD-HHMM>-<agent-name>` otherwise. When the checkout sits on a
+trunk branch, the step reason repeats that branch suggestion. If tracing is
 part of the integration, include it in the commit that is pushed; never commit
 secret file. Tracing remains advisory and does not block this step.
 
