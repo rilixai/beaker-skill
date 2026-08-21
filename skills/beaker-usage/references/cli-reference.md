@@ -142,6 +142,29 @@ SHAs are not valid hosted sources; the server returns `422` with
 `<owner/repository>@<ref> is not a GitHub branch.` Ask for a remote branch that
 points to the intended commit instead.
 
+## Launch config overrides with `--config`
+
+`beaker run trigger --config '<json>'` takes a JSON object of launch-config
+overrides. `config_defaults` in `.beaker/beaker.yaml` form the base and
+`--config` overrides them; the merged object must satisfy the strict server
+launch contract, which rejects unknown keys with `422`. Do not confuse this
+flag with the global `--config-file` option, which selects the YAML file.
+
+Prefer typed flags whenever one exists. Use `--config` only for launch keys
+that have no typed flag, when the developer explicitly asks for them:
+`spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
+`"use_harness_optimization": false` (opts into the GEPA/bootstrap optimizer
+loop instead of the default Harness Optimization), and `extra` (opaque
+passthrough to the spec factory via `OptimizationContext.config`). Never
+hand-author `optimization_config` inside `--config`: typed model flags and
+`--execution-mode optimize_only` both reject it, and plain runs should let the
+platform choose.
+
+```bash
+beaker run trigger --agent <selected-agent> --dataset <name@revision> \
+  --config '{"spend_budget_usd": 5}' --json
+```
+
 ## Selected-model flags
 
 | Flag | Contract |
