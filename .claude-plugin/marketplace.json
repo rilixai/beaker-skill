@@ -11,7 +11,7 @@
   },
   "plugins": [
     {
-      "name": "beaker-setup",
+      "name": "beaker",
       "description": "Configure and operate Beaker agent optimization.",
       "source": "./",
       "strict": false,

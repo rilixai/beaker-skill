@@ -30,8 +30,9 @@ branch: the current branch when it is already this agent's integration branch
 from the last hour, so retries reuse it, and a freshly stamped
 `beaker/<YYYYMMDD-HHMM>-<agent-name>` otherwise. When the checkout sits on a
 trunk branch, the step reason repeats that branch suggestion. If tracing is
-part of the integration, include it in the commit that is pushed; never commit
-secret file. Tracing remains advisory and does not block this step.
+part of the integration, make a best effort to include it in the commit that is
+pushed; never commit secret files. Tracing remains optional and advisory and
+does not block this step.
 
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
@@ -67,30 +68,39 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 }
 ```
 
-`owner` is `agent` when the coding agent can perform the action and
-`developer` when it requires the human, such as GitHub App access, labeled
-data, agent-name approval, or authorization for a hosted run. The next action
-is the first incomplete agent-owned step in canonical order. Developer-owned
-steps known to be incomplete (`todo`) are listed in `blocked_on_developer` in
-canonical order; relay only newly discovered actions verbatim without
-attempting them, tracking what was already reported in this session. This
-report is not a halt: continue with the returned `next.action`. An `unknown`
-step means the check has not completed yet, never that the developer must act,
-and it is not added to `blocked_on_developer`. Stop and wait only when `next`
-itself is developer-owned; if no agent-owned step remains, the first known-incomplete
-developer-owned step becomes `next`. The `blocking` field is `false` only for advisory
-`tracing_wired`; it is `true` for all other steps. Tracing never blocks
-completion. `integration_pushed` is the final blocking agent-owned step and
-must be complete before a hosted optimization run. It is not required before
-dataset upload. Exit code `0` means the state and an actionable
-`next` were computed, even when steps remain incomplete. Exit code `2` is
-reserved for a not-computed payload where an actionable `next` could not be
-produced, such as an unreadable Beaker config; selection and hosted errors
-remain in `errors` but return `0` when `next` is actionable.
-When onboarding is complete, `next.id` is `null` and `next.action` contains
-the completion message; the null id is an intentional completion shape, not a
-parse failure. For exit `2`, read `errors`, retry once, and if the failure
-persists relay the error to the developer.
+Interpret the payload with these rules:
+
+- `owner` is `agent` when the coding agent can perform the action and
+  `developer` when it requires the human, such as GitHub App access, labeled
+  data, agent-name approval, or authorization for a hosted run.
+- The next action is the first incomplete agent-owned step in canonical
+  order; if no agent-owned step remains, the first known-incomplete
+  developer-owned step becomes `next`.
+- Developer-owned steps known to be incomplete (`todo`) are listed in
+  `blocked_on_developer` in canonical order; relay only newly discovered
+  actions verbatim without attempting them, tracking what was already
+  reported in this session. This report is not a halt: continue with the
+  returned `next.action`.
+- An `unknown` step means the check has not completed yet, never that the
+  developer must act, and it is not added to `blocked_on_developer`.
+- Stop and wait only when `next` itself is developer-owned.
+- The `blocking` field is `false` only for advisory `tracing_wired`; it is
+  `true` for all other steps. Tracing never blocks completion.
+- `integration_pushed` is the final blocking agent-owned step and must be
+  complete before a hosted optimization run. It is not required before
+  dataset upload. The agent normally completes the later `dataset_available`
+  and `experiment_launched` steps too, but the developer may also complete
+  them, including through the platform UI.
+- Exit code `0` means the state and an actionable `next` were computed, even
+  when steps remain incomplete; selection and hosted errors remain in
+  `errors` but return `0` when `next` is actionable.
+- Exit code `2` is reserved for a not-computed payload where an actionable
+  `next` could not be produced, such as an unreadable Beaker config. For exit
+  `2`, read `errors`, retry once, and if the failure persists relay the error
+  to the developer.
+- When onboarding is complete, `next.id` is `null` and `next.action` contains
+  the completion message; the null id is an intentional completion shape, not
+  a parse failure.
 
 ## Local validation
 
@@ -168,10 +178,12 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - `spec.required_env` contains only required variable names. Values are
   confined to `.beaker/.env` or hosted encrypted agent settings, and every
   declared hosted value is present before launch.
-- When tracing applies, local `beaker run smoke --strict` passes with no
-  tracing warning before the integration is committed and pushed. If tracing
-  detection is `UNKNOWN`, report that verification uncertainty rather than
-  treating it as a tracing failure; it does not block the push.
+- When tracing applies, a best effort was made to wire it so that local
+  `beaker run smoke --strict` passes with no tracing warning before the
+  integration is committed and pushed; an unresolved tracing warning never
+  blocks the push. If tracing detection is `UNKNOWN`, report that verification
+  uncertainty rather than treating it as a tracing failure; it does not block
+  the push.
 - The completed integration is committed and pushed by the agent, without
   asking the developer unless the developer disallowed autonomous actions, to a
   `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in

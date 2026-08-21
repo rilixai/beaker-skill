@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also preserve an existing logical-target spec only when it explicitly uses @spec(repository=None).
+description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
 license: MIT
 ---
 
@@ -14,21 +14,29 @@ remotely only when the developer requests it.
 
 ## Keep the onboarding loop explicit
 
-`beaker onboarding status` is the loop-control command for setup. Run it after
-every Beaker command and whenever it is unclear what to do next, then follow
-its single returned next action exactly. The returned action is normally the
-first incomplete agent-owned step in canonical order. If
-`blocked_on_developer` lists developer-owned steps known to be incomplete,
-relay only newly discovered actions verbatim to the developer without
-attempting them yourself, tracking what was already reported in this session.
-This report is not a halt: continue with the returned `next.action`. An
-`unknown` step has not been checked yet and never means that the developer
-must act. Stop and wait only when `next` itself is developer-owned; finish
-when `next.id` is `null`. Tracing is advisory and never delays the required
-push. When the selected use case includes tracing, commit its wiring with the
-completed integration before pushing; `integration_pushed` is the final
-blocking agent-owned step.
-Do not ask the developer what to do next before consulting this command.
+`beaker onboarding status` is the loop-control command for setup:
+
+- Run it after every Beaker command and whenever the next step is unclear.
+  Do not ask the developer what to do next before consulting this command.
+- Follow its single returned next action exactly. The returned action is
+  normally the first incomplete agent-owned step in canonical order.
+- If `blocked_on_developer` lists developer-owned steps known to be
+  incomplete, relay only newly discovered actions verbatim to the developer
+  without attempting them yourself, tracking what was already reported in
+  this session. This report is not a halt: continue with the returned
+  `next.action`.
+- An `unknown` step has not been checked yet and never means that the
+  developer must act.
+- Stop and wait only when `next` itself is developer-owned. Finish when
+  `next.id` is `null`.
+- Tracing is optional and advisory: when the selected use case includes
+  tracing, make a best effort to wire it and commit its wiring with the
+  completed integration before pushing, but never let it block or delay the
+  required push.
+- `integration_pushed` is the final blocking agent-owned step. The agent
+  normally completes the later `dataset_available` and `experiment_launched`
+  steps too, but the developer may also complete them, including through the
+  platform UI.
 
 ## Commit and push the integration yourself
 
@@ -235,36 +243,30 @@ Hosted runs read the repository through the Beaker GitHub App, so the
 organization needs an installation before `beaker agent setup` or `beaker run
 trigger`.
 
-`beaker github status` is read-only and never opens a browser. Run it first;
-exit code 0 means connected, 1 means the connection or repository access is
-missing, 2 means the check itself failed. Add `--repo <owner/name>` once the
-target repository is known to confirm this installation can read it.
+- `beaker github status` is read-only and never opens a browser. Run it
+  first; exit code 0 means connected, 1 means the connection or repository
+  access is missing, 2 means the check itself failed. Add `--repo
+  <owner/name>` once the target repository is known to confirm this
+  installation can read it.
+- Only the developer can grant access. When status reports a gap, ask them to
+  complete the install:
 
-Only the developer can grant access. When status reports a gap, ask them to
-complete the install:
+  ```bash
+  beaker github connect
+  beaker github connect --repo <owner/name>
+  ```
 
-```bash
-beaker github connect
-beaker github connect --repo <owner/name>
-```
+- `beaker github connect` opens the GitHub App install page and then blocks,
+  polling until the installation appears. Say plainly that the command is
+  waiting on them, relay the printed install URL verbatim when the browser
+  cannot open, and let it keep running while they click through. Do not kill
+  it, background it, or retry it in a loop.
+- `beaker agent setup --repo <owner/name>` runs this same connection flow
+  implicitly and can block on the browser in exactly the same way. Running
+  `beaker github status` first turns that surprise into a deliberate step.
 
-`beaker github connect` opens the GitHub App install page and then blocks,
-polling until the installation appears (`--timeout`, default 600 seconds). Say
-plainly that the command is waiting on them, relay the printed install URL
-verbatim when the browser cannot open, and let it keep running while they click
-through. Do not kill it, background it, or retry it in a loop.
-
-Repository selection happens in GitHub's own picker — all repositories, or an
-explicit list — and is not something this skill controls. `--repo` only verifies
-afterwards that the chosen repository is readable; it never selects one. If the
-installation exists but omits the target repository, `connect --repo` reopens the
-install page so the developer can add it. When the repository belongs to an
-organization the developer does not administer, an owner must approve the
-install request before the command returns.
-
-`beaker agent setup --repo <owner/name>` runs this same connection flow
-implicitly and can block on the browser in exactly the same way. Running
-`beaker github status` first turns that surprise into a deliberate step.
+Repository selection, install approval, and timeout details are in
+[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md).
 
 ### Select the agent
 
@@ -306,7 +308,7 @@ run can then find a config such as
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
-credentials, datasets, hosted environment variables, or runs.
+working with credentials, datasets, hosted environment variables, or runs.
 
 Before launching, compare `spec.required_env` with `beaker agent env list` for
 the selected agent. A hosted run with a missing or empty declared value fails
@@ -319,17 +321,20 @@ Run a local validation only after real labeled examples are available:
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
-Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call. Read its staged `PASS`/`FAIL` output and customer
-code traceback when a check fails. A tracing warning in that output is
-non-blocking to the CLI. When tracing applies, complete its wiring as part of
-the integration before the required final push, then rerun smoke. When execution evidence matters, run
-`beaker trace instrument --check`, exercise the repository's
-candidate workflow rooted at the main workflow agent inside `Spec.run_case`
-under a local Beaker capture, then run
-`beaker trace doctor --require-model-calls` and inspect `.beaker/traces` with
-`beaker trace inspect`. Include the workflow's sub-agents, tools, retrievers,
-and nested model calls; a judge- or scorer-only capture does not satisfy
-runtime trace validation.
+- Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call.
+- Read its staged `PASS`/`FAIL` output and customer code traceback when a
+  check fails.
+- A tracing warning in that output is non-blocking to the CLI. When tracing
+  applies, make a best effort to complete its wiring as part of the
+  integration before the required final push, then rerun smoke; do not let
+  tracing block the push.
+- When execution evidence matters, run `beaker trace instrument --check`,
+  exercise the repository's candidate workflow rooted at the main workflow
+  agent inside `Spec.run_case` under a local Beaker capture, then run
+  `beaker trace doctor --require-model-calls` and inspect `.beaker/traces`
+  with `beaker trace inspect`. Include the workflow's sub-agents, tools,
+  retrievers, and nested model calls; a judge- or scorer-only capture does
+  not satisfy runtime trace validation.
 
 Read [validation-and-handoff.md](references/validation-and-handoff.md) before declaring setup complete or launching remotely.
 
@@ -388,8 +393,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never trigger a hosted optimization run unless the developer explicitly asks.
 - Before starting a hosted optimization run, commit and push the completed
   Beaker integration to a branch in the selected agent repository. Do not
-  commit `*.env` or other secret files. Include tracing changes when tracing
-  applies, but do not treat tracing as a prerequisite to the push.
+  commit `*.env` or other secret files. Make a best effort to include tracing
+  changes when tracing applies, but never let tracing block the push.
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
 - Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's

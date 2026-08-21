@@ -34,46 +34,60 @@ Use this command during setup validation and launch preparation, after each
 CLI command and whenever the next action is unclear. For inspecting,
 monitoring, pulling, or cancelling a known run with its preconditions met,
 run only the relevant command and consult onboarding status only after a
-failure or when the next action is unclear. It reports the ordered steps
-`beaker_dependency_declared`,
-`config_present`, `logged_in`, `github_connected`, `agent_selected`,
-`spec_integrated`, `spec_validated`, `tracing_wired`, `integration_pushed`,
-`dataset_available`, and `experiment_launched`. Onboarding is
-complete once `experiment_launched` is complete. Shipping a winning candidate
-pull request is developer-owned follow-up work outside the onboarding loop.
-`github_connected` checks only the organization's GitHub App installation;
-`agent_selected` also requires a selected agent with a non-empty repository
-association that the App can read.
-JSON contains `steps`, `next`, `blocked_on_developer`, and `errors`; each step
-has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`; `next` has
-`id`, `owner`, and `action`; and `blocked_on_developer` lists developer-owned
-known-incomplete (`todo`) steps with their relayable actions. `next` is the
-first incomplete agent-owned step in canonical order. Relay every blocked
-developer action verbatim without attempting it, then continue with the
-returned `next.action`; an `unknown` step has not been checked yet and never
-means the developer must act, so it is not listed in `blocked_on_developer`.
-Stop and wait only when `next` itself is developer-owned. If no agent-owned
-step remains, `next` is the first known-incomplete developer-owned step. Exit `0` means the state and
-an actionable `next` were computed, even if incomplete; exit `2` is reserved
-for a not-computed payload where no actionable `next` could be produced.
-Selection and hosted errors remain in `errors` but return `0` when `next` is
-actionable.
-`tracing_wired` has `blocking: false`, so it is advisory and does not delay the
-required push. When tracing is included, complete its wiring as part of the
-integration before pushing. `integration_pushed` is the final blocking
-agent-owned step; it must be complete before a hosted optimization run, 
-but is not mandatory for dataset upload. Commit and push it without asking the
-developer to confirm, unless they told you not to take autonomous actions, to
-the branch named in the step's action: the current
-branch when it is already the selected agent's
-`beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
-reuses it, and a newly stamped one otherwise. When the checkout sits on `main`,
-`master`, `trunk`, or `develop`, the step reason repeats that branch suggestion
-rather than accepting a default-branch push.
-Follow the returned action, and relay developer-owned actions verbatim.
-When onboarding is complete, `next.id` is `null` and `next.action` contains
-the completion message. For exit `2`, read `errors`, retry once, and if the
-failure persists relay the error to the developer.
+failure or when the next action is unclear.
+
+Steps and completion:
+
+- The ordered steps are `beaker_dependency_declared`, `config_present`,
+  `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
+  `spec_validated`, `tracing_wired`, `integration_pushed`,
+  `dataset_available`, and `experiment_launched`.
+- Onboarding is complete once `experiment_launched` is complete. Shipping a
+  winning candidate pull request is developer-owned follow-up work outside
+  the onboarding loop.
+- `github_connected` checks only the organization's GitHub App installation;
+  `agent_selected` also requires a selected agent with a non-empty repository
+  association that the App can read.
+- `tracing_wired` has `blocking: false`, so it is optional and advisory: when
+  tracing is included, make a best effort to complete its wiring as part of
+  the integration before pushing, but never let it delay the required push.
+- `integration_pushed` is the final blocking agent-owned step; it must be
+  complete before a hosted optimization run, but is not mandatory for dataset
+  upload. Commit and push it without asking the developer to confirm, unless
+  they told you not to take autonomous actions, to the branch named in the
+  step's action: the current branch when it is already the selected agent's
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
+  reuses it, and a newly stamped one otherwise. When the checkout sits on
+  `main`, `master`, `trunk`, or `develop`, the step reason repeats that branch
+  suggestion rather than accepting a default-branch push. The agent normally
+  completes the later `dataset_available` and
+  `experiment_launched` steps too, but the developer may also complete them,
+  including through the platform UI.
+
+Reading the JSON and acting on it:
+
+- JSON contains `steps`, `next`, `blocked_on_developer`, and `errors`; each
+  step has `id`, `state`, `reason`, `owner`, `next_action`, and `blocking`;
+  `next` has `id`, `owner`, and `action`; and `blocked_on_developer` lists
+  developer-owned known-incomplete (`todo`) steps with their relayable
+  actions.
+- `next` is the first incomplete agent-owned step in canonical order. If no
+  agent-owned step remains, `next` is the first known-incomplete
+  developer-owned step. Follow the returned action.
+- Relay only newly discovered blocked developer actions verbatim without
+  attempting them, tracking what was already reported in this session, then
+  continue with the returned `next.action`.
+- An `unknown` step has not been checked yet and never means the developer
+  must act, so it is not listed in `blocked_on_developer`.
+- Stop and wait only when `next` itself is developer-owned.
+- When onboarding is complete, `next.id` is `null` and `next.action` contains
+  the completion message.
+- Exit `0` means the state and an actionable `next` were computed, even if
+  incomplete; selection and hosted errors remain in `errors` but return `0`
+  when `next` is actionable.
+- Exit `2` is reserved for a not-computed payload where no actionable `next`
+  could be produced. For exit `2`, read `errors`, retry once, and if the
+  failure persists relay the error to the developer.
 
 ## Discovery
 
@@ -126,7 +140,8 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 ```
 
 Selected-model benchmark and optimization for a spec with populated
-`seed_targets`:
+`seed_targets`. The split values below are illustrative, not defaults; use the
+benchmark defaults unless the developer chooses splits:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> \
@@ -136,7 +151,6 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --benchmark-split TEST \
   --benchmark-max-cases 30 \
   --final-eval-split VAL \
-  --test-all-candidates \
   --json
 ```
 
@@ -145,6 +159,28 @@ not push or include local-only commits or working tree changes. Tags and commit
 SHAs are not valid hosted sources; the server returns `422` with
 `<owner/repository>@<ref> is not a GitHub branch.` Ask for a remote branch that
 points to the intended commit instead.
+
+## Launch config overrides with `--config`
+
+`beaker run trigger --config '<json>'` takes a JSON object of launch-config
+overrides. `config_defaults` in `.beaker/beaker.yaml` form the base and
+`--config` overrides them; the merged object must satisfy the strict server
+launch contract, which rejects unknown keys with `422`. Do not confuse this
+flag with the global `--config-file` option, which selects the YAML file.
+
+Prefer typed flags whenever one exists. Use `--config` only for launch keys
+that have no typed flag, when the developer explicitly asks for them:
+`spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
+and `extra` (opaque passthrough to the spec factory via
+`OptimizationContext.config`). Never
+hand-author `optimization_config` inside `--config`: typed model flags and
+`--execution-mode optimize_only` both reject it, and plain runs should let the
+platform choose.
+
+```bash
+beaker run trigger --agent <selected-agent> --dataset <name@revision> \
+  --config '{"spend_budget_usd": 5}' --json
+```
 
 ## Selected-model flags
 
@@ -155,7 +191,7 @@ points to the intended commit instead.
 | `--benchmark-split` | `VAL` or `TEST` |
 | `--benchmark-max-cases` | 1–1000 |
 | `--final-eval-split` | Repeatable `VAL` or `TEST` |
-| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource default optimization (`repository=None`), including resources such as `wiki`, and for selected-model runs; repository-surface default optimization ignores the flag and always tests only the winner |
+| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource default optimization (`repository=None`), including resources such as `wiki`; repository-surface default optimization and selected-model runs ignore the flag and always test only the winner |
 
 Do not combine selected-model flags with `--use-harness-optimization` or with
 an `optimization_config` supplied through `--config`. Do not combine

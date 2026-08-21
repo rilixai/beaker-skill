@@ -13,20 +13,26 @@ datasets, or Beaker config merely to launch or manage a run.
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
 interpreting status exit codes, pulling results, or handling a CLI error.
 
-During setup validation and launch preparation, run `beaker onboarding status`
-at the start of the flow and after every CLI command, then follow its returned
-action. Relay only newly discovered actions in `blocked_on_developer` verbatim
-to the developer without attempting developer-owned work, tracking what was
-already reported in this session. This report is not a halt: continue with the
-returned `next.action`. An `unknown` step has not been checked yet and never
-means the developer must act. Stop and wait only when `next` itself is
-developer-owned.
-`integration_pushed` is the final blocking agent-owned step: commit and push
-the completed integration yourself, without asking the developer to confirm
-unless they told you not to take autonomous actions,
-to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in the selected agent
-repository before a hosted optimization run. If tracing applies, include it in that push, but do not treat it
-as a prerequisite; never commit secret files.
+During setup validation and launch preparation:
+
+- Run `beaker onboarding status` at the start of the flow and after every CLI
+  command, then follow its returned action.
+- Relay only newly discovered actions in `blocked_on_developer` verbatim to
+  the developer without attempting developer-owned work, tracking what was
+  already reported in this session. This report is not a halt: continue with
+  the returned `next.action`.
+- An `unknown` step has not been checked yet and never means the developer
+  must act. Stop and wait only when `next` itself is developer-owned.
+- `integration_pushed` is the final blocking agent-owned step: commit and push
+  the completed integration yourself, without asking the developer to confirm
+  unless they told you not to take autonomous actions, to a
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in the selected agent repository
+  before a hosted optimization run. The agent normally completes the later
+  `dataset_available` and `experiment_launched` steps too, but the developer
+  may also complete them, including through the platform UI.
+- Tracing is optional: if it applies, make a best effort to include it in
+  that push, but never let it block the push; never commit secret files.
+
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
 without restarting onboarding discovery. Consult onboarding status there only
@@ -147,7 +153,8 @@ Apply TEST candidate policy by editable surface:
 - Named-resource surface (`@spec(repository=None)`):
   `--test-all-candidates` applies to the default optimization and evaluates every
   persisted candidate on TEST, including resources such as `wiki`. Without the
-  flag, only the selected winner is TEST-evaluated.
+  flag, only the selected winner is TEST-evaluated. Selected-model runs also
+  ignore the flag and always TEST-evaluate only each model's winner.
 
 `optimize_only` uses the production system and cannot be combined with
 `--optimization-model`, benchmark flags, or final-evaluation flags. If the
@@ -164,18 +171,18 @@ For a selected-model run:
    beaker model list --available-only --json
    ```
 
-2. Ask the developer which one to eight canonical `provider:model` values to
-   use. Offer only values returned by the command. Do not substitute a similar
+2. Ask the developer which models to use (one to eight canonical
+   `provider:model` values). Offer only values returned by the command. Do not substitute a similar
    model, infer a default, or choose based on cost or speed without direction.
 3. Selected-model runs use `benchmark_and_optimize`; it is also the CLI default
    when models are supplied. The CLI does not expose benchmark-only execution.
 4. Use the benchmark defaults unless the developer asks
    to choose the benchmark split or case count. Valid splits are `VAL` and
    `TEST`; valid case counts are 1 through 1000.
-5. Add final evaluation splits or `--test-all-candidates` only when the
-   developer supplies them or asks to configure them. Do not invent tuning
-   values. Follow the editable-surface TEST policy above; do not offer
-   `--test-all-candidates` for the repository surface.
+5. Add final evaluation splits only when the developer supplies them or asks
+   to configure them. Do not invent tuning values. Do not offer
+   `--test-all-candidates` for selected-model runs: the runtime ignores it and
+   always TEST-evaluates only each model's winner.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.

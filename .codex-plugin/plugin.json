@@ -1,5 +1,5 @@
 {
-  "name": "beaker-setup",
+  "name": "beaker",
   "version": "0.4.2",
   "description": "Configure and operate Beaker agent optimization.",
   "author": {
