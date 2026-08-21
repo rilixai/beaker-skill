@@ -196,7 +196,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Tags and commit SHAs passed to `--ref` return `422`", normalized)
         self.assertIn("Never pass a tag or commit SHA through `--ref`", normalized)
         self.assertIn("Ask which dataset", normalized)
-        self.assertIn("Ask the developer which one to eight", normalized)
+        self.assertIn("Ask the developer which models to use (one to eight", normalized)
         self.assertIn("Launch only after explicit developer authorization", normalized)
         self.assertIn("Never cancel a run without explicit authorization", normalized)
         self.assertIn("Never combine selected models with the default optimization", normalized)

@@ -54,14 +54,14 @@ Claude Code:
 
 ```text
 /plugin marketplace add rilixai/beaker-skill
-/plugin install beaker-setup@beaker
+/plugin install beaker@beaker
 ```
 
 Codex:
 
 ```text
 codex plugin marketplace add https://github.com/rilixai/beaker-skill
-codex plugin add beaker-setup@beaker
+codex plugin add beaker@beaker
 ```
 
 After installation, ask your agent to "set up Beaker in this repository" or

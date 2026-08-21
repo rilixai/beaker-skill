@@ -14,30 +14,39 @@ follow-up work outside the onboarding loop.
 `agent_selected` also requires a selected agent with a non-empty repository
 association that the App can read.
 
-Use `beaker onboarding status --json` for automation. The response contains
-`steps`, `next`, `blocked_on_developer`, and `errors`; every step contains
-`id`, `state`, `reason`, `owner`, `next_action`, and `blocking`, while `next`
-contains `id`, `owner`, and `action`. The next action is the first incomplete
-agent-owned step in canonical order. Relay only newly discovered actions in
-`blocked_on_developer` verbatim to the developer without attempting them, and
-track which actions were already reported in this session. This report is not
-a halt: continue with the returned `next.action`; an `unknown` step has not
-been checked yet and never means that the developer must act. Stop and wait
-only when `next` itself is developer-owned. If no agent step remains, `next` is
-the first known-incomplete developer-owned step. Exit `0` means the state and
-an actionable `next` were computed, including incomplete onboarding. Exit `2` is reserved
-for a not-computed payload where an actionable `next` could not be produced.
-Selection and hosted errors remain in `errors` but return `0` when `next` is
-actionable. On exit `2`, read `errors`, retry once, and if it persists relay
-the error to the developer. When onboarding is complete, `next.id` is `null`
-and `next.action` contains the completion message.
-Offline or logged-out hosted checks are reported as `unknown`; run
-`beaker login` when it is the returned action. Tracing is advisory
-(`blocking: false`) and does not delay the required push. When tracing is
-included, commit its wiring with the integration. `integration_pushed` verifies
-that the current local commit is present on a branch in the selected agent
-repository; it is required before a hosted optimization run, not before dataset
-upload.
+Use `beaker onboarding status --json` for automation:
+
+- The response contains `steps`, `next`, `blocked_on_developer`, and
+  `errors`; every step contains `id`, `state`, `reason`, `owner`,
+  `next_action`, and `blocking`, while `next` contains `id`, `owner`, and
+  `action`.
+- The next action is the first incomplete agent-owned step in canonical
+  order. If no agent step remains, `next` is the first known-incomplete
+  developer-owned step.
+- Relay only newly discovered actions in `blocked_on_developer` verbatim to
+  the developer without attempting them, and track which actions were already
+  reported in this session. This report is not a halt: continue with the
+  returned `next.action`.
+- An `unknown` step has not been checked yet and never means that the
+  developer must act. Offline or logged-out hosted checks are reported as
+  `unknown`; run `beaker login` when it is the returned action.
+- Stop and wait only when `next` itself is developer-owned.
+- Exit `0` means the state and an actionable `next` were computed, including
+  incomplete onboarding. Selection and hosted errors remain in `errors` but
+  return `0` when `next` is actionable.
+- Exit `2` is reserved for a not-computed payload where an actionable `next`
+  could not be produced. On exit `2`, read `errors`, retry once, and if it
+  persists relay the error to the developer.
+- When onboarding is complete, `next.id` is `null` and `next.action` contains
+  the completion message.
+- Tracing is optional and advisory (`blocking: false`): when tracing is
+  included, make a best effort to commit its wiring with the integration, but
+  never let it delay the required push.
+- `integration_pushed` verifies that the current local commit is present on a
+  branch in the selected agent repository; it is required before a hosted
+  optimization run, not before dataset upload. The agent normally completes
+  the later `dataset_available` and `experiment_launched` steps too, but the
+  developer may also complete them, including through the platform UI.
 
 ## GitHub App access
 
