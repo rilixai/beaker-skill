@@ -9,11 +9,12 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - input shape;
 - expected/ground-truth shape;
 - prediction fields;
-- scoring rules and field weights;
+- scoring rules and field weights, confirmed by the developer when the
+  repository does not already establish them;
 - train and validation examples;
 - stable row identifiers and optional grouping/metadata.
 
-Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, or split composition from application code or prose.
+Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
 
 If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running smoke validation, or uploading synthetic data.
 
