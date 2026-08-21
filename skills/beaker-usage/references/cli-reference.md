@@ -153,9 +153,8 @@ flag with the global `--config-file` option, which selects the YAML file.
 Prefer typed flags whenever one exists. Use `--config` only for launch keys
 that have no typed flag, when the developer explicitly asks for them:
 `spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
-`"use_harness_optimization": false` (opts into the GEPA/bootstrap optimizer
-loop instead of the default Harness Optimization), and `extra` (opaque
-passthrough to the spec factory via `OptimizationContext.config`). Never
+and `extra` (opaque passthrough to the spec factory via
+`OptimizationContext.config`). Never
 hand-author `optimization_config` inside `--config`: typed model flags and
 `--execution-mode optimize_only` both reject it, and plain runs should let the
 platform choose.
