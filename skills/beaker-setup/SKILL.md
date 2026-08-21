@@ -322,9 +322,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Treat the selected agent as the direct owner of its runs and run history.
   Create another agent only for a confirmed, distinct optimization target.
 - Never silently choose among multiple plausible tasks.
-- Never implicitly decide what metric of quality the optimization hill-climbs;
-  when the repository does not already establish one, ask the developer which
-  metric to optimize, including field weights when several fields matter.
+- Never implicitly decide what metric of quality the optimization hill-climbs
+  when several metrics are plausible or when scoring aggregates or averages
+  multiple metrics; ask the developer which metric and weights to optimize. A
+  single clearly established metric needs no confirmation.
 - Never ask the developer what to do next before running `beaker onboarding
   status`; follow its returned action, and relay developer-owned actions
   verbatim.
