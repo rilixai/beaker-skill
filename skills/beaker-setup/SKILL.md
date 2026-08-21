@@ -112,10 +112,8 @@ Use the selected agent's page to view its runs and score trends.
      fresh evaluator process.
    - scorer: score the quality metric the developer chose to hill-climb. If
      the repository does not already establish a single scoring metric (an
-     existing eval or scorer with clear fields and weights), summarize the
-     plausible metrics and ask the developer which one to optimize; never make
-     that decision implicitly. Then match actual output and ground-truth
-     fields and weights. If it
+     existing eval or scorer with clear fields and weights), ask the developer which metric to
+     optimize; never make that decision implicitly. If it
      uses an LLM judge, set `Spec.llm_scorer_model` to that agent's fixed
      canonical `provider:model`, then route hosted judge calls through
      `scoring_inference_target()` so gateway accounting and run budgets include

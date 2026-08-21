@@ -10,7 +10,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - expected/ground-truth shape;
 - prediction fields;
 - scoring rules and field weights, confirmed by the developer when the
-  repository does not already establish them;
+  repository does not already establish them, or when it's unclear on which metric to use;
 - train and validation examples;
 - stable row identifiers and optional grouping/metadata.
 
