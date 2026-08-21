@@ -22,8 +22,9 @@ returned `next.action`. An `unknown` step has not been checked yet and never
 means the developer must act. Stop and wait only when `next` itself is
 developer-owned.
 `integration_pushed` is the final blocking agent-owned step: commit and push
-the completed integration to a branch in the selected agent repository before
-a hosted optimization run. If tracing applies, include it in that push, but do not treat it
+the completed integration yourself, without asking the developer to confirm,
+to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in the selected agent
+repository before a hosted optimization run. If tracing applies, include it in that push, but do not treat it
 as a prerequisite; never commit secret files.
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
@@ -304,6 +305,9 @@ Cancellation is a state-changing operation:
 - Never use selected-model flags when `Spec.seed_targets` is absent.
 - Never combine selected models with `--execution-mode optimize_only`.
 - Never treat unpushed local changes as part of a hosted run.
+- Never ask the developer for permission to commit or push the integration, and
+  never push it to `main`, `master`, or the default branch unless the developer
+  explicitly asks; use `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
 - Never pass a tag or commit SHA through `--ref`; hosted GitHub sources accept
   remote branches only.
 - Never cancel a run without explicit authorization for the resolved run ID.

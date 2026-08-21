@@ -21,8 +21,14 @@ action is unclear. It reports these ordered steps:
 installation is connected. `agent_selected` requires a selected Beaker agent
 with a non-empty repository association that the App can read.
 `integration_pushed` confirms that the current checkout's `HEAD` is pushed to
-a branch in that selected repository. If tracing is part of the integration,
-include it in the commit that is pushed; never commit secret file. Tracing remains advisory and does not block this step.
+a branch in that selected repository. It is agent-owned: commit and push
+without asking the developer to confirm, to a
+`beaker/<YYYYMMDD-HHMM>-<agent-name>` branch such as
+`beaker/20260821-1339-invoice-extraction`, never to `main`, `master`, or the
+default branch unless the developer explicitly asks. When the checkout sits on
+a trunk branch, the step reason repeats that branch suggestion. If tracing is
+part of the integration, include it in the commit that is pushed; never commit
+secret file. Tracing remains advisory and does not block this step.
 
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
@@ -163,8 +169,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   tracing warning before the integration is committed and pushed. If tracing
   detection is `UNKNOWN`, report that verification uncertainty rather than
   treating it as a tracing failure; it does not block the push.
-- The completed integration is committed and pushed to a branch in the
-  selected agent repository; secrets are not staged.
+- The completed integration is committed and pushed by the agent, without
+  asking the developer, to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in
+  the selected agent repository; secrets are not staged.
 - Hosted operations occur only after their preconditions and user authorization.
 
 ## Final report

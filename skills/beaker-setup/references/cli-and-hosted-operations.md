@@ -37,7 +37,10 @@ Offline or logged-out hosted checks are reported as `unknown`; run
 included, commit its wiring with the integration. `integration_pushed` verifies
 that the current local commit is present on a branch in the selected agent
 repository; it is required before a hosted optimization run, not before dataset
-upload.
+upload. Perform that commit and push without asking the developer to confirm,
+on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch; a checkout sitting on
+`main`, `master`, `trunk`, or `develop` gets that branch suggestion in the step
+reason instead of being pushed as-is.
 
 ## GitHub App access
 
@@ -183,8 +186,9 @@ list`, and start a new run; do not retry the failed run unchanged.
    beaker run trigger --agent <selected-agent> --dataset <dataset-name>
    ```
 
-   Before triggering, commit and push the completed integration to the branch
-   you intend to use. Do not stage secret files.
+   Before triggering, commit and push the completed integration yourself, to
+   the `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch you intend to use. Do not
+   stage secret files.
 
    Without `--ref`, the CLI uses the current checked-out branch when it belongs
    to the linked repository and exists on its remote, then falls back to the
