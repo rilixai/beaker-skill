@@ -63,7 +63,8 @@ required push. When tracing is included, complete its wiring as part of the
 integration before pushing. `integration_pushed` is the final blocking
 agent-owned step; it must be complete before a hosted optimization run, 
 but is not mandatory for dataset upload. Commit and push it without asking the
-developer to confirm, to the branch named in the step's action: the current
+developer to confirm, unless they told you not to take autonomous actions, to
+the branch named in the step's action: the current
 branch when it is already the selected agent's
 `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
 reuses it, and a newly stamped one otherwise. When the checkout sits on `main`,

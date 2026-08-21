@@ -38,7 +38,8 @@ included, commit its wiring with the integration. `integration_pushed` verifies
 that the current local commit is present on a branch in the selected agent
 repository; it is required before a hosted optimization run, not before dataset
 upload. Perform that commit and push without asking the developer to confirm,
-on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch; a checkout sitting on
+unless the developer told you not to take autonomous actions, on a
+`beaker/<YYYYMMDD-HHMM>-<agent-name>` branch; a checkout sitting on
 `main`, `master`, `trunk`, or `develop` gets that branch suggestion in the step
 reason instead of being pushed as-is.
 

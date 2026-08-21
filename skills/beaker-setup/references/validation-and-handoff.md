@@ -22,10 +22,10 @@ installation is connected. `agent_selected` requires a selected Beaker agent
 with a non-empty repository association that the App can read.
 `integration_pushed` confirms that the current checkout's `HEAD` is pushed to
 a branch in that selected repository. It is agent-owned: commit and push
-without asking the developer to confirm, to a
-`beaker/<YYYYMMDD-HHMM>-<agent-name>` branch such as
-`beaker/20260821-1339-invoice-extraction`, never to `main`, `master`, or the
-default branch unless the developer explicitly asks. The step's action names the
+without asking the developer to confirm, unless the developer told you not to
+take autonomous actions, to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch such
+as `beaker/20260821-1339-invoice-extraction`, never to `main`, `master`, or the
+default branch unless the developer asks. The step's action names the
 branch: the current branch when it is already this agent's integration branch
 from the last hour, so retries reuse it, and a freshly stamped
 `beaker/<YYYYMMDD-HHMM>-<agent-name>` otherwise. When the checkout sits on a
@@ -173,7 +173,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   detection is `UNKNOWN`, report that verification uncertainty rather than
   treating it as a tracing failure; it does not block the push.
 - The completed integration is committed and pushed by the agent, without
-  asking the developer, to a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in
+  asking the developer unless the developer disallowed autonomous actions, to a
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in
   the selected agent repository; secrets are not staged.
 - Hosted operations occur only after their preconditions and user authorization.
 

@@ -33,14 +33,15 @@ Do not ask the developer what to do next before consulting this command.
 ## Commit and push the integration yourself
 
 `integration_pushed` is agent-owned work: commit the completed integration and
-push it without asking the developer for confirmation. Push to a dedicated
-branch named `beaker/<YYYYMMDD-HHMM>-<agent-name>`, using the selected Beaker
-agent's name slugified, for example `beaker/20260821-1339-invoice-extraction`:
+push it without asking the developer for confirmation, unless the developer has
+told you not to take autonomous actions. Push to a dedicated branch named
+`beaker/<YYYYMMDD-HHMM>-<agent-name>`, using the selected Beaker agent's name
+slugified, for example `beaker/20260821-1339-invoice-extraction`:
 
 ```bash
 git checkout -b beaker/$(date +%Y%m%d-%H%M)-invoice-extraction
 git add .beaker pyproject.toml uv.lock
-git commit -m "Add Beaker optimization integration"
+git commit -m "Add Beaker integration"
 git push -u origin HEAD
 ```
 
@@ -53,9 +54,9 @@ onboarding status` names the branch to use in the `integration_pushed` action;
 follow it.
 
 Never push the integration to `main`, `master`, or the repository's default
-branch, and never open a pull request, unless the developer explicitly asks
-for it. Stage only integration files; never stage any other
-secret file. Report the branch you pushed.
+branch, and never open a pull request, unless the developer asks for it. Stage
+only integration files; never stage any other secret file. Report the branch you
+pushed.
 
 ## Keep Beaker isolated
 
@@ -359,9 +360,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
 - Never edit application code until spec-only and `.beaker/` adapter approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed trace-adapter wiring.
 - Never ask the developer for permission to commit or push the integration;
-  `integration_pushed` is agent-owned.
+  `integration_pushed` is agent-owned. The only exception is a developer who
+  told you not to take autonomous actions.
 - Never push the integration to `main`, `master`, or the default branch unless
-  the developer explicitly asks; use `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
+  the developer asks; use `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
 - Never add `seed_targets` to a repository-mode spec or assume `targets` is a
   prompt bundle there; repository mode passes `None`.
