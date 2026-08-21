@@ -13,21 +13,24 @@ datasets, or Beaker config merely to launch or manage a run.
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
 interpreting status exit codes, pulling results, or handling a CLI error.
 
-During setup validation and launch preparation, run `beaker onboarding status`
-at the start of the flow and after every CLI command, then follow its returned
-action. Relay only newly discovered actions in `blocked_on_developer` verbatim
-to the developer without attempting developer-owned work, tracking what was
-already reported in this session. This report is not a halt: continue with the
-returned `next.action`. An `unknown` step has not been checked yet and never
-means the developer must act. Stop and wait only when `next` itself is
-developer-owned.
-`integration_pushed` is the final blocking agent-owned step: commit and push
-the completed integration to a branch in the selected agent repository before
-a hosted optimization run; the later `dataset_available` and
-`experiment_launched` steps may be completed by the developer, including
-through the platform UI. Tracing is optional: if it applies, make a best
-effort to include it in that push, but never let it block the push; never
-commit secret files.
+During setup validation and launch preparation:
+
+- Run `beaker onboarding status` at the start of the flow and after every CLI
+  command, then follow its returned action.
+- Relay only newly discovered actions in `blocked_on_developer` verbatim to
+  the developer without attempting developer-owned work, tracking what was
+  already reported in this session. This report is not a halt: continue with
+  the returned `next.action`.
+- An `unknown` step has not been checked yet and never means the developer
+  must act. Stop and wait only when `next` itself is developer-owned.
+- `integration_pushed` is the final blocking agent-owned step: commit and
+  push the completed integration to a branch in the selected agent repository
+  before a hosted optimization run; the later `dataset_available` and
+  `experiment_launched` steps may be completed by the developer, including
+  through the platform UI.
+- Tracing is optional: if it applies, make a best effort to include it in
+  that push, but never let it block the push; never commit secret files.
+
 When inspecting, monitoring, pulling, or cancelling a known run whose
 documented preconditions are already satisfied, operate the run directly
 without restarting onboarding discovery. Consult onboarding status there only

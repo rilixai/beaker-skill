@@ -60,31 +60,38 @@ The human-readable output identifies each step as `PASS`, `TODO`, `UNKNOWN`, or
 }
 ```
 
-`owner` is `agent` when the coding agent can perform the action and
-`developer` when it requires the human, such as GitHub App access, labeled
-data, agent-name approval, or authorization for a hosted run. The next action
-is the first incomplete agent-owned step in canonical order. Developer-owned
-steps known to be incomplete (`todo`) are listed in `blocked_on_developer` in
-canonical order; relay only newly discovered actions verbatim without
-attempting them, tracking what was already reported in this session. This
-report is not a halt: continue with the returned `next.action`. An `unknown`
-step means the check has not completed yet, never that the developer must act,
-and it is not added to `blocked_on_developer`. Stop and wait only when `next`
-itself is developer-owned; if no agent-owned step remains, the first known-incomplete
-developer-owned step becomes `next`. The `blocking` field is `false` only for advisory
-`tracing_wired`; it is `true` for all other steps. Tracing never blocks
-completion. `integration_pushed` is the final blocking agent-owned step and
-must be complete before a hosted optimization run. It is not required before
-dataset upload. The later `dataset_available` and `experiment_launched` steps
-may be completed by the developer, including through the platform UI. Exit code `0` means the state and an actionable
-`next` were computed, even when steps remain incomplete. Exit code `2` is
-reserved for a not-computed payload where an actionable `next` could not be
-produced, such as an unreadable Beaker config; selection and hosted errors
-remain in `errors` but return `0` when `next` is actionable.
-When onboarding is complete, `next.id` is `null` and `next.action` contains
-the completion message; the null id is an intentional completion shape, not a
-parse failure. For exit `2`, read `errors`, retry once, and if the failure
-persists relay the error to the developer.
+Interpret the payload with these rules:
+
+- `owner` is `agent` when the coding agent can perform the action and
+  `developer` when it requires the human, such as GitHub App access, labeled
+  data, agent-name approval, or authorization for a hosted run.
+- The next action is the first incomplete agent-owned step in canonical
+  order; if no agent-owned step remains, the first known-incomplete
+  developer-owned step becomes `next`.
+- Developer-owned steps known to be incomplete (`todo`) are listed in
+  `blocked_on_developer` in canonical order; relay only newly discovered
+  actions verbatim without attempting them, tracking what was already
+  reported in this session. This report is not a halt: continue with the
+  returned `next.action`.
+- An `unknown` step means the check has not completed yet, never that the
+  developer must act, and it is not added to `blocked_on_developer`.
+- Stop and wait only when `next` itself is developer-owned.
+- The `blocking` field is `false` only for advisory `tracing_wired`; it is
+  `true` for all other steps. Tracing never blocks completion.
+- `integration_pushed` is the final blocking agent-owned step and must be
+  complete before a hosted optimization run. It is not required before
+  dataset upload. The later `dataset_available` and `experiment_launched`
+  steps may be completed by the developer, including through the platform UI.
+- Exit code `0` means the state and an actionable `next` were computed, even
+  when steps remain incomplete; selection and hosted errors remain in
+  `errors` but return `0` when `next` is actionable.
+- Exit code `2` is reserved for a not-computed payload where an actionable
+  `next` could not be produced, such as an unreadable Beaker config. For exit
+  `2`, read `errors`, retry once, and if the failure persists relay the error
+  to the developer.
+- When onboarding is complete, `next.id` is `null` and `next.action` contains
+  the completion message; the null id is an intentional completion shape, not
+  a parse failure.
 
 ## Local validation
 
