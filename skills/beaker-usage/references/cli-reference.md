@@ -53,8 +53,9 @@ Steps and completion:
   the integration before pushing, but never let it delay the required push.
 - `integration_pushed` is the final blocking agent-owned step; it must be
   complete before a hosted optimization run, but is not mandatory for dataset
-  upload. The later `dataset_available` and `experiment_launched` steps may
-  be completed by the developer, including through the platform UI.
+  upload. The agent normally completes the later `dataset_available` and
+  `experiment_launched` steps too, but the developer may also complete them,
+  including through the platform UI.
 
 Reading the JSON and acting on it:
 

@@ -44,9 +44,9 @@ Use `beaker onboarding status --json` for automation:
   never let it delay the required push.
 - `integration_pushed` verifies that the current local commit is present on a
   branch in the selected agent repository; it is required before a hosted
-  optimization run, not before dataset upload. The later `dataset_available`
-  and `experiment_launched` steps may be completed by the developer,
-  including through the platform UI.
+  optimization run, not before dataset upload. The agent normally completes
+  the later `dataset_available` and `experiment_launched` steps too, but the
+  developer may also complete them, including through the platform UI.
 
 ## GitHub App access
 

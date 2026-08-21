@@ -25,9 +25,9 @@ During setup validation and launch preparation:
   must act. Stop and wait only when `next` itself is developer-owned.
 - `integration_pushed` is the final blocking agent-owned step: commit and
   push the completed integration to a branch in the selected agent repository
-  before a hosted optimization run; the later `dataset_available` and
-  `experiment_launched` steps may be completed by the developer, including
-  through the platform UI.
+  before a hosted optimization run. The agent normally completes the later
+  `dataset_available` and `experiment_launched` steps too, but the developer
+  may also complete them, including through the platform UI.
 - Tracing is optional: if it applies, make a best effort to include it in
   that push, but never let it block the push; never commit secret files.
 

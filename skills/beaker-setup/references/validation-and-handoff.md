@@ -80,8 +80,9 @@ Interpret the payload with these rules:
   `true` for all other steps. Tracing never blocks completion.
 - `integration_pushed` is the final blocking agent-owned step and must be
   complete before a hosted optimization run. It is not required before
-  dataset upload. The later `dataset_available` and `experiment_launched`
-  steps may be completed by the developer, including through the platform UI.
+  dataset upload. The agent normally completes the later `dataset_available`
+  and `experiment_launched` steps too, but the developer may also complete
+  them, including through the platform UI.
 - Exit code `0` means the state and an actionable `next` were computed, even
   when steps remain incomplete; selection and hosted errors remain in
   `errors` but return `0` when `next` is actionable.

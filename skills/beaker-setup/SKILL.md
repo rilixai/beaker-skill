@@ -33,9 +33,10 @@ remotely only when the developer requests it.
   tracing, make a best effort to wire it and commit its wiring with the
   completed integration before pushing, but never let it block or delay the
   required push.
-- `integration_pushed` is the final blocking agent-owned step; the later
-  `dataset_available` and `experiment_launched` steps may be completed by the
-  developer, including through the platform UI.
+- `integration_pushed` is the final blocking agent-owned step. The agent
+  normally completes the later `dataset_available` and `experiment_launched`
+  steps too, but the developer may also complete them, including through the
+  platform UI.
 
 ## Keep Beaker isolated
 
