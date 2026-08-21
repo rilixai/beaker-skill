@@ -133,7 +133,6 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --benchmark-split TEST \
   --benchmark-max-cases 30 \
   --final-eval-split VAL \
-  --test-all-candidates \
   --json
 ```
 
@@ -152,7 +151,7 @@ points to the intended commit instead.
 | `--benchmark-split` | `VAL` or `TEST` |
 | `--benchmark-max-cases` | 1–1000 |
 | `--final-eval-split` | Repeatable `VAL` or `TEST` |
-| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource default optimization (`repository=None`), including resources such as `wiki`, and for selected-model runs; repository-surface default optimization ignores the flag and always tests only the winner |
+| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource default optimization (`repository=None`), including resources such as `wiki`; repository-surface default optimization and selected-model runs ignore the flag and always test only the winner |
 
 Do not combine selected-model flags with `--use-harness-optimization` or with
 an `optimization_config` supplied through `--config`. Do not combine

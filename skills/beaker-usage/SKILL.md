@@ -148,7 +148,8 @@ Apply TEST candidate policy by editable surface:
 - Named-resource surface (`@spec(repository=None)`):
   `--test-all-candidates` applies to the default optimization and evaluates every
   persisted candidate on TEST, including resources such as `wiki`. Without the
-  flag, only the selected winner is TEST-evaluated.
+  flag, only the selected winner is TEST-evaluated. Selected-model runs also
+  ignore the flag and always TEST-evaluate only each model's winner.
 
 `optimize_only` uses the production system and cannot be combined with
 `--optimization-model`, benchmark flags, or final-evaluation flags. If the
@@ -173,10 +174,10 @@ For a selected-model run:
 4. Use the benchmark defaults unless the developer asks
    to choose the benchmark split or case count. Valid splits are `VAL` and
    `TEST`; valid case counts are 1 through 1000.
-5. Add final evaluation splits or `--test-all-candidates` only when the
-   developer supplies them or asks to configure them. Do not invent tuning
-   values. Follow the editable-surface TEST policy above; do not offer
-   `--test-all-candidates` for the repository surface.
+5. Add final evaluation splits only when the developer supplies them or asks
+   to configure them. Do not invent tuning values. Do not offer
+   `--test-all-candidates` for selected-model runs: the runtime ignores it and
+   always TEST-evaluates only each model's winner.
 
 Use the typed flags described in the CLI reference. Do not hand-author
 `optimization_config` JSON for selected-model runs.
