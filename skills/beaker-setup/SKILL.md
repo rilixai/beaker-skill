@@ -46,7 +46,7 @@ git push -u origin HEAD
 
 Never push the integration to `main`, `master`, or the repository's default
 branch, and never open a pull request, unless the developer explicitly asks
-for it. Stage only integration files; never stage `.beaker/.env` or any other
+for it. Stage only integration files; never stage any other
 secret file. Report the branch you pushed.
 
 ## Keep Beaker isolated
