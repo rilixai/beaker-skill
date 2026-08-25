@@ -169,14 +169,29 @@ handoffs. At application model call sites, use
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
 
-Use an adapter first, scoped only to the candidate-workflow invocation.
-Frameworks with an adapter under
-`beaker.tracing.integrations` must not be hand-annotated: the supported
-frameworks here are PydanticAI and LiteLLM. `beaker trace instrument` detects
-the framework and installs its extra; it does not replace the wiring guidance
-in this section. Install `beaker-sdk[pydantic-ai]` for PydanticAI or
-`beaker-sdk[litellm]` for LiteLLM (the command installs these as needed), rather
-than relying only on `beaker-sdk[tracing]`.
+### Framework adapters
+
+Use an adapter first, scoped only to the candidate-workflow invocation. A
+framework in this list has an adapter under `beaker.tracing.integrations` and
+must not be hand-annotated: the adapter owns that framework's spans — agent and
+node runs, model calls, tool calls, and handoffs — so do not wrap those calls in
+`runtime.trace.model_call(...)` as well. `runtime.trace` stays for
+application-level stages and artifacts.
+
+| Framework | Extras | Wiring entrypoint |
+| --- | --- | --- |
+| PydanticAI | `beaker-sdk[tracing,pydantic-ai]` | `pydantic_ai.instrument(...)` (1.x) or `pydantic_ai.capabilities(...)` (2.x) |
+| LangChain / LangGraph | `beaker-sdk[tracing,langchain]` | `langchain.config(...)` passed as the invocation `config=` |
+| LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
+| OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
+
+`beaker trace instrument` detects the framework and installs its extras; it does
+not replace the wiring guidance in this section. Install the framework extras
+above rather than relying only on `beaker-sdk[tracing]`.
+
+Every adapter takes the application's existing telemetry through `existing=` and
+composes with it, so an app's own OpenInference, LangSmith, or Logfire
+instrumentation keeps working; no adapter patches global state.
 
 For PydanticAI, pass the application's existing instrumentation through
 `existing=` so the adapter composes with it:
@@ -203,6 +218,26 @@ unchanged when no capture is active, which would break production. Use
 `capabilities(...)` for the 2.x path. This preserves existing hooks,
 instrumentation, and exports without changing global PydanticAI settings.
 
+For LangChain and LangGraph, wire the adapter into the invocation config so the
+callback is scoped to that call:
+
+```python
+from beaker.tracing import current_trace
+from beaker.tracing.integrations import langchain as beaker_langchain
+
+result = graph.invoke(
+    state, config=beaker_langchain.config(current_trace(), existing=app_config)
+)
+```
+
+In the spec, pass `runtime.trace` instead of `current_trace()`. `config(...)`
+preserves every other `RunnableConfig` key, including the app's own
+`callbacks`, so an existing OpenInference or LangSmith handler keeps exporting;
+the adapter only adds a callback and patches nothing globally. With
+`stream()`/`astream()`, keep the capture open until the iterator is fully
+consumed: spans still open when the capture closes are dropped as capture
+omissions and downgrade the capture to `incomplete`.
+
 LiteLLM registration is case-scoped. Keep it around the calls, and flush
 afterward because LiteLLM logs after the call returns:
 
@@ -221,8 +256,8 @@ case. An unflushed or unlogged call is dropped as a capture omission and
 downgrades the capture to `incomplete`; do not let the registration scope end
 before `flush()` or `wait()`.
 
-For frameworks with no adapter — including provider SDKs, LlamaIndex, and
-LangChain today — wrap the real model call with `trace.model_call(...)`.
+For frameworks absent from the adapter list above — including provider SDKs and
+LlamaIndex today — wrap the real model call with `trace.model_call(...)`.
 Wrap nested calls the same way, inside the enclosing operation, so they are
 recorded as its child spans. Otherwise the capture can contain stages but zero
 model calls, causing `beaker trace doctor --require-model-calls` to fail.
