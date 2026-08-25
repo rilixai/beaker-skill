@@ -40,8 +40,8 @@ Steps and completion:
 
 - The ordered steps are `beaker_dependency_declared`, `config_present`,
   `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
-  `spec_validated`, `tracing_wired`, `integration_pushed`,
-  `dataset_available`, and `experiment_launched`.
+  `tracing_wired`, `integration_pushed`, `dataset_available`, and
+  `experiment_launched`.
 - Onboarding is complete once `experiment_launched` is complete. Shipping a
   winning candidate pull request is developer-owned follow-up work outside
   the onboarding loop.

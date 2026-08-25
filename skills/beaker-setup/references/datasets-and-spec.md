@@ -17,17 +17,45 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
 
-If local data is unavailable, inspect hosted data with `beaker dataset list` and `beaker dataset show`. If neither source has usable labels, direct the developer to upload or provide real examples and stop before finalizing the spec, running smoke validation, or uploading synthetic data.
+If local data is unavailable, inspect hosted data with `beaker dataset list` and
+`beaker dataset show`. Validate a usable hosted snapshot with `beaker run smoke
+--strict --agent <selected-agent> --dataset <name@revision>` or
+`--dataset-id <artifact-id>`. If neither source has usable labels, direct the
+developer to upload or provide real examples and stop before finalizing the
+spec, running smoke validation, or uploading synthetic data.
+
+## Configure one dataset source
+
+Use `local_dataset_path` only for a real path that will remain available in the
+local checkout:
+
+```yaml
+config_defaults:
+  local_dataset_path: data/evals
+```
+
+For hosted data, configure one immutable selector instead:
+
+```yaml
+config_defaults:
+  dataset_ref: invoices@<revision>
+  # Or use dataset_id: <artifact-id>, never both.
+```
+
+Remote selection supersedes `local_dataset_path` during smoke validation.
+Explicit `--dataset` or `--dataset-id` flags supersede the configured remote
+selector. Do not place Beaker-owned S3 or presigned URLs in configuration.
 
 ## Convert without persisting generated datasets
 
 When real labeled source data must be converted to Beaker's JSONL layout, keep
 the conversion script under `.beaker/` and write its generated splits only to an
-OS-managed temporary directory. Run validation, when needed, and the CLI upload
-synchronously inside the temporary-directory context so cleanup happens after
-the CLI has finished reading the files. Never write generated JSONL into the
-repository, `.beaker/`, an existing fixture directory, or another persistent
-output directory.
+OS-managed temporary directory. Run the CLI upload synchronously inside the
+temporary-directory context so cleanup happens after the CLI has finished
+reading the files. If pre-upload local validation is needed, run it in that
+same context. After upload, validate the retained immutable remote selector.
+Never write generated JSONL into the repository, `.beaker/`, an existing
+fixture directory, or another persistent output directory.
 
 Use `tempfile.TemporaryDirectory()` instead of an open `NamedTemporaryFile`, so
 the Beaker subprocess can reopen the files reliably across platforms:
@@ -49,7 +77,7 @@ with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
             for row in rows:
                 output.write(json.dumps(row) + "\n")
 
-    subprocess.run(
+    upload = subprocess.run(
         [
             "beaker", "dataset", "upload", str(dataset_dir),
             "--name", dataset_name,
@@ -57,14 +85,32 @@ with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
             "--split", f"train={len(train_rows)}",
             "--split", f"val={len(val_rows)}",
             "--agent", agent_key,
+            "--json",
         ],
         check=True,
+        capture_output=True,
+        text=True,
     )
+
+    artifact = json.loads(upload.stdout)
+    dataset_ref = f"{artifact['artifact_key']}@{artifact['dataset_revision']}"
+
+subprocess.run(
+    [
+        "beaker", "run", "smoke", "--strict",
+        "--agent", agent_key,
+        "--dataset", dataset_ref,
+    ],
+    check=True,
+)
 ```
 
 The CLI currently requires a dataset directory or JSONL file path; this staging
 is temporary filesystem materialization, not a repository artifact. Do not add
 generated dataset paths to `.gitignore` as a substitute for temporary storage.
+If validation must happen before upload, run local smoke against `dataset_dir`
+inside the temporary-directory context. The post-upload remote smoke remains
+the authoritative check that the hosted snapshot can be downloaded and parsed.
 
 ## Map repository code into the spec
 

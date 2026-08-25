@@ -5,8 +5,8 @@
 Run `beaker onboarding status` after every command and whenever the next
 action is uncertain. Follow its one returned action. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
-`github_connected`, `agent_selected`, `spec_integrated`, `spec_validated`,
-`tracing_wired`, `integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
+`github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
+`integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
 complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
@@ -179,7 +179,7 @@ list`, and start a new run; do not retry the failed run unchanged.
 2. Upload and inspect the dataset:
 
    ```bash
-   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split val=<n> --agent <selected-agent>
+   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split val=<n> --agent <selected-agent> --json
    beaker dataset list --agent <selected-agent>
    beaker dataset show <dataset-name> --agent <selected-agent>
    ```
@@ -189,12 +189,30 @@ list`, and start a new run; do not retry the failed run unchanged.
    rather than a path in the repository. Run `beaker dataset upload`
    synchronously before the temporary directory is removed. Existing
    source-of-truth dataset directories may be uploaded from their established
-   locations without being copied.
+   locations without being copied. Preserve the upload response's
+   `dataset_revision` and `artifact_id`; they identify the immutable snapshot.
 
-3. Trigger only with explicit developer authorization:
+3. Validate that exact hosted snapshot through the same download path used by
+   optimization:
 
    ```bash
-   beaker run trigger --agent <selected-agent> --dataset <dataset-name>
+   beaker run smoke --strict --agent <selected-agent> --dataset <dataset-name@revision>
+   # Or, equivalently:
+   beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+   ```
+
+   Supply exactly one selector. Remote smoke authenticates and downloads the
+   dataset through presigned URLs, but does not execute a rollout or scorer and
+   does not launch a hosted run. A configured `config_defaults.dataset_ref` or
+   `config_defaults.dataset_id` can supply the selector when it names this same
+   snapshot.
+
+4. Trigger only with explicit developer authorization, reusing the selector
+   that passed smoke:
+
+   ```bash
+   beaker run trigger --agent <selected-agent> --dataset <dataset-name@revision>
+   # Or use --dataset-id <artifact-id> instead.
    ```
 
    Before triggering, commit and push the completed integration yourself, to
@@ -216,7 +234,13 @@ hosted operations resolve the same nested YAML.
 
 Use the same selected agent for dataset inspection, upload, and launch.
 
-Dataset uploads create immutable revisions and normally promote the new revision to `production`. Re-uploading identical files is a no-op. Select data by name, `name@revision`, artifact id, or `config_defaults.dataset_ref`; never expose storage URIs.
+Dataset uploads create immutable revisions and normally promote the new
+revision to `production`. Re-uploading identical files is a no-op. Bare names
+resolve the production alias at command time, so use `name@revision`, artifact
+id, `config_defaults.dataset_ref`, or `config_defaults.dataset_id` when smoke
+and launch must use the same snapshot. Explicit `--dataset` and `--dataset-id`
+selectors override configured selectors and must not be combined. Never expose
+storage URIs.
 
 Preserve the full run UUID and the `View in UI:` link printed by trigger. Use
 `beaker run status <full-run-id>` for a one-shot check; exit code 3 means the

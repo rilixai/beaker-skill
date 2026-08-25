@@ -289,6 +289,41 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("PASS", content)
         self.assertIn("FAIL", content)
 
+    def test_smoke_supports_local_and_exact_remote_datasets(self) -> None:
+        setup_content = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in [SKILL, *(SKILL.parent / "references").glob("*.md")]
+        )
+        usage_reference = (
+            USAGE_SKILL.parent / "references" / "cli-reference.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(setup_content.split())
+
+        self.assertNotIn("spec_validated", setup_content)
+        self.assertNotIn("spec_validated", usage_reference)
+        self.assertIn(
+            "beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>",
+            normalized,
+        )
+        self.assertIn("--dataset-id <artifact-id>", normalized)
+        self.assertIn("local_dataset_path", setup_content)
+        self.assertIn("dataset_ref:", setup_content)
+        self.assertIn("dataset_id:", setup_content)
+        self.assertIn("Local-path smoke is offline", setup_content)
+        self.assertIn("presigned URLs", setup_content)
+
+    def test_smoke_and_launch_reuse_one_immutable_dataset_selector(self) -> None:
+        operations = (
+            SKILL.parent / "references" / "cli-and-hosted-operations.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(operations.split())
+
+        self.assertIn("dataset_revision", operations)
+        self.assertIn("artifact_id", operations)
+        self.assertIn("reusing the selector that passed smoke", normalized)
+        self.assertIn("must not be combined", normalized)
+        self.assertIn("--dataset <dataset-name@revision>", operations)
+
     def test_skill_explains_nested_beaker_config_paths(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
@@ -400,6 +435,10 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Never save generated JSONL dataset files", skill)
         self.assertIn("tempfile.TemporaryDirectory", datasets)
         self.assertIn("subprocess.run", datasets)
+        self.assertIn('"--json"', datasets)
+        self.assertIn("dataset_revision", datasets)
+        self.assertIn('"beaker", "run", "smoke"', datasets)
+        self.assertIn("authoritative check", datasets)
         self.assertIn("before the temporary directory is removed", operations)
 
 

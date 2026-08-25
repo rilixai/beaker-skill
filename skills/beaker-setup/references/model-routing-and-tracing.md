@@ -262,10 +262,12 @@ Wrap nested calls the same way, inside the enclosing operation, so they are
 recorded as its child spans. Otherwise the capture can contain stages but zero
 model calls, causing `beaker trace doctor --require-model-calls` to fail.
 
-First verify structural wiring:
+First verify structural wiring with the real local dataset or the exact hosted
+snapshot selected for launch:
 
 ```bash
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
 ```
 
 Smoke verifies structural wiring only; it neither opens a capture nor executes
