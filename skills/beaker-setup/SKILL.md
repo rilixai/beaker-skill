@@ -169,7 +169,9 @@ Use the selected agent's page to view its runs and score trends.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
 6. Inspect the real call path to verify `_run_case` executes the application
    code inside the selected repository scope, then run `beaker run smoke
-   --strict` to validate config, spec, dataset, runner, and scorer wiring.
+   --strict` with either the real local dataset path or the exact hosted
+   dataset revision to validate config, spec, dataset, runner, and scorer
+   wiring.
    Smoke does not execute `run_case` or the
    scorer and does not support `--trace`. Smoke also warns, without failing,
    when no framework adapter or `runtime.trace.model_call` is wired in
@@ -318,13 +320,28 @@ the selected agent. A hosted run with a missing or empty declared value fails
 before candidate dispatch. Set each missing value with `--value-stdin`, then
 start a new run.
 
-Run a local validation only after real labeled examples are available:
+Run structural smoke validation only after real labeled examples are
+available. Use the local path when the source data remains on disk:
 
 ```bash
 beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
+Use the selected hosted dataset when local data is unavailable or has already
+been removed after temporary conversion. Prefer its immutable revision; an
+artifact id is equivalent:
+
+```bash
+beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
+beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+```
+
 - Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call.
+- Local-path smoke is offline. Remote-dataset smoke authenticates to Beaker,
+  resolves the selected snapshot, and downloads it through presigned URLs
+  before validating every row. It does not launch a hosted run.
+- Use the same immutable `name@revision` or artifact id for smoke and the later
+  hosted run. Do not supply `--dataset` and `--dataset-id` together.
 - Read its staged `PASS`/`FAIL` output and customer code traceback when a
   check fails.
 - A tracing warning in that output is non-blocking to the CLI. When tracing

@@ -11,11 +11,10 @@ action is unclear. It reports these ordered steps:
 4. `github_connected`
 5. `agent_selected`
 6. `spec_integrated`
-7. `spec_validated`
-8. `tracing_wired`
-9. `integration_pushed`
-10. `dataset_available`
-11. `experiment_launched`
+7. `tracing_wired`
+8. `integration_pushed`
+9. `dataset_available`
+10. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App
 installation is connected. `agent_selected` requires a selected Beaker agent
@@ -102,25 +101,54 @@ Interpret the payload with these rules:
   the completion message; the null id is an intentional completion shape, not
   a parse failure.
 
-## Local validation
+## Smoke validation
 
-Run `beaker run smoke --strict` after each meaningful integration change, but
-only after real labeled examples are available. The `spec_validated` onboarding
-step performs this same local structural/readiness check only after
-`spec_integrated` is complete. It reports failures in the step reason and
-points back to `beaker run smoke --strict`; it does not print smoke output or
-write files. A passing smoke check proves the config resolves, the spec loads,
-the dataset loads and parses, and the runner and scorer are connected. The CLI
-may still label one structural stage `targets`. It does not execute `run_case`,
-call the scorer, make a model/tool call, trigger hosted calls, or report a
-score.
+`beaker onboarding status` does not import the spec, load its dataset, or
+record a smoke result. Run `beaker run smoke --strict` yourself after each
+meaningful integration change, but only after real labeled examples are
+available.
+
+Choose one dataset source:
+
+```bash
+# Offline: validate a real local dataset that remains on disk.
+beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+
+# Remote: validate an immutable hosted revision for the selected agent.
+beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
+
+# Equivalent remote selection by artifact id.
+beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+```
+
+When `config_defaults.dataset_ref` or `config_defaults.dataset_id` already
+selects the intended remote snapshot, a bare `beaker run smoke --strict` uses
+that selector after resolving the configured agent. Explicit `--dataset` and
+`--dataset-id` flags override configured selectors; provide exactly one.
+
+If the installed CLI does not recognize these flags, upgrade `beaker-sdk`
+through the repository's existing development-dependency workflow and retry.
+Do not bypass the CLI with private API calls.
+
+Local-path smoke is offline. Remote smoke authenticates to Beaker, resolves the
+selected snapshot, downloads its standard files through presigned URLs, and
+then uses the same local loader to validate every row. It does not start an
+optimization run. Prefer immutable `name@revision` or `artifact-id` selectors
+over a bare production name, and reuse the exact selector for `beaker run
+trigger` so validation and optimization cannot drift to different revisions.
+
+A passing smoke check proves the config resolves, the spec loads, the dataset
+loads and parses, and the runner and scorer are connected. The CLI may still
+label one structural stage `targets`. It does not execute `run_case`, call the
+scorer, make a model/tool call, trigger hosted calls, or report a score.
 
 Interpret common failures:
 
 - `FAIL spec`: use the printed exception type and traceback to fix the factory
   import, construction, or spec contract.
 - `FAIL dataset`: use the printed file/line and traceback to fix dataset
-  configuration, JSONL parsing, or case construction.
+  configuration, remote authentication/download, JSONL parsing, or case
+  construction.
 - missing or empty split: add real examples to the requested split or select
   the correct split.
 - missing runner/scorer callable: connect the required spec hook.

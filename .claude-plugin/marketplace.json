@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Set up and operate Beaker agent optimization in a repository.",
-    "version": "0.4.3"
+    "version": "0.4.4"
   },
   "plugins": [
     {
