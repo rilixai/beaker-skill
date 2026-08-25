@@ -146,7 +146,10 @@ Use the selected agent's page to view its runs and score trends.
    - `_run_case`: accept `targets=None`, import the real application normally,
      and call the real agent/LLM. Each candidate repository is imported in a
      fresh evaluator process.
-   - scorer: match actual output and ground-truth fields and weights. If it
+   - scorer: score the quality metric the developer chose to hill-climb. If
+     the repository does not already establish a single scoring metric (an
+     existing eval or scorer with clear fields and weights), ask the developer which metric to
+     optimize; never make that decision implicitly. If it
      uses an LLM judge, set `Spec.llm_scorer_model` to that agent's fixed
      canonical `provider:model`, then route hosted judge calls through
      `scoring_inference_target()` so gateway accounting and run budgets include
@@ -352,6 +355,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Treat the selected agent as the direct owner of its runs and run history.
   Create another agent only for a confirmed, distinct optimization target.
 - Never silently choose among multiple plausible tasks.
+- Never implicitly decide what metric of quality the optimization hill-climbs
+  when several metrics are plausible or when scoring aggregates or averages
+  multiple metrics; ask the developer which metric and weights to optimize. A
+  single clearly established metric needs no confirmation.
 - Never ask the developer what to do next before running `beaker onboarding
   status`; follow its returned action, and relay developer-owned actions
   verbatim.

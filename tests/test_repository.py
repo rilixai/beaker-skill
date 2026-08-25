@@ -244,6 +244,22 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("LLM-as-a-judge scoring", routing)
         self.assertIn("local application or evaluation runs", routing)
 
+    def test_setup_skill_requires_explicit_metric_selection(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        normalized_skill = " ".join(skill.split())
+        normalized_datasets = " ".join(datasets.split())
+        self.assertIn(
+            "Never implicitly decide what metric of quality the optimization hill-climbs",
+            normalized_skill,
+        )
+        self.assertIn(
+            "ask the developer which metric to optimize; never make that decision implicitly",
+            normalized_skill,
+        )
+        self.assertIn("confirmed by the developer", normalized_datasets)
+        self.assertIn("the quality metric to hill-climb", normalized_datasets)
+
     def test_tracing_is_scoped_to_candidate_agent(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
