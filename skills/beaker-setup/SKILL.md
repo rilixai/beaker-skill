@@ -29,6 +29,8 @@ remotely only when the developer requests it.
   developer must act.
 - Stop and wait only when `next` itself is developer-owned. Finish when
   `next.id` is `null`.
+- Communicate with the developer in plain English. Keep status updates, questions,
+  and explanations concise, direct, and free of internal jargon.
 - Tracing is optional and advisory: when the selected use case includes
   tracing, make a best effort to wire it and commit its wiring with the
   completed integration before pushing, but never let it block or delay the
@@ -70,7 +72,7 @@ pushed.
 
 Treat Beaker as development/evaluation tooling, not an application runtime.
 Keep every Beaker-owned file under the selected project's `.beaker/` whenever
-possible: config, spec, adapters, credentials, gitignore, and trace receipts. Do
+possible: config, spec, helper code, credentials, gitignore, and trace receipts. Do
 not add Beaker modules under application packages, import or initialize Beaker
 from production entrypoints, change deployment/runtime config, add or modify
 tests, or route normal traffic through Beaker.
@@ -83,11 +85,11 @@ Allow files outside `.beaker/` only when required:
   edit, move, or repurpose test files, fixtures, snapshots, or test config;
 - record Beaker in development/tooling dependency metadata and its lockfile when
   the project supports that separation;
-- add the smallest optional application injection seam only when the spec and a
-  `.beaker/` adapter cannot reuse an existing interface. Preserve identical
-  production defaults and keep all non-tracing Beaker imports inside `.beaker/`.
-  The only application-code exception is narrowly scoped trace-adapter wiring:
-  `current_trace()` is a no-op outside a capture, and Beaker remains a
+- add the smallest optional application injection seam only when the spec and
+  helper code under `.beaker/` cannot reuse an existing interface. Preserve
+  identical production defaults and keep all non-tracing Beaker imports inside
+  `.beaker/`. The only application-code exception is narrowly scoped tracing
+  wiring: `current_trace()` is a no-op outside a capture, and Beaker remains a
   development/tooling dependency.
 
 Before changing application code, explain why spec-only integration is
@@ -164,7 +166,7 @@ Use the selected agent's page to view its runs and score trends.
    - `spec.required_env`: list only the names of application variables that
      candidate evaluation needs. Keep local values in `.beaker/.env` and
      hosted values in encrypted agent settings; never put values in YAML.
-4. Keep the spec and helper adapters under `.beaker/`. Import application code
+4. Keep the spec and helper code under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
 6. Inspect the real call path to verify `_run_case` executes the application
@@ -174,7 +176,7 @@ Use the selected agent's page to view its runs and score trends.
    wiring.
    Smoke does not execute `run_case` or the
    scorer and does not support `--trace`. Smoke also warns, without failing,
-   when no framework adapter or `runtime.trace.model_call` is wired in
+   when no framework integration or `runtime.trace.model_call` is wired in
    application code; treat that warning as a prompt to finish the tracing
    wiring described in
    [model-routing-and-tracing.md](references/model-routing-and-tracing.md),
@@ -221,8 +223,8 @@ silently convert one mode into the other.
 ## Route models without changing production defaults
 
 Keep Beaker-selected model routing inside `.beaker/` and the evaluation/spec
-path. First adapt through the spec or a `.beaker/` adapter. Touch application
-code only when no existing injection interface can be reused. If
+path. First connect through the spec or helper code under `.beaker/`. Touch
+application code only when no existing injection interface can be reused. If
 `runtime.model` is absent, retain the application's existing client and model
 defaults.
 
@@ -376,6 +378,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   when several metrics are plausible or when scoring aggregates or averages
   multiple metrics; ask the developer which metric and weights to optimize. A
   single clearly established metric needs no confirmation.
+- Always communicate with the developer in plain English, avoiding internal jargon and technical arcana.
 - Never ask the developer what to do next before running `beaker onboarding
   status`; follow its returned action, and relay developer-owned actions
   verbatim.
@@ -385,9 +388,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   `.beaker/`; stage conversions in an OS-managed temporary directory and upload
   them before cleanup.
 - Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth.
-- Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped trace-adapter wiring at the real model call site.
+- Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped tracing wiring at the real model call site.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
-- Never edit application code until spec-only and `.beaker/` adapter approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed trace-adapter wiring.
+- Never edit application code until spec-only and `.beaker/` helper approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed tracing wiring.
 - Never ask the developer for permission to commit or push the integration;
   `integration_pushed` is agent-owned. The only exception is a developer who
   told you not to take autonomous actions.

@@ -114,7 +114,7 @@ the authoritative check that the hosted snapshot can be downloaded and parsed.
 
 ## Map repository code into the spec
 
-Keep the spec and its helper adapters under `.beaker/`. Import the application's
+Keep the spec and helper code under `.beaker/`. Import the application's
 public or existing internal interfaces from the spec; do not create Beaker
 orchestration modules in the application package. Never create or modify test
 files, fixtures, snapshots, helpers, or test configuration for Beaker.
@@ -171,5 +171,5 @@ Do not place datasets under `.beaker/`. Existing labeled data is source material
 not Beaker-owned tooling: leave it in its established location and reference it
 from the config or command. Generated JSONL conversions exist only in an
 OS-managed temporary directory for validation/upload. `.beaker/` owns Beaker
-config, specs, adapters, conversion scripts, credentials, and local trace
+config, specs, helper code, conversion scripts, credentials, and local trace
 receipts, but not generated dataset outputs.

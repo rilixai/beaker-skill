@@ -7,9 +7,9 @@ selection in the evaluation path. Its absence means use the application's
 existing production-like client and model defaults. Keep all Beaker imports for
 gateway construction and routing decisions inside `.beaker/`.
 
-The one narrow exception is **trace-adapter wiring**: application model call
-sites may import `beaker.tracing` and configure a supported adapter. This is
-safe because `current_trace()` returns a `NoopTrace` when no capture is active
+The one narrow exception is **tracing integration**: application model call
+sites may import `beaker.tracing` and configure supported instrumentation. This
+is safe because `current_trace()` returns a `NoopTrace` when no capture is active
 (no spans, exporter, or network), and Beaker remains a development/tooling
 dependency. This exception does not permit Beaker imports for model selection,
 gateway construction, or routing.
@@ -20,7 +20,7 @@ Prefer these seams in order:
 2. Add a small adapter beside the spec under `.beaker/`.
 3. Only if both fail, add optional keyword arguments to the nearest agent
    factory or eval function. Preserve existing defaults and do not import
-   Beaker from application code, except for the trace-adapter wiring described
+   Beaker from application code, except for the tracing wiring described
    above.
 
 Do not modify a central LLM wrapper, production entrypoint, global environment
@@ -169,14 +169,14 @@ handoffs. At application model call sites, use
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
 
-### Framework adapters
+### Framework integrations
 
-Use an adapter first, scoped only to the candidate-workflow invocation. A
-framework in this list has an adapter under `beaker.tracing.integrations` and
-must not be hand-annotated: the adapter owns that framework's spans — agent and
-node runs, model calls, tool calls, and handoffs — so do not wrap those calls in
-`runtime.trace.model_call(...)` as well. `runtime.trace` stays for
-application-level stages and artifacts.
+Use a built-in framework integration first, scoped only to the candidate-workflow
+invocation. A framework in this list has built-in integration under
+`beaker.tracing.integrations` and must not be hand-annotated: the integration
+owns that framework's spans — agent and node runs, model calls, tool calls, and
+handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as well.
+`runtime.trace` stays for application-level stages and artifacts.
 
 | Framework | Extras | Wiring entrypoint |
 | --- | --- | --- |
@@ -189,12 +189,12 @@ application-level stages and artifacts.
 not replace the wiring guidance in this section. Install the framework extras
 above rather than relying only on `beaker-sdk[tracing]`.
 
-Every adapter takes the application's existing telemetry through `existing=` and
-composes with it, so an app's own OpenInference, LangSmith, or Logfire
-instrumentation keeps working; no adapter patches global state.
+Every integration takes the application's existing telemetry through `existing=`
+and composes with it, so an app's own OpenInference, LangSmith, or Logfire
+instrumentation keeps working; no integration patches global state.
 
 For PydanticAI, pass the application's existing instrumentation through
-`existing=` so the adapter composes with it:
+`existing=` so Beaker composes with it:
 
 ```python
 from beaker.tracing import current_trace
@@ -211,14 +211,14 @@ agent = Agent(model, capabilities=pydantic_ai.capabilities(
 ```
 
 On 1.x, `existing` is the application's `instrument=` value; on 2.x it is
-the existing `capabilities=` list. Do not pass the adapter's `instrument(...)`
+the existing `capabilities=` list. Do not pass the `instrument(...)`
 result into `Instrumentation(settings=...)`: that API requires actual
-`InstrumentationSettings`, while the adapter returns the existing value
+`InstrumentationSettings`, while the helper returns the existing value
 unchanged when no capture is active, which would break production. Use
 `capabilities(...)` for the 2.x path. This preserves existing hooks,
 instrumentation, and exports without changing global PydanticAI settings.
 
-For LangChain and LangGraph, wire the adapter into the invocation config so the
+For LangChain and LangGraph, wire the integration into the invocation config so the
 callback is scoped to that call:
 
 ```python
@@ -233,7 +233,7 @@ result = graph.invoke(
 In the spec, pass `runtime.trace` instead of `current_trace()`. `config(...)`
 preserves every other `RunnableConfig` key, including the app's own
 `callbacks`, so an existing OpenInference or LangSmith handler keeps exporting;
-the adapter only adds a callback and patches nothing globally. With
+the integration only adds a callback and patches nothing globally. With
 `stream()`/`astream()`, keep the capture open until the iterator is fully
 consumed: spans still open when the capture closes are dropped as capture
 omissions and downgrade the capture to `incomplete`.
@@ -245,18 +245,18 @@ afterward because LiteLLM logs after the call returns:
 from beaker.tracing import current_trace
 from beaker.tracing.integrations.litellm import registered
 
-async with registered(current_trace()) as trace_adapter:
+async with registered(current_trace()) as litellm_trace:
     await litellm.acompletion(model=model, messages=messages)
-    await trace_adapter.flush()
+    await litellm_trace.flush()
 ```
 
-Use `with registered(current_trace()) as trace_adapter:` around synchronous
-`completion(...)` calls and call `trace_adapter.wait()` before leaving the
+Use `with registered(current_trace()) as litellm_trace:` around synchronous
+`completion(...)` calls and call `litellm_trace.wait()` before leaving the
 case. An unflushed or unlogged call is dropped as a capture omission and
 downgrades the capture to `incomplete`; do not let the registration scope end
 before `flush()` or `wait()`.
 
-For frameworks absent from the adapter list above — including provider SDKs and
+For frameworks absent from the list above — including provider SDKs and
 LlamaIndex today — wrap the real model call with `trace.model_call(...)`.
 Wrap nested calls the same way, inside the enclosing operation, so they are
 recorded as its child spans. Otherwise the capture can contain stages but zero
@@ -271,7 +271,7 @@ beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
 ```
 
 Smoke verifies structural wiring only; it neither opens a capture nor executes
-a model call. It warns, without failing, when no framework adapter or
+a model call. It warns, without failing, when no framework integration or
 `runtime.trace.model_call` is wired in application code — resolve that warning
 with the wiring above before handoff. Then exercise the repository's normal
 application/evaluation path
