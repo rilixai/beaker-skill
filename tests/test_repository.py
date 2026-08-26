@@ -145,6 +145,28 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("organization's LLM credentials", normalized)
         self.assertIn("smoke does not execute `run_case`", normalized)
 
+    def test_skills_require_preserving_the_application_client_type(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, routing, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Preserve the client type", routing)
+        self.assertIn("Wrap the *call*, not the client", routing)
+        self.assertIn("a type the application already constructs", normalized)
+        self.assertIn(
+            "Never substitute a proxy, subclass, `__getattr__` forwarder, or monkeypatched method",
+            normalized,
+        )
+        self.assertIn("keep the original unwrapped client, run untraced", normalized)
+        self.assertIn("client-type checks reject a wrapper", normalized)
+        self.assertIn("Tracing and model injection preserve the client type", handoff)
+
     def test_setup_skill_has_a_hosted_yaml_preflight(self) -> None:
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
             encoding="utf-8"

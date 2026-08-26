@@ -49,6 +49,11 @@ async def _run_case(*, case, targets: None, runtime):
     return CaseResult(output=result.output)
 ```
 
+Build the injected client as a type the application already constructs and
+accepts. Applications and benchmark harnesses often validate the client they
+are handed against recognized types, so a Beaker-specific object or a wrapper
+around the client is rejected before any case runs.
+
 The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
 
 `inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. Prefer `runtime.canonical_model_id`; the helper may combine an explicit provider and model but does not guess an ambiguous provider.
@@ -168,6 +173,21 @@ handoffs. At application model call sites, use
 `from beaker.tracing import current_trace`; `runtime.trace` is not available
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
+
+### Preserve the client type
+
+Tracing must not change the type or identity of any object the application
+passes into a framework, agent factory, or benchmark harness. Add tracing only
+at the adapter entrypoints in the table below or with `trace.model_call(...)`
+around the call site. Never substitute a proxy, subclass, `__getattr__`
+forwarder, or monkeypatched method for the client or model object: recognized
+client-type checks reject the wrapper, and every case then fails before it
+runs. Wrap the *call*, not the client.
+
+If tracing cannot be wired without changing that type, keep the original
+unwrapped client, run untraced, and report the tracing gap at handoff. An
+unresolved tracing warning never blocks handoff; a rejected client fails the
+whole run.
 
 ### Framework adapters
 

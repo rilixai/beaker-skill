@@ -426,6 +426,12 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   invocation boundary, excluding those calls even when clients or wrappers are
   shared. Scorer traffic is accounted for separately through
   `scoring_inference_target()`.
+- Never hand the application or a benchmark harness a wrapped, proxied,
+  subclassed, or monkeypatched stand-in for its model client. Tracing goes at
+  the call site or through a framework adapter, and an injected client is a type
+  the application already accepts; client-type checks reject a wrapper and fail
+  every case before it runs. When tracing cannot preserve that type, keep the
+  unwrapped client and report the tracing gap.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.

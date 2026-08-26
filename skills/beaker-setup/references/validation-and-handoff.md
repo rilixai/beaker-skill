@@ -204,6 +204,10 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
   post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
+- Tracing and model injection preserve the client type: no proxy, subclass, or
+  monkeypatched object was substituted for a client the application or harness
+  validates. Where that was not possible, the unwrapped client was kept and the
+  tracing gap was reported.
 - The selected-model branch uses the narrowest injection seam.
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
