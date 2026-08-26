@@ -456,6 +456,22 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Use the selected agent's page to view its runs and score trends", normalized)
         self.assertIn("complete run history and score trends for completed runs", normalized)
 
+    def test_agent_discovery_carries_the_repository_config_path(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        content = " ".join((setup + "\n" + usage).split())
+        start_safely = setup.split("## Start safely", 1)[1].split("## Implement the real integration", 1)[0]
+        normalized_start = " ".join(start_safely.split())
+
+        self.assertIn("beaker agent list --json", content)
+        self.assertIn("uvx --from beaker-sdk beaker agent list --json", setup)
+        self.assertIn("github_repository", content)
+        self.assertIn("beaker_config_path", content)
+        self.assertIn("global `--config-file` selector", content)
+        discovery_command = "uvx --from beaker-sdk beaker agent list --json"
+        self.assertLess(start_safely.index(discovery_command), start_safely.index("beaker init --print"))
+        self.assertIn("before `beaker init` or the first `beaker onboarding status`", normalized_start)
+
     def test_usage_documents_parallel_agent_runs_without_a_fixed_cap(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(

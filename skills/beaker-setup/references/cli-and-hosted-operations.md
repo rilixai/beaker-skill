@@ -2,6 +2,15 @@
 
 ## Onboarding loop
 
+Before entering the loop, authenticate and run `beaker agent list --json`
+through `uvx --from beaker-sdk` when Beaker is not installed in the project.
+Match the current GitHub repository. If a matching agent exists, select its
+repository-relative `beaker_config_path`, read that YAML's Git-root-relative
+`spec.source_dir`, and run the loop from that project with the same config
+selector. Only initialize a config after discovery establishes that no
+applicable agent/config exists. Status searches upward and does not discover a
+nested config below the Git root.
+
 Run `beaker onboarding status` after every command and whenever the next
 action is uncertain. Follow its one returned action. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
@@ -76,9 +85,12 @@ Use `beaker onboarding status --json` for automation:
 ## Authentication and agent selection
 
 - `beaker auth status` checks the user-level login; `beaker login` creates it.
-- After login, run `beaker agent list` before setup or creation. Most new users
-  will not have an agent yet. If none exists, confirm what they want to optimize
-  and create one with a clear name for that target.
+- After login, run `beaker agent list --json` before setup or creation. Filter
+  its `agents` by an exact `github_repository` match with the current GitHub
+  checkout. Each matching record's `beaker_config_path` is the authoritative
+  repository-relative YAML selector. Most new users will not have an agent yet.
+  If none matches this repository, confirm what they want to optimize and
+  create one with a clear name for that target.
 - If one existing agent clearly matches the task, use it. If several agents
   could match, ask the developer which one to use. State which agent you
   selected.
@@ -107,21 +119,29 @@ At least one of `--name` or `--config-path` is required. The agent key and GitHu
 ## Config location and monorepos
 
 The default config is `.beaker/beaker.yaml` under the selected project root.
-Enter that root first, then use the same config selection for every command:
+Discover existing agents before initialization. When none applies, enter the
+chosen project root and use the same config selection for every command:
 
 ```bash
+uvx --from beaker-sdk beaker auth status
+uvx --from beaker-sdk beaker login  # only when auth status requires it
+uvx --from beaker-sdk beaker agent list --json
+
+# No existing agent/config matched, so initialize the chosen project.
 cd services/invoices
-beaker init
-beaker login
+uvx --from beaker-sdk beaker init
+
+# Install the project dependency with the command printed by init, then:
 beaker github status --repo acme/invoices
-beaker agent list
 beaker agent setup "Invoice Extraction" --repo acme/invoices
 
 # Or choose another location inside this project:
 beaker --config-file config/beaker.yaml init
-beaker agent list
 beaker --config-file config/beaker.yaml agent setup "Invoice Extraction" --repo acme/invoices
 ```
+
+After adding Beaker to the project, omit `uvx --from beaker-sdk` and use the
+project's ordinary `beaker` command.
 
 `BEAKER_CONFIG_FILE` is equivalent to `--config-file`. The CLI converts the
 discovered location to a Git-root-relative `beaker_config_path`, such as
