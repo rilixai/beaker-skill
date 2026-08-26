@@ -131,6 +131,44 @@ path as its selector. Paths must remain inside the Git repository. Agent setup
 writes `.beaker/.env` under its working directory, so run it from the intended
 project root when credentials should live beside that project's config.
 
+## Beaker YAML preflight
+
+Before hosted validation or launch, inspect the selected `beaker.yaml` against
+the committed repository. Do not assume generated or previously working values
+still match the checkout:
+
+```yaml
+spec:
+  target: "beaker_spec:build_spec"
+  source_dir: "services/example"
+  package_import_root: ".beaker"
+  environment_base: "debian_slim:3.13"
+  required_env:
+    - OPENAI_API_KEY
+```
+
+Check each field that controls the hosted evaluator:
+
+- Resolve `spec.source_dir` from the Git checkout root. In a monorepo, use the
+  package or service directory rather than assuming the Git root is the
+  project root.
+- Resolve `spec.package_import_root` inside `spec.source_dir`, and verify that
+  the resulting directory exists in the pushed commit. Do not interpret it
+  from the directory where the local CLI happens to run.
+- Match `spec.environment_base` to the project's `requires-python` constraint
+  and every dependency's supported Python versions. Do not weaken the project
+  constraint to fit an older image.
+- Derive `spec.required_env` from variables read by code that runs in the
+  candidate evaluator child process. The list is an allowlist: storing a value
+  in agent settings does not expose it unless its name is declared here.
+
+Commit and push changes to these fields before launch so the hosted spec build
+reads them. Runs are immutable snapshots: changing YAML or agent settings does
+not repair an existing failed run, so start a new run after correcting either.
+A passing structural smoke check does not prove that the hosted image builds,
+that `run_case` executes, or that an environment value reaches the child
+process.
+
 ## Hosted environment variables
 
 ### Credential preflight

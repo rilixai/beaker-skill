@@ -185,6 +185,11 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   defaults and no Beaker import; otherwise application code is untouched.
 - Beaker is recorded as development/tooling rather than a production runtime
   dependency when the project supports that separation.
+- `spec.source_dir` resolves from the Git checkout root, and
+  `spec.package_import_root` resolves to an existing directory inside it in the
+  pushed commit.
+- `spec.environment_base` satisfies the project's `requires-python` constraint
+  and its dependencies without weakening the package metadata.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
 - The `@spec(repository=...)` scope contains the intended application source,
@@ -211,6 +216,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   settings before launch, and any provider routed through Beaker has an
   organization LLM credential. Local shell and `.beaker/.env` values were not
   treated as hosted settings.
+- Every Beaker YAML or agent-setting correction was followed by a new run;
+  existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local
   `beaker run smoke --strict` passes with no tracing warning before the
   integration is committed and pushed; an unresolved tracing warning never

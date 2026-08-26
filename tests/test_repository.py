@@ -145,6 +145,27 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("organization's LLM credentials", normalized)
         self.assertIn("smoke does not execute `run_case`", normalized)
 
+    def test_setup_skill_has_a_hosted_yaml_preflight(self) -> None:
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((SKILL.read_text(encoding="utf-8"), operations, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Beaker YAML preflight", content)
+        self.assertIn('source_dir: "services/example"', operations)
+        self.assertIn('package_import_root: ".beaker"', operations)
+        self.assertIn('environment_base: "debian_slim:3.13"', operations)
+        self.assertIn("Resolve `spec.source_dir` from the Git checkout root", normalized)
+        self.assertIn("Resolve `spec.package_import_root` inside `spec.source_dir`", normalized)
+        self.assertIn("project's `requires-python` constraint", normalized)
+        self.assertIn("The list is an allowlist", normalized)
+        self.assertIn("Runs are immutable snapshots", normalized)
+        self.assertIn("does not prove that the hosted image builds", normalized)
+
     def test_plain_hosted_launch_defaults_to_optimization_across_surfaces(self) -> None:
         usage = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(
