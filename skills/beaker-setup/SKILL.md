@@ -130,9 +130,9 @@ ambiguous; use `--discover` to locate existing factories.
 Before hosted validation or launch, complete the Beaker YAML preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
 the hosted source paths, dependency installation, and environment allowlist
-against the repository rather than accepting generated defaults. Commit and
-push every YAML correction before starting a new run; an existing run does not
-pick up later config or agent-setting changes.
+against the repository instead of trusting generated defaults. Commit and push
+every YAML correction before starting a new run; an existing run does not pick
+up later config or agent-setting changes.
 
 Use the selected agent's page to view its runs and score trends.
 
@@ -172,8 +172,8 @@ Use the selected agent's page to view its runs and score trends.
      JSON-normalizable because they cross the evaluator process boundary.
    - `spec.required_env`: inspect every application path that hosted candidate
      evaluation can reach, including SDK defaults and fallback branches, and
-     list the environment variable names that those paths read directly. Do
-     not infer this list only from existing config. Keep local values in
+     list the environment variable names those paths read directly. Do not
+     infer this list from existing config alone. Keep local values in
      `.beaker/.env` and hosted values in encrypted agent settings; never put
      values in YAML. Declare a provider key here only for model calls the
      gateway does not serve; gateway-routed calls need no credential setup.
@@ -241,7 +241,7 @@ defaults.
 
 For a selected model, prefer the Beaker gateway over the application's provider
 keys: point the application's existing client at `inference_target(runtime)`.
-The gateway serves every supported provider but accepts only the OpenAI Chat
+The gateway serves every supported provider but takes only the OpenAI Chat
 Completions shape, so classify the call site by its SDK surface, not its
 provider. Calls it cannot serve keep the application's client and credentials.
 
@@ -340,9 +340,9 @@ required variables from the real `Spec.run_case` call path, then compare them
 with `spec.required_env` and `beaker agent env list --agent <selected-agent>`.
 Provider calls routed through Beaker need no credential setup and never block a
 launch. Local shell variables and `.beaker/.env` values are not hosted
-settings. Do not trigger a run while a required credential is absent. A passing
-smoke check does not prove credentials are ready because smoke does not execute
-`run_case`.
+settings. Do not trigger a run while a required credential is missing. A
+passing smoke check does not prove credentials are ready, because smoke does
+not execute `run_case`.
 
 Run structural smoke validation only after real labeled examples are
 available. Use the local path when the source data remains on disk:
@@ -436,11 +436,11 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   shared. Scorer traffic is accounted for separately through
   `scoring_inference_target()`.
 - Never hand the application or a benchmark harness a wrapped, proxied,
-  subclassed, or monkeypatched stand-in for its model client. Tracing goes at
-  the call site or through a framework adapter, and an injected client is a type
-  the application already accepts; client-type checks reject a wrapper and fail
-  every case before it runs. When tracing cannot preserve that type, keep the
-  unwrapped client and report the tracing gap.
+  subclassed, or monkeypatched stand-in for its model client. Trace at the call
+  site or through a framework integration, and inject only a client type the
+  application already accepts; client-type checks reject a wrapper and fail
+  every case before it runs. When tracing cannot keep that type, keep the plain
+  client and report the tracing gap.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.

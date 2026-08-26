@@ -205,21 +205,21 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
 - Tracing and model injection preserve the client type: no proxy, subclass, or
-  monkeypatched object was substituted for a client the application or harness
-  validates. Where that was not possible, the unwrapped client was kept and the
-  tracing gap was reported.
+  monkeypatched object stands in for a client the application or harness checks.
+  Where that was not possible, the plain client was kept and the tracing gap
+  was reported.
 - The selected-model branch uses the narrowest injection seam.
 - Selected-model calls the gateway can serve are routed through
   `inference_target(runtime)`, with no provider key declared for them. Any call
-  site the gateway cannot serve is named at handoff, together with the provider
-  credential it still requires.
+  site the gateway cannot serve is named at handoff, with the provider
+  credential it still needs.
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
 - Credential requirements were derived from every hosted-reachable
-  `Spec.run_case` path, including SDK defaults and fallback branches, rather
-  than only from existing `spec.required_env` entries.
+  `Spec.run_case` path, including SDK defaults and fallback branches, not from
+  existing `spec.required_env` entries alone.
 - `spec.required_env` contains only variables read directly by candidate
   application code. Every declared hosted value is present in encrypted agent
   settings before launch. No provider key was declared, created, or waited on

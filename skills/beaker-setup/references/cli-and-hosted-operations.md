@@ -153,17 +153,17 @@ Check each field that controls the hosted evaluator:
 - Resolve `spec.source_dir` from the Git checkout root. It defaults to `.`, so
   in a monorepo set it to the package or service directory rather than
   assuming the Git root is the project root.
-- Resolve `spec.package_import_root` inside `spec.source_dir`, and verify that
-  the resulting directory exists in the pushed commit. Do not interpret it
-  from the directory where the local CLI happens to run. It is optional, and
-  `beaker init` writes both fields only when they differ from the defaults, so
-  add them only when the layout requires it.
+- Resolve `spec.package_import_root` inside `spec.source_dir`, and check that
+  the resulting directory exists in the pushed commit. Do not read it relative
+  to wherever the local CLI happens to run. Both fields are optional, and
+  `beaker init` writes them only when they differ from the defaults, so add
+  them only when the layout needs them.
 - Install the evaluator's dependencies from the pushed bundle. When
   `spec.source_dir` contains a `pyproject.toml`, the hosted image installs that
-  package and resolves its dependency closure; otherwise list every runtime
-  dependency in `spec.pip_install` and system packages in `spec.apt_install`. A
-  dependency that exists only in the local environment fails the image build or
-  the first import inside the evaluator.
+  package and its dependency closure. Otherwise list every runtime dependency
+  in `spec.pip_install` and system packages in `spec.apt_install`. A dependency
+  that exists only in the local environment fails the image build or the first
+  import inside the evaluator.
 - Derive `spec.required_env` from variables read by code that runs in the
   candidate evaluator child process. The list is an allowlist: storing a value
   in agent settings does not expose it unless its name is declared here.
@@ -184,8 +184,8 @@ path that `Spec.run_case` can reach. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
 only on names already present in `spec.required_env`. Read the application
 source to collect the variable *names* it reads; this inspection never reads,
-prints, or copies any secret value. Start with a focused search over the
-first-party source paths, adjusting them to this repository's layout:
+prints, or copies a secret value. Search the first-party source paths,
+adjusting them to this repository's layout:
 
 ```bash
 rg -n 'os\.environ|os\.getenv' .beaker <application-source-dir>
@@ -197,17 +197,17 @@ Classify each credential before configuring it:
   declare its name in `spec.required_env` and store its hosted value in the
   selected agent's encrypted environment settings.
 - Calls routed through `inference_target(runtime)` or
-  `scoring_inference_target()` require no credential setup. Do not declare a
+  `scoring_inference_target()` need no credential setup. Do not declare a
   provider key for them, do not create an agent or organization provider key,
-  and do not block a launch on one being absent: the gateway falls back to the
+  and do not block a launch on one being absent. The gateway falls back to the
   platform key, which covers OpenAI, Anthropic, Google, and OpenRouter. Agent
-  and organization keys are a customer billing choice made in the UI.
+  and organization keys are a billing choice the customer makes in the UI.
 - Before declaring a provider key, check whether the gateway can serve that
-  call instead. A model call site the gateway can serve should be routed
-  through `inference_target(runtime)` and its provider key left out of
-  `spec.required_env` entirely; see
+  call instead. Route what it can serve through `inference_target(runtime)` and
+  leave that key out of `spec.required_env`; see
   [model-routing-and-tracing.md](model-routing-and-tracing.md).
-- When both paths can run, satisfy both requirements.
+- A call site the gateway cannot serve still needs its own key declared and
+  set, even when other calls in the same run are gateway-routed.
 
 Treat process environment variables and values in `.beaker/.env` as local
 only. Beaker does not copy them to hosted settings. Immediately before launch,

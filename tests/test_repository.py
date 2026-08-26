@@ -191,7 +191,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Wrap the *call*, not the client", routing)
         self.assertIn("a type the application already constructs", normalized)
         self.assertIn(
-            "Never substitute a proxy, subclass, `__getattr__` forwarder, or monkeypatched method",
+            "Never put a proxy, subclass, `__getattr__` forwarder, or monkeypatched method",
             normalized,
         )
         self.assertIn("keep the original unwrapped client, run untraced", normalized)
