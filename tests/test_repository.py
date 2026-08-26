@@ -142,7 +142,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("SDK defaults and fallback branches", normalized)
         self.assertIn("Do not rely only on names already present in `spec.required_env`", normalized)
         self.assertIn("Beaker does not copy them to hosted settings", normalized)
-        self.assertIn("organization's LLM credentials", normalized)
+        self.assertIn("gateway-routed calls need no credential setup", normalized)
         self.assertIn("smoke does not execute `run_case`", normalized)
 
     def test_skills_prefer_the_gateway_over_application_provider_keys(self) -> None:
@@ -160,7 +160,12 @@ class RepositoryContractTests(unittest.TestCase):
         normalized = " ".join(content.split())
 
         self.assertIn("Prefer the gateway over application provider keys", routing)
-        self.assertIn("Gateway-routed calls need no provider key", normalized)
+        self.assertIn("Gateway-routed calls require no credential setup at all", normalized)
+        self.assertIn("never create an agent or organization provider key", normalized)
+        self.assertIn(
+            "A direct provider call from application code has no platform fallback", normalized
+        )
+        self.assertIn("do not block a launch on one being absent", normalized)
         self.assertIn("the model or provider is not the constraint", normalized)
         self.assertIn("Change the endpoint, not the client type or the call shape", normalized)
         self.assertIn("classify the call site by its SDK surface, not its provider", normalized)

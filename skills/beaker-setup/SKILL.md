@@ -173,9 +173,8 @@ Use the selected agent's page to view its runs and score trends.
      list the environment variable names that those paths read directly. Do
      not infer this list only from existing config. Keep local values in
      `.beaker/.env` and hosted values in encrypted agent settings; never put
-     values in YAML. Provider credentials used only through Beaker inference
-     routing belong in the organization's LLM credentials instead; declare a
-     provider key here only for model calls the gateway does not serve.
+     values in YAML. Declare a provider key here only for model calls the
+     gateway does not serve; gateway-routed calls need no credential setup.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
@@ -337,8 +336,8 @@ Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from the real `Spec.run_case` call path, then compare them
 with `spec.required_env` and `beaker agent env list --agent <selected-agent>`.
-Verify organization LLM credentials separately for provider calls routed
-through Beaker. Local shell variables and `.beaker/.env` values are not hosted
+Provider calls routed through Beaker need no credential setup and never block a
+launch. Local shell variables and `.beaker/.env` values are not hosted
 settings. Do not trigger a run while a required credential is absent. A passing
 smoke check does not prove credentials are ready because smoke does not execute
 `run_case`.

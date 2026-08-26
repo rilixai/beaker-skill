@@ -222,9 +222,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   than only from existing `spec.required_env` entries.
 - `spec.required_env` contains only variables read directly by candidate
   application code. Every declared hosted value is present in encrypted agent
-  settings before launch, and any provider routed through Beaker has an
-  organization LLM credential. Local shell and `.beaker/.env` values were not
-  treated as hosted settings.
+  settings before launch. No provider key was declared, created, or waited on
+  for a call routed through Beaker. Local shell and `.beaker/.env` values were
+  not treated as hosted settings.
 - Every Beaker YAML or agent-setting correction was followed by a new run;
   existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local

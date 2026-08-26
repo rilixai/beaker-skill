@@ -196,10 +196,12 @@ Classify each credential before configuring it:
 - When candidate application code reads an environment variable directly,
   declare its name in `spec.required_env` and store its hosted value in the
   selected agent's encrypted environment settings.
-- When code uses `inference_target(runtime)` or
-  `scoring_inference_target()`, verify the provider in the organization's LLM
-  credentials. Do not copy that provider secret into agent environment
-  settings unless the application also reads it directly.
+- Calls routed through `inference_target(runtime)` or
+  `scoring_inference_target()` require no credential setup. Do not declare a
+  provider key for them, do not create an agent or organization provider key,
+  and do not block a launch on one being absent: the gateway falls back to the
+  platform key, which covers OpenAI, Anthropic, Google, and OpenRouter. Agent
+  and organization keys are a customer billing choice made in the UI.
 - Before declaring a provider key, check whether the gateway can serve that
   call instead. A model call site the gateway can serve should be routed
   through `inference_target(runtime)` and its provider key left out of

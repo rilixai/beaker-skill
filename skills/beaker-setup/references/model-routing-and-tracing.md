@@ -5,9 +5,18 @@
 When the evaluation path selects a model, route those calls through the Beaker
 gateway by pointing the application's *existing* client at
 `inference_target(runtime)`, rather than exposing a provider key to the run.
-Gateway-routed calls need no provider key in `spec.required_env`: they draw on
-the organization's LLM credentials and are counted in the run ledger and
-budget.
+Gateway-routed calls require no credential setup at all: the gateway selects
+the agent key, then the organization key, then the platform key, and platform
+coverage includes OpenAI, Anthropic, Google, and OpenRouter. Declare no
+provider key in `spec.required_env` for them, never create an agent or
+organization provider key on the developer's behalf, and never treat a missing
+one as a launch blocker — those keys are a deliberate customer billing choice
+made in the UI.
+
+A direct provider call from application code has no platform fallback: it runs
+only on an agent or organization key that the developer configured and that the
+spec declares in `spec.required_env`. That is the concrete cost of not routing
+through the gateway.
 
 The gateway serves every provider Beaker supports and translates each request
 into that provider's dialect, so the model or provider is not the constraint —
