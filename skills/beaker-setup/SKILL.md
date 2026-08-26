@@ -322,11 +322,12 @@ working with credentials, datasets, hosted environment variables, or runs.
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from the real `Spec.run_case` call path, then compare them
-with `spec.required_env` and `beaker agent env list`. Verify organization LLM
-credentials separately for provider calls routed through Beaker. Local shell
-variables and `.beaker/.env` values are not hosted settings. Do not trigger a
-run while a required credential is absent. A passing smoke check does not
-prove credentials are ready because smoke does not execute `run_case`.
+with `spec.required_env` and `beaker agent env list --agent <selected-agent>`.
+Verify organization LLM credentials separately for provider calls routed
+through Beaker. Local shell variables and `.beaker/.env` values are not hosted
+settings. Do not trigger a run while a required credential is absent. A passing
+smoke check does not prove credentials are ready because smoke does not execute
+`run_case`.
 
 Run structural smoke validation only after real labeled examples are
 available. Use the local path when the source data remains on disk:

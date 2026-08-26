@@ -139,10 +139,10 @@ Before a hosted launch, derive credential requirements from every application
 path that `Spec.run_case` can reach. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
 only on names already present in `spec.required_env`. Start with a focused
-search such as:
+search, adjusting the paths to this repository's layout:
 
 ```bash
-rg -n 'os\.environ|getenv|API_KEY|api_key_var' .beaker src app
+rg -n 'os\.environ|getenv|API_KEY|api_key_var' .
 ```
 
 Classify each credential before configuring it:
@@ -157,18 +157,11 @@ Classify each credential before configuring it:
 - When both paths can run, satisfy both requirements.
 
 Treat process environment variables and values in `.beaker/.env` as local
-only. Beaker does not copy them to hosted settings. Run `beaker agent env list`
-immediately before launch and stop if a required name is absent. Structural
-smoke does not execute `run_case`, so it cannot validate these credentials.
-
-When the required value is available in the current process, pass it without
-printing it or placing it in shell history:
-
-```bash
-printf '%s' "$DATABASE_URL" | beaker agent env set DATABASE_URL --value-stdin --agent <selected-agent>
-```
-
-Run `beaker agent env list` again to verify the name before launch.
+only. Beaker does not copy them to hosted settings. Immediately before launch,
+run `beaker agent env list --agent <selected-agent>` and stop if a required
+name is absent. Structural smoke does not execute `run_case`, so it cannot
+validate these credentials. Set any missing value with the commands below, then
+list the names again before launch.
 
 Declare application variables needed by candidate evaluation as names under the
 selected YAML spec. Values never belong in YAML:
