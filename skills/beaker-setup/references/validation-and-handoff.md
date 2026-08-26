@@ -188,8 +188,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - `spec.source_dir` resolves from the Git checkout root, and
   `spec.package_import_root` resolves to an existing directory inside it in the
   pushed commit.
-- `spec.environment_base` satisfies the project's `requires-python` constraint
-  and its dependencies without weakening the package metadata.
+- The evaluator's dependencies come from the pushed bundle's `pyproject.toml`
+  or from `spec.pip_install`/`spec.apt_install`, not from the local
+  environment.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
 - The `@spec(repository=...)` scope contains the intended application source,

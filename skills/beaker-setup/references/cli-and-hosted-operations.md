@@ -142,22 +142,28 @@ spec:
   target: "beaker_spec:build_spec"
   source_dir: "services/example"
   package_import_root: ".beaker"
-  environment_base: "debian_slim:3.13"
+  pip_install:
+    - "httpx==0.28.1"
   required_env:
     - OPENAI_API_KEY
 ```
 
 Check each field that controls the hosted evaluator:
 
-- Resolve `spec.source_dir` from the Git checkout root. In a monorepo, use the
-  package or service directory rather than assuming the Git root is the
-  project root.
+- Resolve `spec.source_dir` from the Git checkout root. It defaults to `.`, so
+  in a monorepo set it to the package or service directory rather than
+  assuming the Git root is the project root.
 - Resolve `spec.package_import_root` inside `spec.source_dir`, and verify that
   the resulting directory exists in the pushed commit. Do not interpret it
-  from the directory where the local CLI happens to run.
-- Match `spec.environment_base` to the project's `requires-python` constraint
-  and every dependency's supported Python versions. Do not weaken the project
-  constraint to fit an older image.
+  from the directory where the local CLI happens to run. It is optional, and
+  `beaker init` writes both fields only when they differ from the defaults, so
+  add them only when the layout requires it.
+- Install the evaluator's dependencies from the pushed bundle. When
+  `spec.source_dir` contains a `pyproject.toml`, the hosted image installs that
+  package and resolves its dependency closure; otherwise list every runtime
+  dependency in `spec.pip_install` and system packages in `spec.apt_install`. A
+  dependency that exists only in the local environment fails the image build or
+  the first import inside the evaluator.
 - Derive `spec.required_env` from variables read by code that runs in the
   candidate evaluator child process. The list is an allowlist: storing a value
   in agent settings does not expose it unless its name is declared here.
@@ -176,11 +182,13 @@ process.
 Before a hosted launch, derive credential requirements from every application
 path that `Spec.run_case` can reach. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
-only on names already present in `spec.required_env`. Start with a focused
-search, adjusting the paths to this repository's layout:
+only on names already present in `spec.required_env`. Read the application
+source to collect the variable *names* it reads; this inspection never reads,
+prints, or copies any secret value. Start with a focused search over the
+first-party source paths, adjusting them to this repository's layout:
 
 ```bash
-rg -n 'os\.environ|getenv|API_KEY|api_key_var' .
+rg -n 'os\.environ|os\.getenv' .beaker <application-source-dir>
 ```
 
 Classify each credential before configuring it:

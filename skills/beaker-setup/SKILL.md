@@ -127,10 +127,10 @@ ambiguous; use `--discover` to locate existing factories.
 
 Before hosted validation or launch, complete the Beaker YAML preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
-the hosted source paths, Python image, and environment allowlist against the
-repository rather than accepting generated defaults. Commit and push every
-YAML correction before starting a new run; an existing run does not pick up
-later config or agent-setting changes.
+the hosted source paths, dependency installation, and environment allowlist
+against the repository rather than accepting generated defaults. Commit and
+push every YAML correction before starting a new run; an existing run does not
+pick up later config or agent-setting changes.
 
 Use the selected agent's page to view its runs and score trends.
 
