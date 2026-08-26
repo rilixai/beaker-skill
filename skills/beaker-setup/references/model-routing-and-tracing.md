@@ -1,11 +1,40 @@
 # Model routing and tracing
 
+## Prefer the gateway over application provider keys
+
+When the evaluation path selects a model, route those calls through the Beaker
+gateway by pointing the application's *existing* client at
+`inference_target(runtime)`, rather than exposing a provider key to the run.
+Gateway-routed calls need no provider key in `spec.required_env`: they draw on
+the organization's LLM credentials and are counted in the run ledger and
+budget.
+
+The gateway serves every provider Beaker supports and translates each request
+into that provider's dialect, so the model or provider is not the constraint —
+the request shape is. It accepts the OpenAI Chat Completions shape. Classify
+the application's model call site by the SDK surface it calls, not by its
+provider:
+
+| Application call site | Beaker integration |
+| --- | --- |
+| OpenAI SDK chat completions, OpenRouter with an effort word, or a LiteLLM-style wrapper | Repoint `base_url` and `api_key` at the target. Nothing else changes. |
+| A reasoning *budget* (`reasoning.max_tokens`, Anthropic `budget_tokens`, Gemini `thinkingBudget`) | Same repoint, and send the nearest canonical effort word in place of the budget; the gateway accepts effort words only. |
+| A different request surface (OpenAI Responses, Anthropic Messages, native Gemini) | The gateway does not serve those shapes for candidate rollouts. Keep the application's client and credentials, declare them in `spec.required_env`, and report the run as provider-credentialed at handoff. |
+
+Do not rewrite a working application call site into the OpenAI shape purely to
+reach the gateway; that is a production code change. Reuse the existing
+injection seam, and when the shape does not fit, take the third row.
+
 ## Model-selection boundary
 
 Treat `runtime.model` as an explicit request for Beaker-controlled model
 selection in the evaluation path. Its absence means use the application's
-existing production-like client and model defaults. Keep all Beaker imports for
-gateway construction and routing decisions inside `.beaker/`.
+existing production-like client and model defaults, including its own
+credentials: `inference_target(runtime)` requires both a selected model and
+hosted run credentials and raises otherwise, so ordinary
+application/evaluation runs and prompt-only optimization are not
+gateway-routed. Keep all Beaker imports for gateway construction and routing
+decisions inside `.beaker/`.
 
 The one narrow exception is **trace-adapter wiring**: application model call
 sites may import `beaker.tracing` and configure a supported adapter. This is
@@ -52,15 +81,17 @@ async def _run_case(*, case, targets: None, runtime):
 Build the injected client as a type the application already constructs and
 accepts. Applications and benchmark harnesses often validate the client they
 are handed against recognized types, so a Beaker-specific object or a wrapper
-around the client is rejected before any case runs.
+around the client is rejected before any case runs. Change the endpoint, not
+the client type or the call shape.
 
-The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
+The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Any supported provider's models are reachable through that one shape, so do not add a provider-specific gateway path: do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
 
 `inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. Prefer `runtime.canonical_model_id`; the helper may combine an explicit provider and model but does not guess an ambiguous provider.
 
 Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped
-Beaker gateway credentials. Never add global environment-driven routing for
-Beaker.
+Beaker gateway credentials, and remove such a name from `spec.required_env`
+once its calls are gateway-routed. Never add global environment-driven routing
+for Beaker.
 
 This example is for the default repository mode. An intentional
 `@spec(repository=None)` logical-target spec instead receives its declared

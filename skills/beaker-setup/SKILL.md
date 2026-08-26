@@ -174,7 +174,8 @@ Use the selected agent's page to view its runs and score trends.
      not infer this list only from existing config. Keep local values in
      `.beaker/.env` and hosted values in encrypted agent settings; never put
      values in YAML. Provider credentials used only through Beaker inference
-     routing belong in the organization's LLM credentials instead.
+     routing belong in the organization's LLM credentials instead; declare a
+     provider key here only for model calls the gateway does not serve.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
@@ -236,6 +237,12 @@ path. First adapt through the spec or a `.beaker/` adapter. Touch application
 code only when no existing injection interface can be reused. If
 `runtime.model` is absent, retain the application's existing client and model
 defaults.
+
+For a selected model, prefer the Beaker gateway over the application's provider
+keys: point the application's existing client at `inference_target(runtime)`.
+The gateway serves every supported provider but accepts only the OpenAI Chat
+Completions shape, so classify the call site by its SDK surface, not its
+provider. Calls it cannot serve keep the application's client and credentials.
 
 Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 

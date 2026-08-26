@@ -209,6 +209,10 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   validates. Where that was not possible, the unwrapped client was kept and the
   tracing gap was reported.
 - The selected-model branch uses the narrowest injection seam.
+- Selected-model calls the gateway can serve are routed through
+  `inference_target(runtime)`, with no provider key declared for them. Any call
+  site the gateway cannot serve is named at handoff, together with the provider
+  credential it still requires.
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the

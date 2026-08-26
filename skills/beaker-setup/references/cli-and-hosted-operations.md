@@ -200,6 +200,11 @@ Classify each credential before configuring it:
   `scoring_inference_target()`, verify the provider in the organization's LLM
   credentials. Do not copy that provider secret into agent environment
   settings unless the application also reads it directly.
+- Before declaring a provider key, check whether the gateway can serve that
+  call instead. A model call site the gateway can serve should be routed
+  through `inference_target(runtime)` and its provider key left out of
+  `spec.required_env` entirely; see
+  [model-routing-and-tracing.md](model-routing-and-tracing.md).
 - When both paths can run, satisfy both requirements.
 
 Treat process environment variables and values in `.beaker/.env` as local

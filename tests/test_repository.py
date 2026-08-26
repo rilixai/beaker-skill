@@ -145,6 +145,32 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("organization's LLM credentials", normalized)
         self.assertIn("smoke does not execute `run_case`", normalized)
 
+    def test_skills_prefer_the_gateway_over_application_provider_keys(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(
+            encoding="utf-8"
+        )
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, routing, operations, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Prefer the gateway over application provider keys", routing)
+        self.assertIn("Gateway-routed calls need no provider key", normalized)
+        self.assertIn("the model or provider is not the constraint", normalized)
+        self.assertIn("Change the endpoint, not the client type or the call shape", normalized)
+        self.assertIn("classify the call site by its SDK surface, not its provider", normalized)
+        self.assertIn("Before declaring a provider key, check whether the gateway", normalized)
+        self.assertIn("Any call site the gateway cannot serve is named at handoff", normalized)
+        self.assertIn(
+            "`inference_target(runtime)` requires both a selected model and hosted run credentials",
+            normalized,
+        )
+
     def test_skills_require_preserving_the_application_client_type(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")
         routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(
