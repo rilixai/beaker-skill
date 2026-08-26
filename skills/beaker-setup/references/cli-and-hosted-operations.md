@@ -142,10 +142,8 @@ spec:
   target: "beaker_spec:build_spec"
   source_dir: "services/example"
   package_import_root: ".beaker"
-  pip_install:
-    - "httpx==0.28.1"
   required_env:
-    - OPENAI_API_KEY
+    - DATABASE_API_KEY
 ```
 
 Check each field that controls the hosted evaluator:
