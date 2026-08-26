@@ -126,7 +126,7 @@ Interpret common failures:
 - missing runner/scorer callable: connect the required spec hook.
 - strict placeholder failure: replace remaining generated TODOs.
 - tracing warning: smoke warns, without changing its exit code (even with
-  `--strict`), when no framework adapter or `runtime.trace.model_call` is
+  `--strict`), when no framework integration or `runtime.trace.model_call` is
   wired in application code. Captures would record no model I/O. Wire tracing
   as described in
   [model-routing-and-tracing.md](model-routing-and-tracing.md) — `beaker trace
@@ -147,7 +147,7 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 
 ## Completion checklist
 
-- Beaker-owned config, specs, adapters, credentials, and traces are under
+- Beaker-owned config, specs, helper code, credentials, and traces are under
   the selected project's `.beaker/` directory.
 - No tests, fixtures, snapshots, test helpers, or test configuration were
   created or modified; existing tests were read-only evidence.
@@ -193,6 +193,7 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 ## Final report
 
 Summarize:
+Summarize in plain English:
 
 - files created or changed;
 - selected optimization target;
