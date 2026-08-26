@@ -123,7 +123,11 @@ insufficient. Do not refactor production code for Beaker.
 By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
 `.beaker/beaker_spec.py` under the selected project root. `--config-file` or
 `BEAKER_CONFIG_FILE` relocates the YAML inside that project. Init does not create
-credentials or placeholder datasets.
+credentials or placeholder datasets. Persisted `spec.source_dir` values are
+always relative to the Git root, not the directory containing the YAML. For
+example, initializing `services/invoices` records `source_dir:
+services/invoices`; `package_import_root` remains relative to that source
+directory.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
@@ -328,6 +332,8 @@ agent as `beaker_config_path` relative to the Git root. Rerunning setup also
 synchronizes that path for an existing repository-associated agent. A hosted
 run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
+The YAML's `spec.source_dir` independently identifies the Git-root-relative
+project source used by both local validation and hosted builds.
 
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
