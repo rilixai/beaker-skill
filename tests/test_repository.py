@@ -138,6 +138,12 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("available to the candidate application during evaluation", normalized)
         self.assertIn("evaluation-scoped, least-privilege credentials", normalized)
         self.assertIn("Declare only values that the application actually needs", normalized)
+        self.assertIn("derive credential requirements", normalized)
+        self.assertIn("SDK defaults and fallback branches", normalized)
+        self.assertIn("Do not rely only on names already present in `spec.required_env`", normalized)
+        self.assertIn("Beaker does not copy them to hosted settings", normalized)
+        self.assertIn("organization's LLM credentials", normalized)
+        self.assertIn("smoke does not execute `run_case`", normalized)
 
     def test_plain_hosted_launch_defaults_to_optimization_across_surfaces(self) -> None:
         usage = USAGE_SKILL.read_text(encoding="utf-8")

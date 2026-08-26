@@ -133,6 +133,43 @@ project root when credentials should live beside that project's config.
 
 ## Hosted environment variables
 
+### Credential preflight
+
+Before a hosted launch, derive credential requirements from every application
+path that `Spec.run_case` can reach. Include SDK defaults and fallback branches
+that can run when a selected model or provider route is absent. Do not rely
+only on names already present in `spec.required_env`. Start with a focused
+search such as:
+
+```bash
+rg -n 'os\.environ|getenv|API_KEY|api_key_var' .beaker src app
+```
+
+Classify each credential before configuring it:
+
+- When candidate application code reads an environment variable directly,
+  declare its name in `spec.required_env` and store its hosted value in the
+  selected agent's encrypted environment settings.
+- When code uses `inference_target(runtime)` or
+  `scoring_inference_target()`, verify the provider in the organization's LLM
+  credentials. Do not copy that provider secret into agent environment
+  settings unless the application also reads it directly.
+- When both paths can run, satisfy both requirements.
+
+Treat process environment variables and values in `.beaker/.env` as local
+only. Beaker does not copy them to hosted settings. Run `beaker agent env list`
+immediately before launch and stop if a required name is absent. Structural
+smoke does not execute `run_case`, so it cannot validate these credentials.
+
+When the required value is available in the current process, pass it without
+printing it or placing it in shell history:
+
+```bash
+printf '%s' "$DATABASE_URL" | beaker agent env set DATABASE_URL --value-stdin --agent <selected-agent>
+```
+
+Run `beaker agent env list` again to verify the name before launch.
+
 Declare application variables needed by candidate evaluation as names under the
 selected YAML spec. Values never belong in YAML:
 

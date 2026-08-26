@@ -203,9 +203,14 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
-- `spec.required_env` contains only required variable names. Values are
-  confined to `.beaker/.env` or hosted encrypted agent settings, and every
-  declared hosted value is present before launch.
+- Credential requirements were derived from every hosted-reachable
+  `Spec.run_case` path, including SDK defaults and fallback branches, rather
+  than only from existing `spec.required_env` entries.
+- `spec.required_env` contains only variables read directly by candidate
+  application code. Every declared hosted value is present in encrypted agent
+  settings before launch, and any provider routed through Beaker has an
+  organization LLM credential. Local shell and `.beaker/.env` values were not
+  treated as hosted settings.
 - When tracing applies, a best effort was made to wire it so that local
   `beaker run smoke --strict` passes with no tracing warning before the
   integration is committed and pushed; an unresolved tracing warning never

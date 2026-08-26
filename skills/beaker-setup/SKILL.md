@@ -161,9 +161,13 @@ Use the selected agent's page to view its runs and score trends.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
      Repository-mode case inputs and `CaseResult.output`/`context` must be
      JSON-normalizable because they cross the evaluator process boundary.
-   - `spec.required_env`: list only the names of application variables that
-     candidate evaluation needs. Keep local values in `.beaker/.env` and
-     hosted values in encrypted agent settings; never put values in YAML.
+   - `spec.required_env`: inspect every application path that hosted candidate
+     evaluation can reach, including SDK defaults and fallback branches, and
+     list the environment variable names that those paths read directly. Do
+     not infer this list only from existing config. Keep local values in
+     `.beaker/.env` and hosted values in encrypted agent settings; never put
+     values in YAML. Provider credentials used only through Beaker inference
+     routing belong in the organization's LLM credentials instead.
 4. Keep the spec and helper adapters under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
@@ -315,10 +319,14 @@ where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
 working with credentials, datasets, hosted environment variables, or runs.
 
-Before launching, compare `spec.required_env` with `beaker agent env list` for
-the selected agent. A hosted run with a missing or empty declared value fails
-before candidate dispatch. Set each missing value with `--value-stdin`, then
-start a new run.
+Before launching, complete the credential preflight in
+[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
+required variables from the real `Spec.run_case` call path, then compare them
+with `spec.required_env` and `beaker agent env list`. Verify organization LLM
+credentials separately for provider calls routed through Beaker. Local shell
+variables and `.beaker/.env` values are not hosted settings. Do not trigger a
+run while a required credential is absent. A passing smoke check does not
+prove credentials are ready because smoke does not execute `run_case`.
 
 Run structural smoke validation only after real labeled examples are
 available. Use the local path when the source data remains on disk:
