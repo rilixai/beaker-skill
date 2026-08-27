@@ -55,10 +55,21 @@ slugified, for example `beaker/20260821-1339-invoice-extraction`:
 
 ```bash
 git checkout -b beaker/$(date +%Y%m%d-%H%M)-invoice-extraction
-git add .beaker pyproject.toml uv.lock
+git status --short
+git add -- "<selected-config>" "<spec-and-helper-files>" \
+  "<dependency-and-lock-files>" "<intentional-tracing-files>"
+git diff --cached --name-only
 git commit -m "Add Beaker integration"
 git push -u origin HEAD
 ```
+
+Replace the placeholders with the exact paths changed for this integration.
+Include the selected config and target, `.beaker/.gitignore`, dependency
+metadata and its lockfile, and any deliberate tracing or application seam.
+Do not stage the selected source directory as a whole. Never stage an
+unrelated untracked dataset or source file merely to make onboarding pass.
+Review the staged path list before committing and ensure every intentional new
+integration file is present.
 
 When the checkout is already on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch
 for the selected agent whose timestamp is less than an hour old, reuse it
@@ -70,7 +81,7 @@ follow it.
 
 Never push the integration to `main`, `master`, or the repository's default
 branch, and never open a pull request, unless the developer asks for it. Stage
-only integration files; never stage any other secret file. Report the branch you
+only integration files; never stage any secret file. Report the branch you
 pushed.
 
 ## Keep Beaker isolated
@@ -128,7 +139,7 @@ insufficient. Do not refactor production code for Beaker.
    location; do not assume the Git root. If multiple tasks are plausible,
    summarize them and ask which one to optimize first.
 4. Only when discovery found no applicable config, enter the selected project
-   root and choose one config location for `init`, agent setup, validation, and
+   root and choose one config file for `init`, agent setup, validation, and
    runs:
 
    ```bash
@@ -146,7 +157,17 @@ insufficient. Do not refactor production code for Beaker.
    `BEAKER_CONFIG_FILE=config/beaker.yaml` is equivalent to the global
    `--config-file` option. If Beaker is already installed, omit
    `uvx --from beaker-sdk`. Config paths must be files inside the Git repository;
-   absolute paths and paths containing `..` are rejected.
+   absolute paths and paths containing `..` are rejected. Commands may run
+   either from the selected project root with its default config, or from the
+   Git root with the full repository-relative selector, for example
+   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`;
+   both select the same config. In a monorepo,
+   `spec.source_dir` is relative to the Git checkout root during hosted builds,
+   and `spec.package_import_root` is relative to `source_dir`, not to the YAML.
+   For a spec at `services/invoices/.beaker/beaker_spec.py`, use
+   `source_dir: services/invoices` and `package_import_root: .beaker`.
+   Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
+   before launching any nested-project integration.
 5. Never overwrite an existing spec or populated config. Fill the existing integration instead.
 6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 

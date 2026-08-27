@@ -120,7 +120,8 @@ At least one of `--name` or `--config-path` is required. The agent key and GitHu
 
 The default config is `.beaker/beaker.yaml` under the selected project root.
 Discover existing agents before initialization. When none applies, enter the
-chosen project root and use the same config selection for every command:
+chosen project root and use the same config selection for every command. Run
+agent setup there so `.beaker/.env` is written beside the selected project:
 
 ```bash
 uvx --from beaker-sdk beaker auth status
@@ -200,6 +201,64 @@ not repair an existing failed run, so start a new run after correcting either.
 A passing structural smoke check does not prove that the hosted image builds,
 that `run_case` executes, or that an environment value reaches the child
 process.
+
+Paths inside the selected spec table use hosted checkout coordinates:
+
+- `source_dir` is relative to the Git checkout root, regardless of where the
+  YAML lives;
+- `package_import_root` is relative to `source_dir`; and
+- `target` is imported from `package_import_root`.
+
+For this nested layout:
+
+```text
+repo/
+  services/invoices/
+    pyproject.toml
+    .beaker/
+      beaker.yaml
+      beaker_spec.py
+```
+
+use:
+
+```yaml
+spec:
+  target: beaker_spec:build_spec
+  source_dir: services/invoices
+  package_import_root: .beaker
+```
+
+Validate the hosted coordinate system from the Git root, carrying the full
+config selector and using the nested project's environment. With uv, for
+example:
+
+```bash
+uv run --project services/invoices beaker \
+  --config-file services/invoices/.beaker/beaker.yaml \
+  run smoke --strict --agent <agent> --dataset <name@revision>
+```
+
+Running from the project root with its default config selects the same file;
+either working directory works when the selector resolves to the selected
+YAML.
+
+## Common integration failures
+
+The `source_dir` rows below all stem from the Git-root-relative resolution
+described in [Config location and monorepos](#config-location-and-monorepos).
+
+| Error or symptom | Cause | Fix |
+|---|---|---|
+| `Configured source_dir is not a directory in the GitHub checkout: '<path>'` | `source_dir` was written relative to the YAML, current directory, or package rather than the Git root. | Set `source_dir` to the project directory as seen from the repository root, commit, push, and launch a new run from that branch. |
+| `Configured package_import_root is not a directory in the GitHub checkout: '.beaker'` | A nested project used `source_dir: .`, so hosted resolution searched for repository-root `.beaker`. | Set `source_dir` to the Git-root-relative project path and keep `package_import_root: .beaker` when the spec file is under that project's `.beaker/`. |
+| `could not find source for target ...` or `ModuleNotFoundError` while loading the spec | `target` is not importable from `package_import_root`, or a path component is not a Python identifier. | Resolve the target as `module.path:callable` from the configured import root; adjust the import root or module path without moving Beaker policy into application source. |
+| Hosted build cannot import application dependencies even though local smoke loads the spec. | `source_dir` does not point at the project containing `pyproject.toml`, so the image builder does not install that package. | Point `source_dir` at the nested Python project, or declare only genuinely external build requirements through the supported image dependency fields. |
+| `Package '<name>' requires a different Python: 3.12.x not in '>=3.13'` during image build | Hosted images default to Python 3.12, but the selected project's `requires-python` excludes it. | Set `spec.environment_base: debian_slim:3.13` (or another supported version satisfying the project), commit, push, and launch a new run. Do not weaken the project's Python requirement merely to satisfy the default image. |
+
+After any hosted failure, inspect it with `beaker run status <run-id>`, fix the
+root cause rather than retrying the same immutable commit, push the fix, launch
+a new run, and monitor it with `beaker run status <new-run-id> --watch`.
 
 ## Hosted environment variables
 
