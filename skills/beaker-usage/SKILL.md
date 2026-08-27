@@ -137,7 +137,9 @@ the optimizer.
 | Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Default optimization (no optimizer flag) |
 
 A plain GitHub-backed launch uses the default optimization for either editable
-surface. The seed starts with the configured production-system model behavior
+surface. This is the launch to use: when the developer asks to optimize,
+launch the default optimization unless they explicitly ask to benchmark or
+compare specific models. The seed starts with the configured production-system model behavior
 unless a supported launch-time model selection is explicit. During
 optimization, the optimizer may modify the editable source or resource,
 including model selection and model-call behavior, when that improves the
@@ -172,7 +174,11 @@ developer asks to optimize without an initial benchmark, use
 
 ### Select models and execution mode
 
-For a selected-model run:
+Selected-model benchmark runs are an explicit opt-in, never the default. Do
+not propose one, discover models, or ask the developer to pick models when
+they only asked to optimize; launch the default optimization instead.
+
+When the developer explicitly asks to benchmark or compare specific models:
 
 1. Discover models whose provider credentials are configured:
 
@@ -317,6 +323,9 @@ Cancellation is a state-changing operation:
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with the default optimization.
+- Never default to a selected-model benchmark run; launch the default
+  optimization unless the developer explicitly asks to benchmark or compare
+  specific models.
 - Never infer the optimizer from `repository`; `repository=None` selects named
   resources and still uses the default optimization.
 - Never use selected-model flags when `Spec.seed_targets` is absent.
