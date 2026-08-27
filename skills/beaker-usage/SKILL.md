@@ -139,8 +139,11 @@ the optimizer.
 A plain GitHub-backed launch uses the default optimization for either editable
 surface. This is the launch to use: when the developer asks to optimize,
 launch the default optimization unless they explicitly ask to benchmark or
-compare specific models. The seed starts with the configured production-system model behavior
-unless a supported launch-time model selection is explicit. During
+compare specific models. For an agent's first run, always launch the plain
+command with no optional flag that changes the run type: no
+`--optimization-model`, no `--execution-mode`, and no `--test-all-candidates`.
+The seed starts with the configured production-system model behavior unless a
+supported launch-time model selection is explicit. During
 optimization, the optimizer may modify the editable source or resource,
 including model selection and model-call behavior, when that improves the
 objective.
@@ -326,6 +329,7 @@ Cancellation is a state-changing operation:
 - Never default to a selected-model benchmark run; launch the default
   optimization unless the developer explicitly asks to benchmark or compare
   specific models.
+- Never add a run-type flag to an agent's first run; trigger it plain.
 - Never infer the optimizer from `repository`; `repository=None` selects named
   resources and still uses the default optimization.
 - Never use selected-model flags when `Spec.seed_targets` is absent.
