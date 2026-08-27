@@ -174,11 +174,7 @@ developer asks to optimize without an initial benchmark, use
 
 ### Select models and execution mode
 
-Selected-model benchmark runs are an explicit opt-in, never the default. Do
-not propose one, discover models, or ask the developer to pick models when
-they only asked to optimize; launch the default optimization instead.
-
-When the developer explicitly asks to benchmark or compare specific models:
+For a selected-model run:
 
 1. Discover models whose provider credentials are configured:
 
