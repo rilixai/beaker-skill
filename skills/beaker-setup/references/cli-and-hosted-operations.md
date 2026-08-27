@@ -335,10 +335,12 @@ Use `--value-stdin`, not `--value`, so the secret does not enter shell history.
 Beaker lists names and non-revealing hints only and never returns plaintext
 values. Never log or commit secret values.
 
-At dispatch, Beaker copies only declared customer variables into each candidate
-evaluator. A missing or empty `required_env` value fails the run before
-candidate code starts. Set the value, verify its name with `beaker agent env
-list`, and start a new run; do not retry the failed run unchanged.
+Agent environment variables configured through the UI or `beaker agent env
+set` are injected into hosted runs. `spec.required_env` identifies which
+variables must be configured before a run can start. A missing or empty
+required value fails the run before candidate code starts. Set the value,
+verify its name with `beaker agent env list`, and start a new run; do not retry
+the failed run unchanged.
 
 ## Hosted data and run ordering
 
