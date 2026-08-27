@@ -157,7 +157,11 @@ credentials or placeholder datasets. Persisted `spec.source_dir` values are
 always relative to the Git root, not the directory containing the YAML. For
 example, initializing `services/invoices` records `source_dir:
 services/invoices`; `package_import_root` remains relative to that source
-directory.
+directory. `source_dir: "."` always means the Git root, including when the
+selected YAML is nested. Absolute paths and paths containing `..` are invalid.
+When smoke or onboarding reports a migration such as `Set source_dir to
+services/invoices`, update the existing YAML to that exact repository-relative
+value and rerun the failed check; do not move or recreate the config.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 

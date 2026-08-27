@@ -413,6 +413,16 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("services/invoices/.beaker/beaker.yaml", text)
             self.assertIn("relative to the Git root", " ".join(text.split()))
 
+    def test_skill_explains_legacy_nested_source_dir_migration(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        for text in (skill, operations):
+            normalized = " ".join(text.split())
+            self.assertIn('source_dir: "."', text)
+            self.assertIn("means the Git root", normalized)
+            self.assertIn("Set source_dir to services/invoices", normalized)
+            self.assertIn("paths containing `..`", normalized)
+
     def test_setup_skill_uses_structural_smoke_validation(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")

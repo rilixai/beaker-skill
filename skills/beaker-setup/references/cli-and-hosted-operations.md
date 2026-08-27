@@ -149,7 +149,11 @@ discovered location to a Git-root-relative `beaker_config_path`, such as
 The selected YAML's `spec.source_dir` is also Git-root-relative, so a nested
 project records `source_dir: services/invoices`; `package_import_root` remains
 relative to that source directory. Local smoke and hosted GitHub builds use
-this same base.
+this same base. `source_dir: "."` means the Git root even when the YAML is
+nested; it does not mean the directory containing the YAML. Absolute paths and
+paths containing `..` are rejected. If smoke or onboarding reports `Set
+source_dir to services/invoices`, apply that exact repository-relative value to
+the existing config and rerun the check.
 If a later command runs from the Git root, pass that full repository-relative
 path as its selector. Paths must remain inside the Git repository. Agent setup
 writes `.beaker/.env` under its working directory, so run it from the intended
