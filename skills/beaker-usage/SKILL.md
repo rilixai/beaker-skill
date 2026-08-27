@@ -319,10 +319,6 @@ Cancellation is a state-changing operation:
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
 - Never combine selected models with the default optimization.
-- Never default to a selected-model benchmark run; launch the default
-  optimization unless the developer explicitly asks to benchmark or compare
-  specific models.
-- Never add a run-type flag to an agent's first run; trigger it plain.
 - Never infer the optimizer from `repository`; `repository=None` selects named
   resources and still uses the default optimization.
 - Never use selected-model flags when `Spec.seed_targets` is absent.
