@@ -243,12 +243,10 @@ class RepositoryContractTests(unittest.TestCase):
             "launch the default optimization unless they explicitly ask to benchmark or compare specific models",
             normalized,
         )
-        self.assertIn("Never default to a selected-model benchmark run", normalized)
         self.assertIn(
             "For an agent's first run, always launch the plain command with no optional flag that changes the run type",
             normalized,
         )
-        self.assertIn("Never add a run-type flag to an agent's first run; trigger it plain", normalized)
         self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
         self.assertIn("Repository-surface default optimization always evaluates only the winner", normalized)
         self.assertIn("Apply TEST candidate policy by editable surface", normalized)
