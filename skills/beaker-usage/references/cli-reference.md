@@ -147,8 +147,7 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 ```
 
 Selected-model benchmark and optimization for a spec with populated
-`seed_targets`. Use it only when the developer explicitly asks to benchmark or
-compare specific models. The split values below are illustrative, not defaults; use the
+`seed_targets`. The split values below are illustrative, not defaults; use the
 benchmark defaults unless the developer chooses splits:
 
 ```bash
