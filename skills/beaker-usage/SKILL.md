@@ -140,10 +140,7 @@ A plain GitHub-backed launch uses the default optimization for either editable
 surface. This is the launch to use: when the developer asks to optimize,
 launch the default optimization unless they explicitly ask to benchmark or
 compare specific models. For an agent's first run, always launch the plain
-command with no optional flag that changes the run type: no
-`--optimization-model`, no `--execution-mode`, and no `--test-all-candidates`.
-The seed starts with the configured production-system model behavior unless a
-supported launch-time model selection is explicit. During
+command with no optional flag that changes the run type. During
 optimization, the optimizer may modify the editable source or resource,
 including model selection and model-call behavior, when that improves the
 objective.
