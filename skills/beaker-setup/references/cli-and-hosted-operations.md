@@ -384,10 +384,6 @@ list`, and start a new run; do not retry the failed run unchanged.
    # Or use --dataset-id <artifact-id> instead.
    ```
 
-   The first run always uses this plain command. Do not add optional run-type
-   flags such as `--optimization-model`, `--execution-mode`, or
-   `--test-all-candidates`.
-
    Before triggering, commit and push the completed integration yourself, to
    the `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch you intend to use. Do not
    stage secret files.
