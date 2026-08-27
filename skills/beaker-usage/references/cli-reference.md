@@ -93,7 +93,7 @@ Reading the JSON and acting on it:
 
 ```bash
 beaker auth status
-beaker agent list
+beaker agent list --json
 beaker github status --repo <owner/repository>
 beaker github branches --repo <owner/repository> --json
 beaker dataset list --agent <selected-agent> --json
@@ -104,6 +104,11 @@ beaker model list --available-only --json
 `github branches` uses the stored user CLI login. Run `beaker login` only when
 that login is missing or expired. Runtime commands use the project credentials
 created during setup.
+
+`agent list --json` includes `github_repository` and `beaker_config_path`.
+Filter by the current checkout's exact GitHub `owner/name`, select the intended
+optimization target, and use its repository-relative `beaker_config_path` as
+the global `--config-file` selector when operating from the Git root.
 
 ## Launch commands
 

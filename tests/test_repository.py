@@ -413,6 +413,16 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("services/invoices/.beaker/beaker.yaml", text)
             self.assertIn("relative to the Git root", " ".join(text.split()))
 
+    def test_skill_explains_legacy_nested_source_dir_migration(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        for text in (skill, operations):
+            normalized = " ".join(text.split())
+            self.assertIn('source_dir: "."', text)
+            self.assertIn("means the Git root", normalized)
+            self.assertIn("Set source_dir to services/invoices", normalized)
+            self.assertIn("paths containing `..`", normalized)
+
     def test_setup_skill_uses_structural_smoke_validation(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
@@ -455,6 +465,22 @@ class RepositoryContractTests(unittest.TestCase):
         normalized = " ".join(content.split())
         self.assertIn("Use the selected agent's page to view its runs and score trends", normalized)
         self.assertIn("complete run history and score trends for completed runs", normalized)
+
+    def test_agent_discovery_carries_the_repository_config_path(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        content = " ".join((setup + "\n" + usage).split())
+        start_safely = setup.split("## Start safely", 1)[1].split("## Implement the real integration", 1)[0]
+        normalized_start = " ".join(start_safely.split())
+
+        self.assertIn("beaker agent list --json", content)
+        self.assertIn("uvx --from beaker-sdk beaker agent list --json", setup)
+        self.assertIn("github_repository", content)
+        self.assertIn("beaker_config_path", content)
+        self.assertIn("global `--config-file` selector", content)
+        discovery_command = "uvx --from beaker-sdk beaker agent list --json"
+        self.assertLess(start_safely.index(discovery_command), start_safely.index("beaker init --print"))
+        self.assertIn("before `beaker init` or the first `beaker onboarding status`", normalized_start)
 
     def test_usage_documents_parallel_agent_runs_without_a_fixed_cap(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")

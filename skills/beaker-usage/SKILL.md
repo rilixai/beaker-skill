@@ -40,9 +40,13 @@ if a command fails or the next action is unclear.
 
 ## Stay inside the connected project
 
-1. Locate the selected project's Beaker config. In a monorepo, do not assume
-   the Git root is the project root. If several Beaker configs exist and the
-   user's target is unclear, show the choices and ask which project to use.
+1. When the selected project is not already known, run `beaker agent list
+   --json`, filter agents to an exact `github_repository` match with the current
+   GitHub checkout, and select the matching optimization target. Its
+   `beaker_config_path` is the authoritative repository-relative config
+   location. If several matching agents could fit, show them and ask which
+   target to use. Read the selected YAML's Git-root-relative `spec.source_dir`
+   to locate its project source; do not assume the Git root.
 2. Run every command from that project root. If the project uses a non-default
    config path, preserve the same global selector on every command:
 
@@ -80,8 +84,13 @@ Before a hosted launch:
    which agent you selected before uploading data or launching a run.
 
    ```bash
-   beaker agent list
+   beaker agent list --json
    ```
+
+   Restrict the returned agents to those whose `github_repository` exactly
+   matches the current checkout. Carry the selected record's
+   `beaker_config_path` as the global `--config-file` selector for commands run
+   from the Git root.
 
 3. List GitHub App-visible branches and the selected agent's hosted datasets:
 

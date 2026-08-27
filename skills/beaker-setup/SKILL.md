@@ -16,6 +16,11 @@ remotely only when the developer requests it.
 
 `beaker onboarding status` is the loop-control command for setup:
 
+- Before entering the loop, complete the repository and agent discovery in
+  **Start safely**. Select an existing agent's `beaker_config_path` when one
+  applies, or establish that no matching agent exists. Status searches upward
+  from the working directory; it does not discover nested configs below the
+  Git root.
 - Run it after every Beaker command and whenever the next step is unclear.
   Do not ask the developer what to do next before consulting this command.
 - Follow its single returned next action exactly. The returned action is
@@ -97,9 +102,34 @@ insufficient. Do not refactor production code for Beaker.
 
 ## Start safely
 
-1. Inspect the repository for `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt definitions, model/agent calls, evals, and labeled fixtures. In a monorepo, identify the package or service being optimized before choosing the config location; do not assume the Git root.
-2. If multiple tasks are plausible, summarize them and ask which one to optimize first.
-3. Enter the selected project root, then choose one config location and use it consistently for `init`, agent setup, validation, and runs:
+1. Determine the enclosing Git root and its GitHub `owner/name`. Check
+   authentication and list agents before `beaker init` or the first
+   `beaker onboarding status`. Until Beaker is installed in the project, run
+   these commands through `uvx`:
+
+   ```bash
+   uvx --from beaker-sdk beaker auth status
+   uvx --from beaker-sdk beaker login  # only when auth status requires it
+   uvx --from beaker-sdk beaker agent list --json
+   ```
+
+   Once the project dependency is installed, use its ordinary `beaker`
+   command instead.
+2. Filter agents to an exact `github_repository` match. If one agent clearly
+   matches the task, use its `beaker_config_path`. If several agents could
+   match, ask the developer which target to use. From the Git root, select that config,
+   read its Git-root-relative `spec.source_dir`, and enter that source/project
+   root. Do not initialize or scan for a replacement config.
+3. Most new users will not have an agent yet. If no agent matches the
+   repository, inspect the checkout for
+   `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt
+   definitions, model/agent calls, evals, and labeled fixtures. In a monorepo,
+   identify the package or service being optimized before choosing the config
+   location; do not assume the Git root. If multiple tasks are plausible,
+   summarize them and ask which one to optimize first.
+4. Only when discovery found no applicable config, enter the selected project
+   root and choose one config location for `init`, agent setup, validation, and
+   runs:
 
    ```bash
    cd services/invoices
@@ -117,13 +147,21 @@ insufficient. Do not refactor production code for Beaker.
    `--config-file` option. If Beaker is already installed, omit
    `uvx --from beaker-sdk`. Config paths must be files inside the Git repository;
    absolute paths and paths containing `..` are rejected.
-4. Never overwrite an existing spec or populated config. Fill the existing integration instead.
-5. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
+5. Never overwrite an existing spec or populated config. Fill the existing integration instead.
+6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 
 By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
 `.beaker/beaker_spec.py` under the selected project root. `--config-file` or
 `BEAKER_CONFIG_FILE` relocates the YAML inside that project. Init does not create
-credentials or placeholder datasets.
+credentials or placeholder datasets. Persisted `spec.source_dir` values are
+always relative to the Git root, not the directory containing the YAML. For
+example, initializing `services/invoices` records `source_dir:
+services/invoices`; `package_import_root` remains relative to that source
+directory. `source_dir: "."` always means the Git root, including when the
+selected YAML is nested. Absolute paths and paths containing `..` are invalid.
+When smoke or onboarding reports a migration such as `Set source_dir to
+services/invoices`, update the existing YAML to that exact repository-relative
+value and rerun the failed check; do not move or recreate the config.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
@@ -247,19 +285,12 @@ provider. Calls it cannot serve keep the application's client and credentials.
 
 Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
-## Authenticate, discover the agent, and validate
+## Connect hosted access and validate
 
-After the optimization target is known, authenticate and confirm GitHub access:
-
-```bash
-beaker auth status
-beaker login
-beaker onboarding status
-beaker github status
-```
-
-Skip `beaker login` only when `beaker auth status` confirms the stored session
-is valid.
+**Start safely** already authenticates, discovers the agent, and selects the
+config. Do not repeat that discovery unless `beaker onboarding status` reports
+that the login or selection is no longer valid. Use the following details only
+for the remaining hosted setup.
 
 ### Connect the Beaker GitHub App
 
@@ -294,19 +325,9 @@ Repository selection, install approval, and timeout details are in
 
 ### Select the agent
 
-Check the existing agents:
-
-```bash
-beaker agent list
-```
-
-Most new users will not have an agent yet. If none exists, confirm what the
-developer wants to optimize and create an agent with a clear name for that
-target. Do not use a generic repository name.
-
-If an existing agent clearly matches the task, use it. If several agents could
-match, ask the developer which one to use. Tell the developer which agent you
-selected before uploading data or launching a run.
+**Start safely** has already selected an existing agent or established that no
+matching agent exists. Tell the developer which agent you selected before
+uploading data or launching a run.
 
 Select an existing agent with:
 
@@ -315,9 +336,15 @@ beaker agent setup "<selected-agent>"
 ```
 
 Pass `--repo <owner/name>` only when the selected agent still needs that
-repository association. To create an agent after confirming its name, run
-`beaker agent setup "<New Agent Name>" --repo <owner/name>`. An unknown name
-creates an agent, so do not guess one.
+repository association. If discovery found no matching agent, create one only
+after confirming the optimization target and name:
+
+```bash
+beaker agent setup "<New Agent Name>" --repo <owner/name>
+```
+
+An unknown name creates an agent, so do not guess one or use a generic
+repository name.
 
 Run `beaker agent setup` from the same selected project root and pass the same
 global `--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If
@@ -328,6 +355,8 @@ agent as `beaker_config_path` relative to the Git root. Rerunning setup also
 synchronizes that path for an existing repository-associated agent. A hosted
 run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
+The YAML's `spec.source_dir` independently identifies the Git-root-relative
+project source used by both local validation and hosted builds.
 
 Agent setup writes runtime secrets only to `.beaker/.env` under the directory
 where it runs. Never print, echo, or commit them. Read
@@ -385,9 +414,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 ## Non-negotiable rules
 
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
-- Never create a generic repository-named Beaker agent; name the optimization target.
-- Check for existing agents after login. If one clearly matches, use it. If
-  several could match, ask the developer which one to use.
+- Follow the existing-agent decision from **Start safely**. Never create a
+  generic repository-named agent or replace a matching agent's selected config.
 - Never attempt to grant GitHub access on the developer's behalf, and never
   guess or pass `--installation-id`; surface the install URL and wait for the
   developer to confirm.
@@ -401,9 +429,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   multiple metrics; ask the developer which metric and weights to optimize. A
   single clearly established metric needs no confirmation.
 - Always communicate with the developer in plain English, avoiding internal jargon and technical arcana.
-- Never ask the developer what to do next before running `beaker onboarding
-  status`; follow its returned action, and relay developer-owned actions
-  verbatim.
+- After repository and agent discovery, never ask the developer what to do next
+  before running `beaker onboarding status` with the selected config; follow
+  its returned action, and relay developer-owned actions verbatim.
 - Never assume the Git root is the Beaker project root in a monorepo; select the target project and keep its config selection consistent across commands.
 - Never place Beaker-owned code or files outside `.beaker/` when they can live there.
 - Never save generated JSONL dataset files in the user's repository or under
