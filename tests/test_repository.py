@@ -190,12 +190,10 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Preserve the client type", routing)
         self.assertIn("Wrap the *call*, not the client", routing)
         self.assertIn("a type the application already constructs", normalized)
-        self.assertIn(
-            "Never put a proxy, subclass, `__getattr__` forwarder, or monkeypatched method",
-            normalized,
-        )
+        self.assertIn("Do not put a transparent proxy, `__getattr__` forwarder", normalized)
         self.assertIn("keep the original unwrapped client, run untraced", normalized)
-        self.assertIn("client-type checks reject a wrapper", normalized)
+        self.assertIn("Client-type checks reject such wrappers", normalized)
+        self.assertIn("exception is a framework-specific adapter", normalized)
         self.assertIn("Tracing and model injection preserve the client type", handoff)
 
     def test_setup_skill_has_a_hosted_yaml_preflight(self) -> None:
@@ -354,6 +352,17 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Never add Beaker tracing to scorers, rubric judges, evaluators, post-processing, or post-rollout model calls", normalized_routing)
         self.assertNotIn("inner=True", normalized_routing)
         self.assertNotIn("inner=True", normalized_skill)
+
+    def test_tracing_guidance_preflights_nominal_client_wrappers(self) -> None:
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(encoding="utf-8")
+        normalized = " ".join(routing.split())
+
+        self.assertIn("delegates through `__getattr__`", routing)
+        self.assertIn("`isinstance(...)`", routing)
+        self.assertIn("subclass the public client base", normalized)
+        self.assertIn("exact resolver or type check the application uses", normalized)
+        self.assertIn("Before a hosted baseline", routing)
+        self.assertIn("Only execute the traced call after that preflight succeeds", normalized)
 
     def test_skill_uses_structural_smoke_validation(self) -> None:
         skill_dir = SKILL.parent
