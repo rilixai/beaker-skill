@@ -194,7 +194,10 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("keep the original unwrapped client, run untraced", normalized)
         self.assertIn("Client-type checks reject such wrappers", normalized)
         self.assertIn("exception is a framework-specific adapter", normalized)
+        self.assertIn("The only exception is a framework-specific, type-preserving adapter", normalized)
+        self.assertIn("passes the application's resolver or type check before a hosted baseline", normalized)
         self.assertIn("Tracing and model injection preserve the client type", handoff)
+        self.assertIn("The only exception is a framework-specific, type-preserving adapter", normalized)
 
     def test_setup_skill_has_a_hosted_yaml_preflight(self) -> None:
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
