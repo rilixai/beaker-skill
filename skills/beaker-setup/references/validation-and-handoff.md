@@ -185,6 +185,12 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   defaults and no Beaker import; otherwise application code is untouched.
 - Beaker is recorded as development/tooling rather than a production runtime
   dependency when the project supports that separation.
+- `spec.source_dir` resolves from the Git checkout root, and
+  `spec.package_import_root` resolves to an existing directory inside it in the
+  pushed commit.
+- The evaluator's dependencies come from the pushed bundle's `pyproject.toml`
+  or from `spec.pip_install`/`spec.apt_install`, not from the local
+  environment.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
 - The `@spec(repository=...)` scope contains the intended application source,
@@ -198,14 +204,29 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
   post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
+- Tracing and model injection preserve the client type: no proxy, subclass, or
+  monkeypatched object stands in for a client the application or harness checks.
+  Where that was not possible, the plain client was kept and the tracing gap
+  was reported.
 - The selected-model branch uses the narrowest injection seam.
+- Selected-model calls the gateway can serve are routed through
+  `inference_target(runtime)`, with no provider key declared for them. Any call
+  site the gateway cannot serve is named at handoff, with the provider
+  credential it still needs.
 - Any LLM judge declares its fixed canonical model with
   `Spec.llm_scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
-- `spec.required_env` contains only required variable names. Values are
-  confined to `.beaker/.env` or hosted encrypted agent settings, and every
-  declared hosted value is present before launch.
+- Credential requirements were derived from every hosted-reachable
+  `Spec.run_case` path, including SDK defaults and fallback branches, not from
+  existing `spec.required_env` entries alone.
+- `spec.required_env` contains only variables read directly by candidate
+  application code. Every declared hosted value is present in encrypted agent
+  settings before launch. No provider key was declared, created, or waited on
+  for a call routed through Beaker. Local shell and `.beaker/.env` values were
+  not treated as hosted settings.
+- Every Beaker YAML or agent-setting correction was followed by a new run;
+  existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local
   `beaker run smoke --strict` passes with no tracing warning before the
   integration is committed and pushed; an unresolved tracing warning never

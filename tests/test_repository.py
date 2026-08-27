@@ -138,6 +138,85 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("available to the candidate application during evaluation", normalized)
         self.assertIn("evaluation-scoped, least-privilege credentials", normalized)
         self.assertIn("Declare only values that the application actually needs", normalized)
+        self.assertIn("derive credential requirements", normalized)
+        self.assertIn("SDK defaults and fallback branches", normalized)
+        self.assertIn("Do not rely only on names already present in `spec.required_env`", normalized)
+        self.assertIn("Beaker does not copy them to hosted settings", normalized)
+        self.assertIn("gateway-routed calls need no credential setup", normalized)
+        self.assertIn("smoke does not execute `run_case`", normalized)
+
+    def test_skills_prefer_the_gateway_over_application_provider_keys(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(
+            encoding="utf-8"
+        )
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, routing, operations, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Prefer the gateway over application provider keys", routing)
+        self.assertIn("Gateway-routed calls require no credential setup at all", normalized)
+        self.assertIn("never create an agent or organization provider key", normalized)
+        self.assertIn(
+            "A direct provider call from application code has no platform fallback", normalized
+        )
+        self.assertIn("do not block a launch on one being absent", normalized)
+        self.assertIn("the model or provider is not the constraint", normalized)
+        self.assertIn("Change the endpoint, not the client type or the call shape", normalized)
+        self.assertIn("classify the call site by its SDK surface, not its provider", normalized)
+        self.assertIn("Before declaring a provider key, check whether the gateway", normalized)
+        self.assertIn("Any call site the gateway cannot serve is named at handoff", normalized)
+        self.assertIn(
+            "`inference_target(runtime)` requires both a selected model and hosted run credentials",
+            normalized,
+        )
+
+    def test_skills_require_preserving_the_application_client_type(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        routing = (SKILL.parent / "references" / "model-routing-and-tracing.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, routing, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Preserve the client type", routing)
+        self.assertIn("Wrap the *call*, not the client", routing)
+        self.assertIn("a type the application already constructs", normalized)
+        self.assertIn(
+            "Never put a proxy, subclass, `__getattr__` forwarder, or monkeypatched method",
+            normalized,
+        )
+        self.assertIn("keep the original unwrapped client, run untraced", normalized)
+        self.assertIn("client-type checks reject a wrapper", normalized)
+        self.assertIn("Tracing and model injection preserve the client type", handoff)
+
+    def test_setup_skill_has_a_hosted_yaml_preflight(self) -> None:
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((SKILL.read_text(encoding="utf-8"), operations, handoff))
+        normalized = " ".join(content.split())
+
+        self.assertIn("Beaker YAML preflight", content)
+        self.assertIn('source_dir: "services/example"', operations)
+        self.assertIn('package_import_root: ".beaker"', operations)
+        self.assertIn("Resolve `spec.source_dir` from the Git checkout root", normalized)
+        self.assertIn("Resolve `spec.package_import_root` inside `spec.source_dir`", normalized)
+        self.assertIn("Install the evaluator's dependencies", normalized)
+        self.assertIn("The list is an allowlist", normalized)
+        self.assertIn("Runs are immutable snapshots", normalized)
+        self.assertIn("does not prove that the hosted image builds", normalized)
 
     def test_plain_hosted_launch_defaults_to_optimization_across_surfaces(self) -> None:
         usage = USAGE_SKILL.read_text(encoding="utf-8")

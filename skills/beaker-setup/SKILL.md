@@ -127,6 +127,13 @@ credentials or placeholder datasets.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
 
+Before hosted validation or launch, complete the Beaker YAML preflight in
+[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
+the hosted source paths, dependency installation, and environment allowlist
+against the repository instead of trusting generated defaults. Commit and push
+every YAML correction before starting a new run; an existing run does not pick
+up later config or agent-setting changes.
+
 Use the selected agent's page to view its runs and score trends.
 
 ## Implement the real integration
@@ -163,9 +170,13 @@ Use the selected agent's page to view its runs and score trends.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
      Repository-mode case inputs and `CaseResult.output`/`context` must be
      JSON-normalizable because they cross the evaluator process boundary.
-   - `spec.required_env`: list only the names of application variables that
-     candidate evaluation needs. Keep local values in `.beaker/.env` and
-     hosted values in encrypted agent settings; never put values in YAML.
+   - `spec.required_env`: inspect every application path that hosted candidate
+     evaluation can reach, including SDK defaults and fallback branches, and
+     list the environment variable names those paths read directly. Do not
+     infer this list from existing config alone. Keep local values in
+     `.beaker/.env` and hosted values in encrypted agent settings; never put
+     values in YAML. Declare a provider key here only for model calls the
+     gateway does not serve; gateway-routed calls need no credential setup.
 4. Keep the spec and helper code under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
@@ -227,6 +238,12 @@ path. First connect through the spec or helper code under `.beaker/`. Touch
 application code only when no existing injection interface can be reused. If
 `runtime.model` is absent, retain the application's existing client and model
 defaults.
+
+For a selected model, prefer the Beaker gateway over the application's provider
+keys: point the application's existing client at `inference_target(runtime)`.
+The gateway serves every supported provider but takes only the OpenAI Chat
+Completions shape, so classify the call site by its SDK surface, not its
+provider. Calls it cannot serve keep the application's client and credentials.
 
 Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
@@ -317,10 +334,15 @@ where it runs. Never print, echo, or commit them. Read
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
 working with credentials, datasets, hosted environment variables, or runs.
 
-Before launching, compare `spec.required_env` with `beaker agent env list` for
-the selected agent. A hosted run with a missing or empty declared value fails
-before candidate dispatch. Set each missing value with `--value-stdin`, then
-start a new run.
+Before launching, complete the credential preflight in
+[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
+required variables from the real `Spec.run_case` call path, then compare them
+with `spec.required_env` and `beaker agent env list --agent <selected-agent>`.
+Provider calls routed through Beaker need no credential setup and never block a
+launch. Local shell variables and `.beaker/.env` values are not hosted
+settings. Do not trigger a run while a required credential is missing. A
+passing smoke check does not prove credentials are ready, because smoke does
+not execute `run_case`.
 
 Run structural smoke validation only after real labeled examples are
 available. Use the local path when the source data remains on disk:
@@ -413,6 +435,12 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   invocation boundary, excluding those calls even when clients or wrappers are
   shared. Scorer traffic is accounted for separately through
   `scoring_inference_target()`.
+- Never hand the application or a benchmark harness a wrapped, proxied,
+  subclassed, or monkeypatched stand-in for its model client. Trace at the call
+  site or through a framework integration, and inject only a client type the
+  application already accepts; client-type checks reject a wrapper and fail
+  every case before it runs. When tracing cannot keep that type, keep the plain
+  client and report the tracing gap.
 - Never set `llm_scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.

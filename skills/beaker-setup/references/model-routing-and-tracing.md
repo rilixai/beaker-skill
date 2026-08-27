@@ -1,10 +1,49 @@
 # Model routing and tracing
 
+## Prefer the gateway over application provider keys
+
+When the evaluation path selects a model, point the application's *existing*
+client at `inference_target(runtime)` instead of giving the run a provider key.
+
+Gateway-routed calls require no credential setup at all. The gateway picks the
+agent key, then the organization key, then the platform key, and the platform
+key covers OpenAI, Anthropic, Google, and OpenRouter. So declare no provider
+key in `spec.required_env` for these calls, never create an agent or
+organization provider key for the developer, and never treat a missing one as a
+launch blocker. Those keys are a billing choice the customer makes in the UI.
+
+That order is a selection, not a retry chain. The gateway picks the first
+configured key before the call and does not move on if the provider rejects it,
+so a configured but broken agent or organization key fails instead of reaching
+the platform key.
+
+A direct provider call from application code has no platform fallback. It runs
+only on a key the developer configured and the spec declares. That is the cost
+of not routing through the gateway.
+
+The gateway serves every provider Beaker supports and rewrites each request for
+that provider, so the model or provider is not the constraint: the request
+shape is. The gateway accepts the OpenAI Chat Completions shape. Sort the call
+site by the SDK it calls, not by its provider:
+
+| Application call site | Beaker integration |
+| --- | --- |
+| OpenAI SDK chat completions, OpenRouter with an effort word, or a LiteLLM-style wrapper | Repoint `base_url` and `api_key` at the target. Nothing else changes. |
+| A reasoning *budget* (`reasoning.max_tokens`, Anthropic `budget_tokens`, Gemini `thinkingBudget`) | Same repoint, and send the nearest effort word in place of the budget. The gateway takes effort words only. |
+| Another request shape (OpenAI Responses, Anthropic Messages, native Gemini) | The gateway does not serve these for candidate rollouts. Keep the application's client and credentials, declare them in `spec.required_env`, and say so at handoff. |
+
+Do not rewrite a working call site into the OpenAI shape just to reach the
+gateway; that changes production code. Reuse the existing injection seam, and
+take the third row when the shape does not fit.
+
 ## Model-selection boundary
 
 Treat `runtime.model` as an explicit request for Beaker-controlled model
 selection in the evaluation path. Its absence means use the application's
-existing production-like client and model defaults. Keep all Beaker imports for
+existing production-like client, model defaults, and credentials.
+`inference_target(runtime)` requires both a selected model and hosted run
+credentials, and raises otherwise, so ordinary application/evaluation runs and
+prompt-only optimization are not gateway-routed. Keep all Beaker imports for
 gateway construction and routing decisions inside `.beaker/`.
 
 The one narrow exception is **tracing integration**: application model call
@@ -49,13 +88,20 @@ async def _run_case(*, case, targets: None, runtime):
     return CaseResult(output=result.output)
 ```
 
-The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
+Build the injected client as a type the application already constructs and
+accepts. Applications and benchmark harnesses often check the client they are
+handed against known types, so a Beaker-specific object or a wrapper around the
+client is rejected before any case runs. Change the endpoint, not the client
+type or the call shape.
+
+The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Any supported provider's models are reachable through that one shape, so do not add a provider-specific gateway path: do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
 
 `inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. Prefer `runtime.canonical_model_id`; the helper may combine an explicit provider and model but does not guess an ambiguous provider.
 
 Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped
-Beaker gateway credentials. Never add global environment-driven routing for
-Beaker.
+Beaker gateway credentials, and remove such a name from `spec.required_env`
+once its calls are gateway-routed. Never add global environment-driven routing
+for Beaker.
 
 This example is for the default repository mode. An intentional
 `@spec(repository=None)` logical-target spec instead receives its declared
@@ -168,6 +214,21 @@ handoffs. At application model call sites, use
 `from beaker.tracing import current_trace`; `runtime.trace` is not available
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
+
+### Preserve the client type
+
+Tracing must not change the type or identity of any object the application
+hands to a framework, agent factory, or benchmark harness. Add tracing only at
+the integration entrypoints in the table below, or with `trace.model_call(...)`
+around the call site. Never put a proxy, subclass, `__getattr__` forwarder, or
+monkeypatched method in place of the client or model object. Client-type checks
+reject the wrapper, and every case then fails before it runs.
+Wrap the *call*, not the client.
+
+If tracing cannot be wired without changing that type, keep the original
+unwrapped client, run untraced, and report the tracing gap at handoff. An
+unresolved tracing warning never blocks handoff; a rejected client fails the
+whole run.
 
 ### Framework integrations
 
