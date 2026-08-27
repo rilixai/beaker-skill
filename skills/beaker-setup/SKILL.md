@@ -128,7 +128,7 @@ insufficient. Do not refactor production code for Beaker.
    location; do not assume the Git root. If multiple tasks are plausible,
    summarize them and ask which one to optimize first.
 4. Only when discovery found no applicable config, enter the selected project
-   root and choose one config location for `init`, agent setup, validation, and
+   root and choose one config file for `init`, agent setup, validation, and
    runs:
 
    ```bash
@@ -146,7 +146,15 @@ insufficient. Do not refactor production code for Beaker.
    `BEAKER_CONFIG_FILE=config/beaker.yaml` is equivalent to the global
    `--config-file` option. If Beaker is already installed, omit
    `uvx --from beaker-sdk`. Config paths must be files inside the Git repository;
-   absolute paths and paths containing `..` are rejected.
+   absolute paths and paths containing `..` are rejected. In a monorepo,
+   `spec.source_dir` is relative to the Git checkout root during hosted builds,
+   and `spec.package_import_root` is relative to `source_dir`, not to the YAML.
+   For a spec at `services/invoices/.beaker/beaker_spec.py`, use
+   `source_dir: services/invoices` and `package_import_root: .beaker`. Validate
+   that layout from the Git root with the full config selector, for example
+   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`.
+   Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
+   before launching any nested-project integration.
 5. Never overwrite an existing spec or populated config. Fill the existing integration instead.
 6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 
