@@ -12,6 +12,11 @@ key in `spec.required_env` for these calls, never create an agent or
 organization provider key for the developer, and never treat a missing one as a
 launch blocker. Those keys are a billing choice the customer makes in the UI.
 
+That order is a selection, not a retry chain. The gateway picks the first
+configured key before the call and does not move on if the provider rejects it,
+so a configured but broken agent or organization key fails instead of reaching
+the platform key.
+
 A direct provider call from application code has no platform fallback. It runs
 only on a key the developer configured and the spec declares. That is the cost
 of not routing through the gateway.

@@ -197,9 +197,10 @@ Classify each credential before configuring it:
 - Calls routed through `inference_target(runtime)` or
   `scoring_inference_target()` need no credential setup. Do not declare a
   provider key for them, do not create an agent or organization provider key,
-  and do not block a launch on one being absent. The gateway falls back to the
-  platform key, which covers OpenAI, Anthropic, Google, and OpenRouter. Agent
-  and organization keys are a billing choice the customer makes in the UI.
+  and do not block a launch on one being absent. With no agent or organization
+  key configured, the gateway selects the platform key, which covers OpenAI,
+  Anthropic, Google, and OpenRouter. Agent and organization keys are a billing
+  choice the customer makes in the UI.
 - Before declaring a provider key, check whether the gateway can serve that
   call instead. Route what it can serve through `inference_target(runtime)` and
   leave that key out of `spec.required_env`; see
