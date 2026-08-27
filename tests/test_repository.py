@@ -239,6 +239,14 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Both use the default optimization", normalized)
         self.assertNotIn("use_harness_optimization=false", content)
         self.assertNotIn('"use_harness_optimization": false', content)
+        self.assertIn(
+            "launch the default optimization unless they explicitly ask to benchmark or compare specific models",
+            normalized,
+        )
+        self.assertIn(
+            "For an agent's first run, always launch the plain command with no optional flag that changes the run type",
+            normalized,
+        )
         self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
         self.assertIn("Repository-surface default optimization always evaluates only the winner", normalized)
         self.assertIn("Apply TEST candidate policy by editable surface", normalized)
