@@ -163,9 +163,7 @@ for the selected winner.
 
 For a logical-target spec, preserve explicit `@spec(repository=None)`. That mode
 requires real `Spec.seed_targets`; inspect each prompt or named resource path into
-the application exactly as before. Selected-model runs require this logical
-target contract and are not valid for the default
-repository-only spec.
+the application exactly as before.
 
 Do not place datasets under `.beaker/`. Existing labeled data is source material,
 not Beaker-owned tooling: leave it in its established location and reference it

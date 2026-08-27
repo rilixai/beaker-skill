@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or preparing a hosted optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
+description: Set up, configure, or onboard a Python repository for Beaker agent optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or launching the first hosted agent optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
 license: MIT
 ---
 
@@ -267,7 +267,8 @@ provider, and finalizer stay under `.beaker/` and are immutable evaluation
 policy. Ordinary application source is the candidate.
 
 Use a normalized tuple of source-relative files or directories to narrow the
-editable surface:
+editable surface. Agent optimization is the run type; the Beaker agent is the
+named target (`beaker agent setup`, `--agent`). Do not use “the agent” for both.
 
 ```python
 @spec(
@@ -286,8 +287,7 @@ boundary. Repository mode does not accept `Spec.seed_targets`; it passes
 winner.
 
 Use `@spec(repository=None)` only for an existing intentional logical-resource
-or prompt-target workflow. That mode requires `Spec.seed_targets`, and
-selected-model optimizer runs also require those targets. Do not
+or prompt-target workflow. That mode requires `Spec.seed_targets`. Do not
 silently convert one mode into the other.
 
 ## Route models without changing production defaults
@@ -498,13 +498,19 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
-- Never trigger a hosted optimization run unless the developer explicitly asks.
-- Before starting a hosted optimization run, commit and push the completed
-  Beaker integration to a branch in the selected agent repository. Do not
+- Never trigger a hosted agent optimization run unless the developer explicitly asks.
+- The first hosted run is agent optimization of the production system. Launch
+  it with a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`).
+  Do not pass `--optimization-model` unless the developer explicitly asked to
+  compare specific models. Do not pass `--test-all-candidates` on that first run.
+- Call the named target the **Beaker agent** (`beaker agent setup`, `--agent`)
+  and the run type **agent optimization**. Do not use “the agent” for both.
+- Before starting a hosted agent optimization run, commit and push the completed
+  Beaker integration to a branch in the selected Beaker agent repository. Do not
   commit `*.env` or other secret files. Make a best effort to include tracing
   changes when tracing applies, but never let tracing block the push.
 - Treat `beaker dataset upload` and `beaker agent env ...` as authorized partner operations once their documented preconditions are met.
-- Launch hosted optimization only with `beaker run trigger`. Without `--ref`,
+- Launch hosted agent optimization only with `beaker run trigger`. Without `--ref`,
   it prefers the current linked remote branch and falls back to the repository's
   GitHub default branch. Use `--ref <remote-branch>` only for an explicit
   remote branch override. Never pass a tag or commit SHA; the hosted source

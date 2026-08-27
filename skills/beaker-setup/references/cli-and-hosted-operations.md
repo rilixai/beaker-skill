@@ -384,9 +384,9 @@ list`, and start a new run; do not retry the failed run unchanged.
    # Or use --dataset-id <artifact-id> instead.
    ```
 
-   The first run always uses this plain command. Do not add optional run-type
-   flags such as `--optimization-model`, `--execution-mode`, or
-   `--test-all-candidates`.
+   The first hosted run is agent optimization of the production system.
+   Use this plain command. Do not add `--optimization-model` or
+   `--test-all-candidates` unless the developer explicitly asked for them.
 
    Before triggering, commit and push the completed integration yourself, to
    the `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch you intend to use. Do not

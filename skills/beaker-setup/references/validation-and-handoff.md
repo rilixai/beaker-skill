@@ -222,9 +222,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   validates and passes the application's resolver or type check before the
   hosted baseline. Where that is not possible, the plain client is kept and the
   tracing gap is reported.
-- The selected-model branch uses the narrowest injection seam.
-- Selected-model calls the gateway can serve are routed through
-  `inference_target(runtime)`, with no provider key declared for them. Any call
+- When `runtime.model` is set, use the narrowest injection seam.
+- Calls `inference_target(runtime)` can serve are routed through the gateway,
+  with no provider key declared for them. Any call
   site the gateway cannot serve is named at handoff, with the provider
   credential it still needs.
 - Any LLM judge declares its fixed canonical model with
