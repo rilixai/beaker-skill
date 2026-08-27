@@ -204,10 +204,13 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
   post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
-- Tracing and model injection preserve the client type: no proxy, subclass, or
-  monkeypatched object stands in for a client the application or harness checks.
-  Where that was not possible, the plain client was kept and the tracing gap
-  was reported.
+- Tracing and model injection preserve the client type: no transparent proxy,
+  `__getattr__` forwarder, or monkeypatched object stands in for a client the
+  application or harness checks. The only exception is a framework-specific,
+  type-preserving adapter that subclasses the public client base the framework
+  validates and passes the application's resolver or type check before the
+  hosted baseline. Where that is not possible, the plain client is kept and the
+  tracing gap is reported.
 - The selected-model branch uses the narrowest injection seam.
 - Selected-model calls the gateway can serve are routed through
   `inference_target(runtime)`, with no provider key declared for them. Any call

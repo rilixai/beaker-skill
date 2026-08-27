@@ -220,15 +220,17 @@ instrumentation changes.
 Tracing must not change the type or identity of any object the application
 hands to a framework, agent factory, or benchmark harness. Add tracing only at
 the integration entrypoints in the table below, or with `trace.model_call(...)`
-around the call site. Never put a proxy, subclass, `__getattr__` forwarder, or
-monkeypatched method in place of the client or model object. Client-type checks
-reject the wrapper, and every case then fails before it runs.
-Wrap the *call*, not the client.
+around the call site. Do not put a transparent proxy, `__getattr__` forwarder,
+or monkeypatched method in place of the client or model object. Client-type
+checks reject such wrappers, and every case then fails before it runs.
+Wrap the *call*, not the client, unless the framework requires a client wrapper
+and the type-preserving adapter described below is necessary.
 
 If tracing cannot be wired without changing that type, keep the original
-unwrapped client, run untraced, and report the tracing gap at handoff. An
-unresolved tracing warning never blocks handoff; a rejected client fails the
-whole run.
+unwrapped client, run untraced, and report the tracing gap at handoff. The only
+exception is a framework-specific adapter that preserves the exact public base
+type the framework validates. An unresolved tracing warning never blocks
+handoff; a rejected client fails the whole run.
 
 ### Framework integrations
 
@@ -322,6 +324,21 @@ LlamaIndex today — wrap the real model call with `trace.model_call(...)`.
 Wrap nested calls the same way, inside the enclosing operation, so they are
 recorded as its child spans. Otherwise the capture can contain stages but zero
 model calls, causing `beaker trace doctor --require-model-calls` to fail.
+
+Prefer wrapping the real call, not the framework client. A transparent wrapper
+that delegates through `__getattr__` can preserve behavior but still fail a
+framework that validates clients with `isinstance(...)` or its own resolver.
+When such a wrapper is unavoidable, make it a framework-specific adapter: it
+must subclass the public client base the framework accepts, initialize that
+base correctly, and delegate every required native conversion, lifecycle, and
+request method to the real client. Put `trace.model_call(...)` around the
+delegated request method only.
+
+Before a hosted baseline, create the wrapped client locally and pass it through
+the exact resolver or type check the application uses. Only execute the traced
+call after that preflight succeeds. This catches an incompatible wrapper before
+every hosted case becomes an unresolved rollout; do not assume a generic Beaker
+proxy can satisfy another framework's client contract.
 
 First verify structural wiring with the real local dataset or the exact hosted
 snapshot selected for launch:
