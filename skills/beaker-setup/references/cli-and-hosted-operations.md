@@ -239,14 +239,11 @@ uv run --project services/invoices beaker \
   run smoke --strict --agent <agent> --dataset <name@revision>
 ```
 
-A smoke run from `services/invoices` with `source_dir: .` can pass locally while
-the hosted build fails, because local discovery makes the nested project the
-base directory but the build worker extracts the whole Git checkout. Before
-launch, inspect the YAML from the checkout root, commit it, push it, and verify
-the exact branch. If the CLI's onboarding dependency check is run from a Git
-root without a `pyproject.toml`, it may not see the dependency declared in the
-nested project; use the nested project's package-manager environment and the
-Git-root smoke command above as the authoritative layout check.
+Persisted `source_dir: .` resolves to the Git root in both local smoke and
+hosted builds. For a nested project, use its Git-root-relative path, such as
+`source_dir: services/invoices`; if the CLI reports `Set source_dir to
+services/invoices`, apply that value and rerun smoke. Commit and push the
+corrected YAML before launching a new run.
 
 ## Common integration failures
 
