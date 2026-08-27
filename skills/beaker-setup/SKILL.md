@@ -55,10 +55,21 @@ slugified, for example `beaker/20260821-1339-invoice-extraction`:
 
 ```bash
 git checkout -b beaker/$(date +%Y%m%d-%H%M)-invoice-extraction
-git add .beaker pyproject.toml uv.lock
+git status --short
+git add -- "<selected-config>" "<spec-and-helper-files>" \
+  "<dependency-and-lock-files>" "<intentional-tracing-files>"
+git diff --cached --name-only
 git commit -m "Add Beaker integration"
 git push -u origin HEAD
 ```
+
+Replace the placeholders with the exact paths changed for this integration.
+Include the selected config and target, `.beaker/.gitignore`, dependency
+metadata and its lockfile, and any deliberate tracing or application seam.
+Do not stage the selected source directory as a whole. Never stage an
+unrelated untracked dataset or source file merely to make onboarding pass.
+Review the staged path list before committing and ensure every intentional new
+integration file is present.
 
 When the checkout is already on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch
 for the selected agent whose timestamp is less than an hour old, reuse it
@@ -70,7 +81,7 @@ follow it.
 
 Never push the integration to `main`, `master`, or the repository's default
 branch, and never open a pull request, unless the developer asks for it. Stage
-only integration files; never stage any other secret file. Report the branch you
+only integration files; never stage any secret file. Report the branch you
 pushed.
 
 ## Keep Beaker isolated

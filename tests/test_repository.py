@@ -423,6 +423,19 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("Set source_dir to services/invoices", normalized)
             self.assertIn("paths containing `..`", normalized)
 
+    def test_setup_skill_stages_only_intended_integration_files(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join((skill + "\n" + handoff).split())
+
+        self.assertIn("git status --short", skill)
+        self.assertIn("git diff --cached --name-only", skill)
+        self.assertNotIn("git add .beaker pyproject.toml uv.lock", skill)
+        self.assertIn("intentionally ignores other untracked files", normalized)
+        self.assertIn("Never stage an unrelated dataset or source file", normalized)
+
     def test_setup_skill_uses_structural_smoke_validation(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")

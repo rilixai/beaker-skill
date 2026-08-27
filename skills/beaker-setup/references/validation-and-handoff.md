@@ -33,6 +33,17 @@ part of the integration, make a best effort to include it in the commit that is
 pushed; never commit secret files. Tracing remains optional and advisory and
 does not block this step.
 
+Before checking this step, inspect `git status --short`, stage the exact files
+intentionally created or changed for the integration, and review `git diff
+--cached --name-only`. The status check detects tracked changes under the
+selected source tree and known new integration files such as the selected
+config, spec target, dependency metadata, lockfiles, and `.beaker/.gitignore`.
+It intentionally ignores other untracked files under `source_dir`, because
+existing datasets and unrelated working files are not automatically part of a
+Beaker integration. The status result does not decide what belongs in the
+commit. Never stage an unrelated dataset or source file merely to make the
+step pass, and ensure every intentional new integration file is staged.
+
 Onboarding is complete once `experiment_launched` is complete. Shipping a
 winning candidate pull request is developer-owned follow-up work outside the
 onboarding loop.
