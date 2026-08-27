@@ -33,7 +33,7 @@ part of the integration, make a best effort to include it in the commit that is
 pushed; never commit secret files. Tracing remains optional and advisory and
 does not block this step.
 
-Before checking this step, inspect `git status --short`, stage the exact files
+Before marking this step complete, inspect `git status --short`, stage the exact files
 intentionally created or changed for the integration, and review `git diff
 --cached --name-only`. The status check detects tracked changes under the
 selected source tree and known new integration files such as the selected

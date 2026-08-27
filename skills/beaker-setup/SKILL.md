@@ -157,13 +157,15 @@ insufficient. Do not refactor production code for Beaker.
    `BEAKER_CONFIG_FILE=config/beaker.yaml` is equivalent to the global
    `--config-file` option. If Beaker is already installed, omit
    `uvx --from beaker-sdk`. Config paths must be files inside the Git repository;
-   absolute paths and paths containing `..` are rejected. In a monorepo,
+   absolute paths and paths containing `..` are rejected. Commands may run
+   either from the selected project root with its default config, or from the
+   Git root with the full repository-relative selector, for example
+   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`;
+   both select the same config. In a monorepo,
    `spec.source_dir` is relative to the Git checkout root during hosted builds,
    and `spec.package_import_root` is relative to `source_dir`, not to the YAML.
    For a spec at `services/invoices/.beaker/beaker_spec.py`, use
-   `source_dir: services/invoices` and `package_import_root: .beaker`. Validate
-   that layout from the Git root with the full config selector, for example
-   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`.
+   `source_dir: services/invoices` and `package_import_root: .beaker`.
    Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
    before launching any nested-project integration.
 5. Never overwrite an existing spec or populated config. Fill the existing integration instead.

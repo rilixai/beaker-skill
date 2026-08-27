@@ -239,13 +239,14 @@ uv run --project services/invoices beaker \
   run smoke --strict --agent <agent> --dataset <name@revision>
 ```
 
-Persisted `source_dir: .` resolves to the Git root in both local smoke and
-hosted builds. For a nested project, use its Git-root-relative path, such as
-`source_dir: services/invoices`; if the CLI reports `Set source_dir to
-services/invoices`, apply that value and rerun smoke. Commit and push the
-corrected YAML before launching a new run.
+Running from the project root with its default config selects the same file;
+either working directory works when the selector resolves to the selected
+YAML.
 
 ## Common integration failures
+
+The `source_dir` rows below all stem from the Git-root-relative resolution
+described in [Config location and monorepos](#config-location-and-monorepos).
 
 | Error or symptom | Cause | Fix |
 |---|---|---|
