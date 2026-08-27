@@ -119,7 +119,9 @@ selected locally, or `default branch` when the server selects the fallback.
 Pass `--ref <remote-branch>` only to override this selection with another
 remote branch, preferably one returned by `beaker github branches`.
 
-Default optimization over the configured editable surface:
+Default optimization over the configured editable surface. Prefer this
+launch; it is the default for every optimization request, and an agent's
+first run must use it exactly as written, with no optional run-type flag:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
