@@ -154,9 +154,12 @@ Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
 Named-resource mode passes the complete declared resources through
 `seed_targets`. Both use agent optimization.
 
-`--optimization-model` does not select a different algorithm. Pass it only
-when the developer explicitly asks to benchmark or compare specific models.
-Do not invent models, and do not pass the flag on a first run.
+`--optimization-model` still selects the legacy comparison optimizer until
+the runtime unifies on agent optimization. Pass it only when the developer
+explicitly asks to benchmark or compare specific models. Comparison models
+need `@spec(repository=None)` with populated `Spec.seed_targets`. A
+repository-mode `@spec()` spec cannot take `--optimization-model`. Do not
+invent models, and do not pass the flag on a first run.
 
 Apply TEST candidate policy by editable surface:
 
@@ -175,7 +178,13 @@ Do not propose a comparison, discover models, or ask the developer to pick
 models when they only asked to optimize; launch agent optimization of the
 production system instead.
 
-When the developer explicitly asks to benchmark or compare specific models:
+When the developer explicitly asks to benchmark or compare specific models,
+first inspect the selected `@spec`. If it has no `Spec.seed_targets`, stop;
+do not launch `--optimization-model` and do not add targets as a
+run-management side effect. Use `$beaker-setup` only when the developer wants
+an explicit `@spec(repository=None)` product decision.
+
+Then:
 
 1. Discover models whose provider credentials are configured:
 
@@ -316,6 +325,9 @@ Cancellation is a state-changing operation:
   `beaker model list --available-only --json`.
 - Never pass `--optimization-model` unless the developer explicitly asked to
   compare specific models.
+- Never use `--optimization-model` when `Spec.seed_targets` is absent;
+  comparison models currently need `@spec(repository=None)` with populated
+  seed_targets.
 - Never default to a comparison-model run; launch agent optimization of the
   production system unless the developer explicitly asks to benchmark or
   compare specific models.

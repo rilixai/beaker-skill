@@ -249,7 +249,11 @@ class RepositoryContractTests(unittest.TestCase):
             normalized,
         )
         self.assertIn("Never add `--optimization-model` or `--test-all-candidates` to a Beaker agent's first run", normalized)
-        self.assertIn("`--optimization-model` does not select a different algorithm", normalized)
+        self.assertIn(
+            "Comparison models need `@spec(repository=None)` with populated `Spec.seed_targets`",
+            normalized,
+        )
+        self.assertIn("A repository-mode `@spec()` spec cannot take `--optimization-model`", normalized)
         self.assertIn("Repository-surface agent optimization always evaluates only the winner", normalized)
         self.assertIn("Apply TEST candidate policy by editable surface", normalized)
         self.assertIn("The runtime ignores `--test-all-candidates` for this surface", normalized)
@@ -267,6 +271,10 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("The first hosted run is agent optimization of the production system", normalized)
         self.assertIn(
             "Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models",
+            normalized,
+        )
+        self.assertIn(
+            "Comparison models currently need `@spec(repository=None)` with populated `Spec.seed_targets`",
             normalized,
         )
         self.assertIn("Call the named target the **Beaker agent**", setup)
@@ -305,6 +313,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Ask the developer which models to use (one to eight", normalized)
         self.assertIn("Launch only after explicit developer authorization", normalized)
         self.assertIn("Never cancel a run without explicit authorization", normalized)
+        self.assertIn("Never use `--optimization-model` when `Spec.seed_targets` is absent", normalized)
         self.assertIn("Never pass `--optimization-model` unless the developer explicitly asked to compare specific models", normalized)
 
     def test_usage_skill_preserves_agent_operational_details(self) -> None:

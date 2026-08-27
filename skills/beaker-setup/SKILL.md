@@ -502,7 +502,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - The first hosted run is agent optimization of the production system. Launch
   it with a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`).
   Do not pass `--optimization-model` unless the developer explicitly asked to
-  compare specific models. Do not pass `--test-all-candidates` on that first run.
+  compare specific models. Comparison models currently need
+  `@spec(repository=None)` with populated `Spec.seed_targets`; do not add them
+  to a repository-mode spec. Do not pass `--test-all-candidates` on that first run.
 - Call the named target the **Beaker agent** (`beaker agent setup`, `--agent`)
   and the run type **agent optimization**. Do not use “the agent” for both.
 - Before starting a hosted agent optimization run, commit and push the completed

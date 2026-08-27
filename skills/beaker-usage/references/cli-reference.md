@@ -141,9 +141,10 @@ optimization may change model selection or model-call behavior within the editab
 surface when that improves the objective.
 
 Agent optimization comparing specific models. Use it only when the developer
-explicitly asks to benchmark or compare models. The split values below are
-illustrative, not defaults; use the benchmark defaults unless the developer
-chooses splits:
+explicitly asks to benchmark or compare models, and only for a spec with
+`@spec(repository=None)` and populated `Spec.seed_targets`. The split values
+below are illustrative, not defaults; use the benchmark defaults unless the
+developer chooses splits:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> \
@@ -186,7 +187,7 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 
 | Flag | Contract |
 |---|---|
-| `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. |
+| `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. Currently requires `@spec(repository=None)` with populated `Spec.seed_targets`. |
 | `--benchmark-split` | `VAL` or `TEST`; requires `--optimization-model` |
 | `--benchmark-max-cases` | 1–1000; requires `--optimization-model` |
 | `--final-eval-split` | Repeatable `VAL` or `TEST`; requires `--optimization-model` |
@@ -194,7 +195,9 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 
 Do not combine `--optimization-model` with an `optimization_config` supplied
 through `--config`. The CLI has no `--execution-mode` flag; a non-empty
-`--optimization-model` list is the comparison switch.
+`--optimization-model` list is the comparison switch. Until the runtime
+unifies on agent optimization, comparison models need
+`@spec(repository=None)` with populated `Spec.seed_targets`.
 
 ## Run lifecycle
 
@@ -247,6 +250,11 @@ invocation. A timeout message may also appear on stderr with exit code `3`.
 - **Missing required evaluation environment variables:** the run fails before
   candidate dispatch. Use `$beaker-setup` to set each declared name with
   `beaker agent env set NAME --value-stdin`, then start a new run.
+- **Comparison models require `Spec.seed_targets`:** `--optimization-model`
+  was used with a spec that has no targets. Stop; do not mutate the spec as a
+  run-management side effect. Launch agent optimization without
+  `--optimization-model`, or use `$beaker-setup` only when the developer wants
+  an explicit `@spec(repository=None)` product decision.
 - **No available models:** comparison-model launch is not ready. Ask the
   developer to configure provider credentials or launch agent optimization
   without `--optimization-model`.
