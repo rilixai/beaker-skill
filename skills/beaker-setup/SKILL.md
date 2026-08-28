@@ -236,6 +236,10 @@ Use the selected agent's page to view its runs and score trends.
      `.beaker/.env` and hosted values in encrypted agent settings; never put
      values in YAML. Declare a provider key here only for model calls the
      gateway does not serve; gateway-routed calls need no credential setup.
+     Before the first hosted run, do not launch until `beaker agent env list`
+     confirms that every name in `spec.required_env` is configured on the
+     selected agent. If one is missing, ask the developer to configure it in
+     the UI or set it with `beaker agent env set NAME --value-stdin`.
 4. Keep the spec and helper code under `.beaker/`. Import application code
    from there; do not move Beaker orchestration into the application package.
 5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
