@@ -99,9 +99,10 @@ Use `beaker onboarding status --json` for automation:
   could match, ask the developer which one to use. State which agent you
   selected.
 - `beaker agent setup "<selected-agent>"` selects an existing optimization
-  target and records the selected agent key in the selected YAML. Pass `--spec-id <id>`
-  when the config has several specs, and pass `--repo <owner/name>` only when
-  the existing target needs a repository association.
+  target and records the selected agent key in the selected YAML. Pass
+  `--spec-id <id>` when the config has several specs, and pass
+  `--repo <owner/name>` only when the existing target needs a repository
+  association.
 - An unknown name passed to `beaker agent setup` creates a target. Only do this
   after discovery finds no suitable agent or the developer explicitly chooses
   a different agent; creation requires `--repo <owner/name>`.
