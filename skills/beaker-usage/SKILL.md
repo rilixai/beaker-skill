@@ -1,6 +1,6 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker optimization integration. Use when the developer asks to launch the default optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, run a selected-model optimization, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
 license: MIT
 ---
 
@@ -125,56 +125,73 @@ Hosted GitHub sources must be remote branches. Tags and commit SHAs passed to
 If the developer supplies one, ask for a remote branch that points to the
 desired commit; do not launch with the tag or SHA.
 
-## Separate the optimizer from the editable surface
+## Agent optimization and the editable surface
 
 Inspect the selected `@spec` registration and `Spec.seed_targets` without
-editing them. The decorator selects what Beaker may edit; it does not select
-the optimizer.
+editing them. The decorator selects what Beaker may edit. Agent optimization
+is the only run type. The **Beaker agent** is the named target (`beaker agent
+setup`, `--agent`); **agent optimization** is the run. Do not use “the agent”
+for both.
 
-| Editable surface | Spec contract | Default launch |
+| Editable surface | Spec contract | Launch |
 |---|---|---|
-| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Default optimization (no optimizer flag) |
-| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Default optimization (no optimizer flag) |
+| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Agent optimization (plain `beaker run trigger`) |
+| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Agent optimization (plain `beaker run trigger`) |
 
-A plain GitHub-backed launch uses the default optimization for either editable
-surface. This is the launch to use: when the developer asks to optimize,
-launch the default optimization unless they explicitly ask to benchmark or
-compare specific models. For an agent's first run, always launch the plain
-command with no optional flag that changes the run type. During
+A plain GitHub-backed launch starts agent optimization of the production
+system for either editable surface. This is the launch to use: when the
+developer asks to optimize, launch agent optimization unless they explicitly
+ask to benchmark or compare specific models. Launch the plain command with no
+flag that changes the run type — no `--optimization-model`, no
+`--test-all-candidates` — unless the developer asked for that flag in this
+conversation. Setup may have happened in another session, so do not assume you
+know a Beaker agent's history: `beaker run list --agent <key> --json` reports
+`total`, and `total` of `0` means the agent has never run.
+The seed starts with the configured production-system model behavior unless a
+supported launch-time model selection is explicit. During
 optimization, the optimizer may modify the editable source or resource,
 including model selection and model-call behavior, when that improves the
 objective.
 
 Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
 Named-resource mode passes the complete declared resources through
-`seed_targets`. Both use the default optimization.
+`seed_targets`. Both use agent optimization.
 
-Selected-model flags choose a different optimizer workflow and are separate
-from the editable-surface setting. They require populated `seed_targets`; if
-the selected spec has none, stop and use `$beaker-setup` to make an explicit
-product decision. Do not silently add targets or change `repository` as a
-run-management side effect. The default optimization and selected-model flags
-are mutually exclusive; never combine them.
+`--optimization-model` still selects the legacy comparison optimizer until
+the runtime unifies on agent optimization. Pass it only when the developer
+explicitly asks to benchmark or compare specific models. Comparison models
+need `@spec(repository=None)` with populated `Spec.seed_targets`. A
+repository-mode `@spec()` spec cannot take `--optimization-model`. Do not
+invent models, and do not pass the flag the developer did not ask for.
 
 Apply TEST candidate policy by editable surface:
 
 - Repository surface (`@spec()` or `@spec(repository=...)`): TEST evaluates
   only the selected winner. The runtime ignores `--test-all-candidates` for
-  this surface, including default optimization runs.
+  this surface, including agent optimization runs.
 - Named-resource surface (`@spec(repository=None)`):
-  `--test-all-candidates` applies to the default optimization and evaluates every
+  `--test-all-candidates` applies to agent optimization and evaluates every
   persisted candidate on TEST, including resources such as `wiki`. Without the
-  flag, only the selected winner is TEST-evaluated. Selected-model runs also
+  flag, only the selected winner is TEST-evaluated. Comparison-model runs also
   ignore the flag and always TEST-evaluate only each model's winner.
 
-`optimize_only` uses the production system and cannot be combined with
-`--optimization-model`, benchmark flags, or final-evaluation flags. If the
-developer asks to optimize without an initial benchmark, use
-`--execution-mode optimize_only` and skip model discovery.
+### Compare specific models
 
-### Select models and execution mode
+"Optimize" never means "compare models". When the developer only asks to
+optimize, do not offer a comparison, do not run `beaker model list`, and do
+not ask them to choose models: launch agent optimization of the production
+system.
 
-For a selected-model run:
+Comparison runs are a rare explicit opt-in, and most specs cannot do one: they
+need `@spec(repository=None)` with populated `Spec.seed_targets`, which the
+recommended repository-mode `@spec()` does not have. So when the developer
+does ask to benchmark or compare specific models, inspect the selected `@spec`
+first. If it has no `Spec.seed_targets`, stop and say so; do not launch
+`--optimization-model`, and do not add targets or change `repository` to make
+the run possible. Switching a spec to `@spec(repository=None)` is a product
+decision for the developer, taken through `$beaker-setup`.
+
+Then:
 
 1. Discover models whose provider credentials are configured:
 
@@ -185,29 +202,29 @@ For a selected-model run:
 2. Ask the developer which models to use (one to eight canonical
    `provider:model` values). Offer only values returned by the command. Do not substitute a similar
    model, infer a default, or choose based on cost or speed without direction.
-3. Selected-model runs use `benchmark_and_optimize`; it is also the CLI default
-   when models are supplied. The CLI does not expose benchmark-only execution.
+3. Repeat `--optimization-model provider:model` for each choice. The CLI has
+   no `--execution-mode` flag; a non-empty model list is the comparison switch.
 4. Use the benchmark defaults unless the developer asks
    to choose the benchmark split or case count. Valid splits are `VAL` and
    `TEST`; valid case counts are 1 through 1000.
 5. Add final evaluation splits only when the developer supplies them or asks
    to configure them. Do not invent tuning values. Do not offer
-   `--test-all-candidates` for selected-model runs: the runtime ignores it and
+   `--test-all-candidates` for comparison-model runs: the runtime ignores it and
    always TEST-evaluates only each model's winner.
 
 Use the typed flags described in the CLI reference. Do not hand-author
-`optimization_config` JSON for selected-model runs.
+`optimization_config` JSON.
 
 ## Authorize and launch
 
 A hosted run can spend money and execute repository code. Before triggering,
 state the exact:
 
-- selected project and agent;
+- selected project and Beaker agent;
 - remote GitHub branch;
 - dataset reference;
-- run family;
-- selected models and execution mode, when applicable; and
+- that this is agent optimization;
+- comparison models, when the developer asked for them; and
 - non-default benchmark, evaluation, candidate-testing, or budget settings.
 
 Launch only after explicit developer authorization. A request such as "launch
@@ -221,21 +238,16 @@ selects another remote branch.
 Prefer JSON output so the run identity is unambiguous:
 
 ```bash
-# Default optimization over the configured editable surface
+# Agent optimization of the production system
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
 
-# Named-resource default optimization with all persisted candidates evaluated on TEST
+# Named-resource agent optimization with all persisted candidates evaluated on TEST
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
   --test-all-candidates --json
 
-# Production-system optimization without an initial benchmark
+# Agent optimization comparing specific models
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
-  --execution-mode optimize_only --json
-
-# Selected-model run
-beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
-  --optimization-model <provider:model> \
-  --execution-mode benchmark_and_optimize --json
+  --optimization-model <provider:model> --json
 ```
 
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
@@ -312,17 +324,26 @@ Cancellation is a state-changing operation:
 
 ## Non-negotiable rules
 
-- Never launch without a resolved remote branch, dataset, run family, and
-  developer authorization.
-- State which agent you selected, and use that same agent for dataset and run
-  commands.
+- Never launch without a resolved remote branch, dataset, and
+  developer authorization. The run type is agent optimization.
+- State which Beaker agent you selected, and use that same Beaker agent for
+  dataset and run commands.
 - Never silently choose models or use models absent from
   `beaker model list --available-only --json`.
-- Never combine selected models with the default optimization.
-- Never infer the optimizer from `repository`; `repository=None` selects named
-  resources and still uses the default optimization.
-- Never use selected-model flags when `Spec.seed_targets` is absent.
-- Never combine selected models with `--execution-mode optimize_only`.
+- Never pass `--optimization-model` unless the developer explicitly asked to
+  compare specific models.
+- Never use `--optimization-model` when `Spec.seed_targets` is absent;
+  comparison models currently need `@spec(repository=None)` with populated
+  seed_targets.
+- Never default to a comparison-model run; launch agent optimization of the
+  production system unless the developer explicitly asks to benchmark or
+  compare specific models.
+- Never add `--optimization-model` or `--test-all-candidates` to a run the
+  developer did not ask for those flags on; trigger it plain. When a Beaker
+  agent was set up in another session, `beaker run list --agent <key> --json`
+  shows whether it has run before.
+- Never infer the run type from `repository`; `repository=None` selects named
+  resources and still uses agent optimization.
 - Never treat unpushed local changes as part of a hosted run.
 - Never ask the developer for permission to commit or push the integration
   unless they told you not to take autonomous actions, and never push it to
@@ -341,8 +362,10 @@ Cancellation is a state-changing operation:
 
 ## Report the outcome
 
-For a launch, report the remote branch, dataset, run family, models/mode when
-applicable, full run ID, initial status, and UI URL. For status or cancellation,
+For a launch, report the remote branch, dataset, that this is agent
+optimization, comparison models when applicable, full run ID, initial status,
+and UI URL. For status or cancellation,
 report the full run ID and authoritative state. For pulled results, report the
 destination and a concise result summary.
 When talking to the developer, refer to runs as "run" or "experiment" (for example, `beaker run`).
+Call the named target the Beaker agent and the run type agent optimization.

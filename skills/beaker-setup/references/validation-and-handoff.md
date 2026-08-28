@@ -2,8 +2,11 @@
 
 ## Onboarding status
 
-Use `beaker onboarding status` after every CLI command and whenever the next
-action is unclear. It reports these ordered steps:
+Use `beaker onboarding status` after a completed onboarding step — `beaker init`,
+the dependency install, a meaningful spec edit, `beaker agent setup`, the push,
+dataset selection, smoke, or trigger — and whenever the next action is unclear.
+Do not run it after `--help`, `--print`, a discovery-only `beaker agent list`, or
+other read-only probes unless you are stuck. It reports these ordered steps:
 
 1. `beaker_dependency_declared`
 2. `config_present`
@@ -222,9 +225,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   validates and passes the application's resolver or type check before the
   hosted baseline. Where that is not possible, the plain client is kept and the
   tracing gap is reported.
-- The selected-model branch uses the narrowest injection seam.
-- Selected-model calls the gateway can serve are routed through
-  `inference_target(runtime)`, with no provider key declared for them. Any call
+- When `runtime.model` is set, use the narrowest injection seam.
+- Calls `inference_target(runtime)` can serve are routed through the gateway,
+  with no provider key declared for them. Any call
   site the gateway cannot serve is named at handoff, with the provider
   credential it still needs.
 - Any LLM judge declares its fixed canonical model with

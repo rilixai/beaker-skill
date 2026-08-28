@@ -11,8 +11,12 @@ selector. Only initialize a config after discovery establishes that no
 applicable agent/config exists. Status searches upward and does not discover a
 nested config below the Git root.
 
-Run `beaker onboarding status` after every command and whenever the next
-action is uncertain. Follow its one returned action. The ordered state checks
+Run `beaker onboarding status` after a completed onboarding step — `beaker init`,
+the dependency install, a meaningful spec edit, `beaker agent setup`, the push,
+dataset selection, smoke, or trigger — and whenever the next action is
+uncertain. Follow its one returned action. Do not run it after `--help`,
+`--print`, a discovery-only `beaker agent list`, or other read-only probes
+unless you are stuck. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
 `github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
 `integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
@@ -95,13 +99,15 @@ Use `beaker onboarding status --json` for automation:
   could match, ask the developer which one to use. State which agent you
   selected.
 - `beaker agent setup "<selected-agent>"` selects an existing optimization
-  target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and
-  `BEAKER_AGENT_KEY` to `.beaker/.env`. Pass `--repo <owner/name>` only when the
-  existing target needs a repository association.
+  target and records the selected agent key in the selected YAML. Pass
+  `--spec-id <id>` when the config has several specs, and pass
+  `--repo <owner/name>` only when the existing target needs a repository
+  association.
 - An unknown name passed to `beaker agent setup` creates a target. Only do this
   after discovery finds no suitable agent or the developer explicitly chooses
   a different agent; creation requires `--repo <owner/name>`.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
+- `beaker agent setup` records the printed agent key in `agent_key` in the selected `.beaker/beaker.yaml`; pass `--spec-id <id>` when the config has several specs. A developer-supplied agent name is approval; do not ask again.
 - Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
@@ -155,10 +161,13 @@ nested; it does not mean the directory containing the YAML. Absolute paths and
 paths containing `..` are rejected. If smoke or onboarding reports `Set
 source_dir to services/invoices`, apply that exact repository-relative value to
 the existing config and rerun the check.
+After `beaker init`, verify the generated `spec.source_dir` names the project's
+Git-root-relative directory and set it yourself when the project's
+`pyproject.toml` is not at the Git root.
 If a later command runs from the Git root, pass that full repository-relative
-path as its selector. Paths must remain inside the Git repository. Agent setup
-writes `.beaker/.env` under its working directory, so run it from the intended
-project root when credentials should live beside that project's config.
+path as its selector. Paths must remain inside the Git repository. Run agent
+setup from the intended project root so it discovers the selected config and
+keeps its repository association aligned with that project.
 
 ## Beaker YAML preflight
 
@@ -386,9 +395,9 @@ the failed run unchanged.
    # Or use --dataset-id <artifact-id> instead.
    ```
 
-   The first run always uses this plain command. Do not add optional run-type
-   flags such as `--optimization-model`, `--execution-mode`, or
-   `--test-all-candidates`.
+   The first hosted run is agent optimization of the production system.
+   Use this plain command. Do not add `--optimization-model` or
+   `--test-all-candidates` unless the developer explicitly asked for them.
 
    Before triggering, commit and push the completed integration yourself, to
    the `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch you intend to use. Do not

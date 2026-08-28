@@ -86,11 +86,12 @@ class RepositoryContractTests(unittest.TestCase):
 
         self.assertIn("| Repository |", content)
         self.assertIn("| Named resources |", content)
-        self.assertIn("Default optimization", content)
+        self.assertIn("agent optimization", content)
         self.assertNotIn("Harness Optimization", content)
-        self.assertIn("Selected-model run", content)
-        self.assertIn("optimize_only", content)
-        self.assertIn("benchmark_and_optimize", content)
+        self.assertNotIn("Default optimization", content)
+        self.assertNotIn("optimize_only", content)
+        self.assertNotIn("benchmark_and_optimize", content)
+        self.assertIn("--optimization-model", content)
         self.assertIn("--watch", content)
         self.assertNotIn("--once", content)
         self.assertNotIn("benchmark_only", content)
@@ -232,7 +233,7 @@ class RepositoryContractTests(unittest.TestCase):
         normalized = " ".join(content.split())
 
         self.assertIn(
-            "A plain GitHub-backed launch uses the default optimization for either editable surface",
+            "A plain GitHub-backed launch starts agent optimization of the production system for either editable surface",
             normalized,
         )
         self.assertIn("The seed starts with the configured production-system model behavior", normalized)
@@ -240,24 +241,53 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("when that improves the objective", normalized)
         self.assertIn("Named resources", content)
         self.assertIn("supplies each complete named resource", normalized)
-        self.assertIn("Both use the default optimization", normalized)
+        self.assertIn("Both use agent optimization", normalized)
         self.assertNotIn("use_harness_optimization=false", content)
         self.assertNotIn('"use_harness_optimization": false', content)
         self.assertIn(
-            "launch the default optimization unless they explicitly ask to benchmark or compare specific models",
+            "launch agent optimization unless they explicitly ask to benchmark or compare specific models",
             normalized,
         )
         self.assertIn(
-            "For an agent's first run, always launch the plain command with no optional flag that changes the run type",
+            "unless the developer asked for that flag in this conversation",
             normalized,
         )
-        self.assertIn("Selected-model flags choose a different optimizer workflow", normalized)
-        self.assertIn("Repository-surface default optimization always evaluates only the winner", normalized)
+        self.assertIn("`beaker run list --agent <key> --json` reports `total`", normalized)
+        self.assertIn(
+            "Never add `--optimization-model` or `--test-all-candidates` to a run the developer did not ask for",
+            normalized,
+        )
+        self.assertIn(
+            "Comparison models need `@spec(repository=None)` with populated `Spec.seed_targets`",
+            normalized,
+        )
+        self.assertIn("A repository-mode `@spec()` spec cannot take `--optimization-model`", normalized)
+        self.assertIn("Repository-surface agent optimization always evaluates only the winner", normalized)
         self.assertIn("Apply TEST candidate policy by editable surface", normalized)
         self.assertIn("The runtime ignores `--test-all-candidates` for this surface", normalized)
-        self.assertIn("`--test-all-candidates` applies to the default optimization", normalized)
+        self.assertIn("`--test-all-candidates` applies to agent optimization", normalized)
         self.assertIn("including resources such as `wiki`", normalized)
-        self.assertIn("Named-resource default optimization with all persisted candidates evaluated on TEST", normalized)
+        self.assertIn("Named-resource agent optimization with all persisted candidates evaluated on TEST", normalized)
+
+    def test_setup_skill_defaults_the_first_hosted_run_to_agent_optimization(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        content = "\n".join((setup, operations))
+        normalized = " ".join(content.split())
+        self.assertIn("The first hosted run is agent optimization of the production system", normalized)
+        self.assertIn(
+            "Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models",
+            normalized,
+        )
+        self.assertIn(
+            "Comparison models currently need `@spec(repository=None)` with populated `Spec.seed_targets`",
+            normalized,
+        )
+        self.assertIn("Call the named target the **Beaker agent**", setup)
+        self.assertIn("and the run type **agent optimization**", setup)
+        self.assertNotIn("Harness Optimization", content)
 
     def test_normal_launch_prefers_the_current_remote_branch(self) -> None:
         setup = SKILL.read_text(encoding="utf-8")
@@ -291,7 +321,8 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Ask the developer which models to use (one to eight", normalized)
         self.assertIn("Launch only after explicit developer authorization", normalized)
         self.assertIn("Never cancel a run without explicit authorization", normalized)
-        self.assertIn("Never combine selected models with the default optimization", normalized)
+        self.assertIn("Never use `--optimization-model` when `Spec.seed_targets` is absent", normalized)
+        self.assertIn("Never pass `--optimization-model` unless the developer explicitly asked to compare specific models", normalized)
 
     def test_usage_skill_preserves_agent_operational_details(self) -> None:
         skill = USAGE_SKILL.read_text(encoding="utf-8")
@@ -351,6 +382,52 @@ class RepositoryContractTests(unittest.TestCase):
         )
         self.assertIn("confirmed by the developer", normalized_datasets)
         self.assertIn("the quality metric to hill-climb", normalized_datasets)
+        self.assertIn("keep replacing `TODO(beaker)`", normalized_skill)
+        self.assertIn("while waiting", normalized_datasets)
+
+    def test_setup_skill_documents_the_happy_path_and_status_cadence(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertLess(
+            skill.index("## Happy path"),
+            skill.index("## Keep the onboarding loop explicit"),
+        )
+        happy_path = skill[
+            skill.index("## Happy path") : skill.index("## Keep the onboarding loop explicit")
+        ]
+        for phrase in (
+            "spec.source_dir",
+            "agent_key",
+            "beaker agent setup",
+            "which metric to optimize",
+            "beaker run trigger",
+            "Do not pass `--optimization-model` unless",
+        ):
+            self.assertIn(phrase, happy_path)
+        self.assertIn("Check the generated `spec.source_dir`", happy_path)
+        self.assertIn("After `beaker init`, verify", operations)
+        self.assertIn("Set source_dir to services/invoices", skill)
+        self.assertIn("Setup records the agent key in `agent_key`", happy_path)
+        self.assertIn("developer supplied the agent name", skill)
+        for text in (skill, operations, handoff):
+            self.assertIn("after a completed onboarding step", text)
+            self.assertIn("read-only probes", text)
+        all_setup_text = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in SKILL.parent.rglob("*")
+            if path.is_file()
+        )
+        for phrase in (
+            "after every Beaker command",
+            "after every CLI command",
+            "after every command",
+        ):
+            self.assertNotIn(phrase, all_setup_text)
 
     def test_tracing_is_scoped_to_candidate_agent(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
@@ -541,7 +618,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         self.assertIn("Tell the developer which agent you selected", normalized)
         self.assertIn("--agent <selected-agent>", content)
-        self.assertIn("use that same agent for dataset and run commands", normalized)
+        self.assertIn("use that same Beaker agent for dataset and run commands", normalized)
         self.assertIn("`PREPARING_BUILD` or `QUEUED`", content)
 
     def test_skill_keeps_beaker_out_of_production_runtime(self) -> None:
