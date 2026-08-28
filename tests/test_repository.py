@@ -404,7 +404,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Check the generated `spec.source_dir`", happy_path)
         self.assertIn("After `beaker init`, verify", operations)
         self.assertIn("Set source_dir to services/invoices", skill)
-        self.assertIn("copy the printed agent key into `agent_key`", skill)
+        self.assertIn("Setup records the agent key in `agent_key`", happy_path)
         self.assertIn("developer supplied the agent name", skill)
         for text in (skill, operations, handoff):
             self.assertIn("after a completed onboarding step", text)

@@ -23,7 +23,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
 6. If several scored fields are plausible, ask the developer once which metric to optimize, then keep doing your own spec work while you wait.
 7. Replace every `TODO(beaker)` in the spec and wire the real model call.
-8. `beaker agent setup "<Agent Name>"`, then copy the printed agent key into `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
+8. `beaker agent setup "<Agent Name>"` (add `--spec-id <id>` when the config has several specs). Setup records the agent key in `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
 9. Relay the GitHub App install and the labeled-data request only when `beaker onboarding status` asks for them, then validate with `beaker run smoke --strict`.
 10. Commit and push the integration yourself to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
 11. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models.
@@ -377,10 +377,11 @@ Select an existing agent with:
 beaker agent setup "<selected-agent>"
 ```
 
-Copy the printed agent key into `agent_key` in the selected YAML immediately, so
-`beaker onboarding status` and `beaker run trigger` select the same Beaker agent
-(newer CLIs also honor `$BEAKER_AGENT_KEY` from `.beaker/.env`, but the YAML must
-not disagree). When the developer supplied the agent name, treat it as approval
+`beaker agent setup` records the selected agent key in `agent_key` in the selected
+YAML, so `beaker onboarding status` and `beaker run trigger` select the same
+Beaker agent. Add `--spec-id <id>` when the config has several specs. An exported
+`$BEAKER_AGENT_KEY` still overrides the YAML for commands that explicitly need
+that behavior. When the developer supplied the agent name, treat it as approval
 and do not ask again.
 
 Pass `--repo <owner/name>` only when the selected agent still needs that

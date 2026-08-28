@@ -99,14 +99,15 @@ Use `beaker onboarding status --json` for automation:
   could match, ask the developer which one to use. State which agent you
   selected.
 - `beaker agent setup "<selected-agent>"` selects an existing optimization
-  target and writes `BEAKER_API_BASE_URL`, `BEAKER_API_KEY`, and
-  `BEAKER_AGENT_KEY` to `.beaker/.env`. Pass `--repo <owner/name>` only when the
-  existing target needs a repository association.
+  target, writes `BEAKER_API_BASE_URL` and `BEAKER_API_KEY` to `.beaker/.env`,
+  and records the selected agent key in the selected YAML. Pass `--spec-id <id>`
+  when the config has several specs, and pass `--repo <owner/name>` only when
+  the existing target needs a repository association.
 - An unknown name passed to `beaker agent setup` creates a target. Only do this
   after discovery finds no suitable agent or the developer explicitly chooses
   a different agent; creation requires `--repo <owner/name>`.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
-- Copy the printed agent key from `beaker agent setup` into `agent_key` in the selected `.beaker/beaker.yaml` immediately. A developer-supplied agent name is approval; do not ask again.
+- `beaker agent setup` records the printed agent key in `agent_key` in the selected `.beaker/beaker.yaml`; pass `--spec-id <id>` when the config has several specs. A developer-supplied agent name is approval; do not ask again.
 - Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
