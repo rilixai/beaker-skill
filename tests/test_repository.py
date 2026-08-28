@@ -374,6 +374,52 @@ class RepositoryContractTests(unittest.TestCase):
         )
         self.assertIn("confirmed by the developer", normalized_datasets)
         self.assertIn("the quality metric to hill-climb", normalized_datasets)
+        self.assertIn("keep replacing `TODO(beaker)`", normalized_skill)
+        self.assertIn("while waiting", normalized_datasets)
+
+    def test_setup_skill_documents_the_happy_path_and_status_cadence(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertLess(
+            skill.index("## Happy path"),
+            skill.index("## Keep the onboarding loop explicit"),
+        )
+        happy_path = skill[
+            skill.index("## Happy path") : skill.index("## Keep the onboarding loop explicit")
+        ]
+        for phrase in (
+            "spec.source_dir",
+            "agent_key",
+            "beaker agent setup",
+            "which metric to optimize",
+            "beaker run trigger",
+            "Do not pass `--optimization-model` unless",
+        ):
+            self.assertIn(phrase, happy_path)
+        self.assertIn("Check the generated `spec.source_dir`", happy_path)
+        self.assertIn("After `beaker init`, verify", operations)
+        self.assertIn("Set source_dir to services/invoices", skill)
+        self.assertIn("copy the printed agent key into `agent_key`", skill)
+        self.assertIn("developer supplied the agent name", skill)
+        for text in (skill, operations, handoff):
+            self.assertIn("after a completed onboarding step", text)
+            self.assertIn("read-only probes", text)
+        all_setup_text = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in SKILL.parent.rglob("*")
+            if path.is_file()
+        )
+        for phrase in (
+            "after every Beaker command",
+            "after every CLI command",
+            "after every command",
+        ):
+            self.assertNotIn(phrase, all_setup_text)
 
     def test_tracing_is_scoped_to_candidate_agent(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")

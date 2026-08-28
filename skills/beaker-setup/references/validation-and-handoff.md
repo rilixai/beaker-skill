@@ -2,8 +2,11 @@
 
 ## Onboarding status
 
-Use `beaker onboarding status` after every CLI command and whenever the next
-action is unclear. It reports these ordered steps:
+Use `beaker onboarding status` after a completed onboarding step — `beaker init`,
+the dependency install, a meaningful spec edit, `beaker agent setup`, the push,
+dataset selection, smoke, or trigger — and whenever the next action is unclear.
+Do not run it after `--help`, `--print`, a discovery-only `beaker agent list`, or
+other read-only probes unless you are stuck. It reports these ordered steps:
 
 1. `beaker_dependency_declared`
 2. `config_present`

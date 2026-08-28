@@ -16,6 +16,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - stable row identifiers and optional grouping/metadata.
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
+When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
 
 If local data is unavailable, inspect hosted data with `beaker dataset list` and
 `beaker dataset show`. Validate a usable hosted snapshot with `beaker run smoke

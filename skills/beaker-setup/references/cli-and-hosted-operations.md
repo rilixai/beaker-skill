@@ -11,8 +11,12 @@ selector. Only initialize a config after discovery establishes that no
 applicable agent/config exists. Status searches upward and does not discover a
 nested config below the Git root.
 
-Run `beaker onboarding status` after every command and whenever the next
-action is uncertain. Follow its one returned action. The ordered state checks
+Run `beaker onboarding status` after a completed onboarding step — `beaker init`,
+the dependency install, a meaningful spec edit, `beaker agent setup`, the push,
+dataset selection, smoke, or trigger — and whenever the next action is
+uncertain. Follow its one returned action. Do not run it after `--help`,
+`--print`, a discovery-only `beaker agent list`, or other read-only probes
+unless you are stuck. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
 `github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
 `integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
@@ -102,6 +106,7 @@ Use `beaker onboarding status --json` for automation:
   after discovery finds no suitable agent or the developer explicitly chooses
   a different agent; creation requires `--repo <owner/name>`.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
+- Copy the printed agent key from `beaker agent setup` into `agent_key` in the selected `.beaker/beaker.yaml` immediately. A developer-supplied agent name is approval; do not ask again.
 - Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
@@ -155,6 +160,9 @@ nested; it does not mean the directory containing the YAML. Absolute paths and
 paths containing `..` are rejected. If smoke or onboarding reports `Set
 source_dir to services/invoices`, apply that exact repository-relative value to
 the existing config and rerun the check.
+After `beaker init`, verify the generated `spec.source_dir` names the project's
+Git-root-relative directory and set it yourself when the project's
+`pyproject.toml` is not at the Git root.
 If a later command runs from the Git root, pass that full repository-relative
 path as its selector. Paths must remain inside the Git repository. Agent setup
 writes `.beaker/.env` under its working directory, so run it from the intended

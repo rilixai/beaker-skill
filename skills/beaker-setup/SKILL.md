@@ -12,6 +12,23 @@ and labeled data before completing the integration. Finish with a passing local
 structural smoke check when real labeled examples are available; launch
 remotely only when the developer requests it.
 
+## Happy path
+
+Follow this order. The rest of this skill is constraints and recovery.
+
+1. `beaker auth status` (run `beaker login` only if it fails), then `beaker agent list --json`. Use `uvx --from beaker-sdk beaker ...` until the project dependency is installed.
+2. Identify the package or service being optimized, not the Git root: in a monorepo that is the directory holding the task's own `pyproject.toml`.
+3. Select that project's existing Beaker config, or enter the project root and run `beaker init`.
+4. Check the generated `spec.source_dir` right away: it must be the project's Git-root-relative directory, for example `services/invoices`, and `"."` only when the project is the Git root. Fix it immediately if it disagrees; do not wait for a migration hint.
+5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
+6. If several scored fields are plausible, ask the developer once which metric to optimize, then keep doing your own spec work while you wait.
+7. Replace every `TODO(beaker)` in the spec and wire the real model call.
+8. `beaker agent setup "<Agent Name>"`, then copy the printed agent key into `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
+9. Relay the GitHub App install and the labeled-data request only when `beaker onboarding status` asks for them, then validate with `beaker run smoke --strict`.
+10. Commit and push the integration yourself to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
+11. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models.
+12. Run `beaker onboarding status` after each completed step above, not after read-only probes.
+
 ## Keep the onboarding loop explicit
 
 `beaker onboarding status` is the loop-control command for setup:
@@ -21,8 +38,8 @@ remotely only when the developer requests it.
   applies, or establish that no matching agent exists. Status searches upward
   from the working directory; it does not discover nested configs below the
   Git root.
-- Run it after every Beaker command and whenever the next step is unclear.
-  Do not ask the developer what to do next before consulting this command.
+- Run it after a completed onboarding step — `beaker init`, the dependency install, a meaningful spec edit, `beaker agent setup`, the push, dataset selection, smoke, trigger — and whenever the next step is unclear. Do not ask the developer what to do next before consulting this command.
+- Do not run it after `--help`, `--print`, a discovery-only `beaker agent list`, or other read-only probes unless you are stuck.
 - Follow its single returned next action exactly. The returned action is
   normally the first incomplete agent-owned step in canonical order.
 - If `blocked_on_developer` lists developer-owned steps known to be
@@ -180,8 +197,8 @@ example, initializing `services/invoices` records `source_dir:
 services/invoices`; `package_import_root` remains relative to that source
 directory. `source_dir: "."` always means the Git root, including when the
 selected YAML is nested. Absolute paths and paths containing `..` are invalid.
-When smoke or onboarding reports a migration such as `Set source_dir to
-services/invoices`, update the existing YAML to that exact repository-relative
+When smoke or onboarding reports a migration such as `Set source_dir to services/invoices`,
+update the existing YAML to that exact repository-relative
 value and rerun the failed check; do not move or recreate the config.
 Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
 ambiguous; use `--discover` to locate existing factories.
@@ -216,9 +233,13 @@ Use the selected agent's page to view its runs and score trends.
      fresh evaluator process.
    - scorer: score the quality metric the developer chose to hill-climb. If
      the repository does not already establish a single scoring metric (an
-     existing eval or scorer with clear fields and weights), ask the developer which metric to
-     optimize; never make that decision implicitly. If it
-     uses an LLM judge, set `Spec.llm_scorer_model` to that agent's fixed
+     existing eval or scorer with clear fields and weights), ask the developer
+     which metric to optimize; never make that decision implicitly. Ask this as
+     soon as several plausible scored fields are found; asking is not a halt:
+     keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset
+     conversion while waiting, then insert the chosen field into the scorer
+     when the answer arrives. If it uses an LLM judge, set
+     `Spec.llm_scorer_model` to that agent's fixed
      canonical `provider:model`, then route hosted judge calls through
      `scoring_inference_target()` so gateway accounting and run budgets include
      them. The judge model must not follow `runtime.model`; retain the same
@@ -356,6 +377,12 @@ Select an existing agent with:
 beaker agent setup "<selected-agent>"
 ```
 
+Copy the printed agent key into `agent_key` in the selected YAML immediately, so
+`beaker onboarding status` and `beaker run trigger` select the same Beaker agent
+(newer CLIs also honor `$BEAKER_AGENT_KEY` from `.beaker/.env`, but the YAML must
+not disagree). When the developer supplied the agent name, treat it as approval
+and do not ask again.
+
 Pass `--repo <owner/name>` only when the selected agent still needs that
 repository association. If discovery found no matching agent, create one only
 after confirming the optimization target and name:
@@ -447,8 +474,11 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never silently choose among multiple plausible tasks.
 - Never implicitly decide what metric of quality the optimization hill-climbs
   when several metrics are plausible or when scoring aggregates or averages
-  multiple metrics; ask the developer which metric and weights to optimize. A
-  single clearly established metric needs no confirmation.
+  multiple metrics; ask the developer which metric and weights to optimize. Ask
+  as soon as several plausible scored fields are found. Asking is not a halt:
+  keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset
+  conversion while waiting, then insert the chosen field into the scorer when
+  the answer arrives. A single clearly established metric needs no confirmation.
 - Always communicate with the developer in plain English, avoiding internal jargon and technical arcana.
 - After repository and agent discovery, never ask the developer what to do next
   before running `beaker onboarding status` with the selected config; follow
