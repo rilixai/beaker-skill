@@ -407,10 +407,13 @@ run can then find a config such as
 The YAML's `spec.source_dir` independently identifies the Git-root-relative
 project source used by both local validation and hosted builds.
 
-Agent setup writes runtime secrets only to `.beaker/.env` under the directory
-where it runs. Never print, echo, or commit them. Read
-[cli-and-hosted-operations.md](references/cli-and-hosted-operations.md) before
-working with credentials, datasets, hosted environment variables, or runs.
+Agent setup records the selected agent in `beaker.yaml` but does not provision
+runtime secrets. Runtime API keys come from Settings → Credentials → API keys
+and should be supplied to CI as `$BEAKER_API_KEY`; local provider and customer
+secrets may still live in `.beaker/.env`. Never print, echo, or commit secrets.
+Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
+before working with credentials, datasets, hosted environment variables, or
+runs.
 
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive

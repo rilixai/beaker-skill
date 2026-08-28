@@ -99,8 +99,7 @@ Use `beaker onboarding status --json` for automation:
   could match, ask the developer which one to use. State which agent you
   selected.
 - `beaker agent setup "<selected-agent>"` selects an existing optimization
-  target, writes `BEAKER_API_BASE_URL` and `BEAKER_API_KEY` to `.beaker/.env`,
-  and records the selected agent key in the selected YAML. Pass `--spec-id <id>`
+  target and records the selected agent key in the selected YAML. Pass `--spec-id <id>`
   when the config has several specs, and pass `--repo <owner/name>` only when
   the existing target needs a repository association.
 - An unknown name passed to `beaker agent setup` creates a target. Only do this
@@ -165,9 +164,9 @@ After `beaker init`, verify the generated `spec.source_dir` names the project's
 Git-root-relative directory and set it yourself when the project's
 `pyproject.toml` is not at the Git root.
 If a later command runs from the Git root, pass that full repository-relative
-path as its selector. Paths must remain inside the Git repository. Agent setup
-writes `.beaker/.env` under its working directory, so run it from the intended
-project root when credentials should live beside that project's config.
+path as its selector. Paths must remain inside the Git repository. Run agent
+setup from the intended project root so it discovers the selected config and
+keeps its repository association aligned with that project.
 
 ## Beaker YAML preflight
 
