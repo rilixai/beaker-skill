@@ -245,10 +245,14 @@ class RepositoryContractTests(unittest.TestCase):
             normalized,
         )
         self.assertIn(
-            "For a Beaker agent's first run, always launch the plain command with no optional flag that changes the run type",
+            "unless the developer asked for that flag in this conversation",
             normalized,
         )
-        self.assertIn("Never add `--optimization-model` or `--test-all-candidates` to a Beaker agent's first run", normalized)
+        self.assertIn("`beaker run list --agent <key> --json` reports `total`", normalized)
+        self.assertIn(
+            "Never add `--optimization-model` or `--test-all-candidates` to a run the developer did not ask for",
+            normalized,
+        )
         self.assertIn(
             "Comparison models need `@spec(repository=None)` with populated `Spec.seed_targets`",
             normalized,

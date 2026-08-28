@@ -141,9 +141,12 @@ for both.
 A plain GitHub-backed launch starts agent optimization of the production
 system for either editable surface. This is the launch to use: when the
 developer asks to optimize, launch agent optimization unless they explicitly
-ask to benchmark or compare specific models. For a Beaker agent's first run,
-always launch the plain command with no optional flag that changes the run
-type: no `--optimization-model` and no `--test-all-candidates`.
+ask to benchmark or compare specific models. Launch the plain command with no
+flag that changes the run type — no `--optimization-model`, no
+`--test-all-candidates` — unless the developer asked for that flag in this
+conversation. Setup may have happened in another session, so do not assume you
+know a Beaker agent's history: `beaker run list --agent <key> --json` reports
+`total`, and `total` of `0` means the agent has never run.
 The seed starts with the configured production-system model behavior unless a
 supported launch-time model selection is explicit. During
 optimization, the optimizer may modify the editable source or resource,
@@ -159,7 +162,7 @@ the runtime unifies on agent optimization. Pass it only when the developer
 explicitly asks to benchmark or compare specific models. Comparison models
 need `@spec(repository=None)` with populated `Spec.seed_targets`. A
 repository-mode `@spec()` spec cannot take `--optimization-model`. Do not
-invent models, and do not pass the flag on a first run.
+invent models, and do not pass the flag the developer did not ask for.
 
 Apply TEST candidate policy by editable surface:
 
@@ -174,15 +177,19 @@ Apply TEST candidate policy by editable surface:
 
 ### Compare specific models
 
-Do not propose a comparison, discover models, or ask the developer to pick
-models when they only asked to optimize; launch agent optimization of the
-production system instead.
+"Optimize" never means "compare models". When the developer only asks to
+optimize, do not offer a comparison, do not run `beaker model list`, and do
+not ask them to choose models: launch agent optimization of the production
+system.
 
-When the developer explicitly asks to benchmark or compare specific models,
-first inspect the selected `@spec`. If it has no `Spec.seed_targets`, stop;
-do not launch `--optimization-model` and do not add targets as a
-run-management side effect. Use `$beaker-setup` only when the developer wants
-an explicit `@spec(repository=None)` product decision.
+Comparison runs are a rare explicit opt-in, and most specs cannot do one: they
+need `@spec(repository=None)` with populated `Spec.seed_targets`, which the
+recommended repository-mode `@spec()` does not have. So when the developer
+does ask to benchmark or compare specific models, inspect the selected `@spec`
+first. If it has no `Spec.seed_targets`, stop and say so; do not launch
+`--optimization-model`, and do not add targets or change `repository` to make
+the run possible. Switching a spec to `@spec(repository=None)` is a product
+decision for the developer, taken through `$beaker-setup`.
 
 Then:
 
@@ -331,8 +338,10 @@ Cancellation is a state-changing operation:
 - Never default to a comparison-model run; launch agent optimization of the
   production system unless the developer explicitly asks to benchmark or
   compare specific models.
-- Never add `--optimization-model` or `--test-all-candidates` to a Beaker
-  agent's first run; trigger it plain.
+- Never add `--optimization-model` or `--test-all-candidates` to a run the
+  developer did not ask for those flags on; trigger it plain. When a Beaker
+  agent was set up in another session, `beaker run list --agent <key> --json`
+  shows whether it has run before.
 - Never infer the run type from `repository`; `repository=None` selects named
   resources and still uses agent optimization.
 - Never treat unpushed local changes as part of a hosted run.
