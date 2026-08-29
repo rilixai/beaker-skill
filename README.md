@@ -25,7 +25,9 @@ npx skills add rilixai/beaker-skill --skill beaker-usage --global --yes
 
 The `skills` CLI detects the agents installed on your machine. `--yes` accepts
 those detected agents without opening the agent-selection menu, and `--global`
-makes the skill available across projects.
+makes the skill available across projects. Let installation or update finish
+before the newly installed skill is loaded. If an agent session already loaded
+an older copy, reload the skill or start a fresh session before onboarding.
 
 > [!NOTE]
 > **Known issue (as of 2026-08-20):** with `--global --yes`, the `skills` CLI may report

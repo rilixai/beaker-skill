@@ -40,8 +40,8 @@ Steps and completion:
 
 - The ordered steps are `beaker_dependency_declared`, `config_present`,
   `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
-  `tracing_wired`, `integration_pushed`, `dataset_available`, and
-  `experiment_launched`.
+  `tracing_wired`, `dataset_available`, `required_env_configured`,
+  `integration_pushed`, and `experiment_launched`.
 - Onboarding is complete once `experiment_launched` is complete. Shipping a
   winning candidate pull request is developer-owned follow-up work outside
   the onboarding loop.
@@ -59,10 +59,10 @@ Steps and completion:
   `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
   reuses it, and a newly stamped one otherwise. When the checkout sits on
   `main`, `master`, `trunk`, or `develop`, the step reason repeats that branch
-  suggestion rather than accepting a default-branch push. The agent normally
-  completes the later `dataset_available` and
-  `experiment_launched` steps too, but the developer may also complete them,
-  including through the platform UI.
+  suggestion rather than accepting a default-branch push. Complete
+  `dataset_available` and `required_env_configured` before this final push. The
+  agent normally completes dataset selection and `experiment_launched` too,
+  but the developer may also complete them through the platform UI.
 
 Reading the JSON and acting on it:
 

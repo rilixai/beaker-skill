@@ -12,6 +12,16 @@ and labeled data before completing the integration. Finish with a passing local
 structural smoke check when real labeled examples are available; launch
 remotely only when the developer requests it.
 
+## Load the installed skill first
+
+When the developer asks to install or update this skill, finish that command
+before loading and following the newly installed copy. Never install or update
+the skill in parallel with loading it. If this session loaded an older copy
+before replacement, reload the installed skill; when the agent host cannot
+refresh skills in place, start a new agent session instead of continuing with
+stale instructions. A user who already has the requested version installed can
+load it normally without reinstalling it.
+
 ## Happy path
 
 Follow this order. The rest of this skill is constraints and recovery.
@@ -21,13 +31,14 @@ Follow this order. The rest of this skill is constraints and recovery.
 3. Select that project's existing Beaker config, or enter the project root and run `beaker init`.
 4. Check the generated `spec.source_dir` right away: it must be the project's Git-root-relative directory, for example `services/invoices`, and `"."` only when the project is the Git root. Fix it immediately if it disagrees; do not wait for a migration hint.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
-6. If several scored fields are plausible, ask the developer once which metric to optimize, then keep doing your own spec work while you wait.
+6. After initial discovery, ask all currently known unresolved decisions together, such as which metric to optimize, the labeled-data source, quick-start versus full dataset size, agent name, judge model, or required credentials. Do not wait for discovery to be exhaustive, and continue independent discovery and implementation while the developer responds.
 7. Replace every `TODO(beaker)` in the spec and wire the real model call.
 8. `beaker agent setup "<Agent Name>"` (add `--spec-id <id>` when the config has several specs). Setup records the agent key in `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
-9. Relay the GitHub App install and the labeled-data request only when `beaker onboarding status` asks for them, then validate with `beaker run smoke --strict`.
-10. Commit and push the integration yourself to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
-11. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models.
-12. Run `beaker onboarding status` after each completed step above, not after read-only probes.
+9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
+10. Upload or select the labeled dataset, record its immutable selector in the config, confirm required hosted environment values, and validate with `beaker run smoke --strict`.
+11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
+12. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models.
+13. Run `beaker onboarding status` after each completed step above, not after read-only probes.
 
 ## Keep the onboarding loop explicit
 
@@ -45,8 +56,9 @@ Follow this order. The rest of this skill is constraints and recovery.
 - If `blocked_on_developer` lists developer-owned steps known to be
   incomplete, relay only newly discovered actions verbatim to the developer
   without attempting them yourself, tracking what was already reported in
-  this session. This report is not a halt: continue with the returned
-  `next.action`.
+  this session. Batch the actions currently known, ask the developer to begin
+  them immediately, and continue with the returned `next.action` so their work
+  overlaps with yours. This report is not a halt.
 - An `unknown` step has not been checked yet and never means that the
   developer must act.
 - Stop and wait only when `next` itself is developer-owned. Finish when
@@ -57,10 +69,10 @@ Follow this order. The rest of this skill is constraints and recovery.
   tracing, make a best effort to wire it and commit its wiring with the
   completed integration before pushing, but never let it block or delay the
   required push.
-- `integration_pushed` is the final blocking agent-owned step. The agent
-  normally completes the later `dataset_available` and `experiment_launched`
-  steps too, but the developer may also complete them, including through the
-  platform UI.
+- `integration_pushed` is the final blocking agent-owned step. Complete
+  `dataset_available` and `required_env_configured` before that final push; the
+  agent normally completes dataset selection and `experiment_launched` too,
+  but the developer may also complete them through the platform UI.
 
 ## Commit and push the integration yourself
 
@@ -95,6 +107,10 @@ integration belongs on the branch already pushed. Older branches, branches for
 another agent, and any other branch mean cutting a fresh one. `beaker
 onboarding status` names the branch to use in the `integration_pushed` action;
 follow it.
+
+Do not push an incomplete integration and then push again only to add the
+dataset selector or another known setup change. Upload or select the dataset,
+finish the selected config, validate it, and make one final integration push.
 
 Never push the integration to `main`, `master`, or the repository's default
 branch, and never open a pull request, unless the developer asks for it. Stage
