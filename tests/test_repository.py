@@ -395,6 +395,8 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("all currently known unresolved decisions together", normalized)
         self.assertIn("Do not wait for discovery to be exhaustive", normalized)
         self.assertIn("continue independent discovery and implementation while the developer responds", normalized)
+        self.assertIn("Batching is best effort", normalized)
+        self.assertIn("if later discovery reveals another required decision, ask it then", normalized)
 
     def test_setup_skill_finalizes_data_before_one_push(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
