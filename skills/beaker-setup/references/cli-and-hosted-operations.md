@@ -19,7 +19,8 @@ uncertain. Follow its one returned action. Do not run it after `--help`,
 unless you are stuck. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
 `github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
-`integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
+`dataset_available`, `required_env_configured`, `integration_pushed`, and
+`experiment_launched`. Onboarding is
 complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
@@ -61,10 +62,10 @@ Use `beaker onboarding status --json` for automation:
   without asking the developer to confirm, unless the developer told you not to
   take autonomous actions, on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch; a
   checkout sitting on `main`, `master`, `trunk`, or `develop` gets that branch
-  suggestion in the step reason instead of being pushed as-is. The agent
-  normally completes the later `dataset_available` and `experiment_launched`
-  steps too, but the developer may also complete them, including through the
-  platform UI.
+  suggestion in the step reason instead of being pushed as-is. Complete
+  `dataset_available` and `required_env_configured` before this final push. The
+  agent normally completes dataset selection and `experiment_launched` too,
+  but the developer may also complete them through the platform UI.
 
 ## GitHub App access
 
