@@ -15,10 +15,9 @@ other read-only probes unless you are stuck. It reports these ordered steps:
 5. `agent_selected`
 6. `spec_integrated`
 7. `tracing_wired`
-8. `dataset_available`
-9. `required_env_configured`
-10. `integration_pushed`
-11. `experiment_launched`
+8. `integration_pushed`
+9. `dataset_available`
+10. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App
 installation is connected. `agent_selected` requires a selected Beaker agent
@@ -102,11 +101,9 @@ Interpret the payload with these rules:
   `true` for all other steps. Tracing never blocks completion.
 - `integration_pushed` is the final blocking agent-owned step and must be
   complete before a hosted optimization run. It is not required before
-  dataset upload. Complete `dataset_available` and `required_env_configured`
-  first so the selected config, dataset, and dependency files need one final
-  integration push. The agent normally completes dataset selection and
-  `experiment_launched` too, but the developer may also complete them through
-  the platform UI.
+  dataset upload. The agent normally completes the later `dataset_available`
+  and `experiment_launched` steps too, but the developer may also complete
+  them, including through the platform UI.
 - Exit code `0` means the state and an actionable `next` were computed, even
   when steps remain incomplete; selection and hosted errors remain in
   `errors` but return `0` when `next` is actionable.

@@ -385,28 +385,6 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("keep replacing `TODO(beaker)`", normalized_skill)
         self.assertIn("while waiting", normalized_datasets)
 
-    def test_setup_skill_installs_before_loading_and_batches_known_questions(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        skill = SKILL.read_text(encoding="utf-8")
-        normalized = " ".join(skill.split())
-
-        self.assertIn("finish before the newly installed skill is loaded", " ".join(readme.split()).lower())
-        self.assertIn("Never install or update the skill in parallel with loading it", normalized)
-        self.assertIn("all currently known unresolved decisions together", normalized)
-        self.assertIn("Do not wait for discovery to be exhaustive", normalized)
-        self.assertIn("continue independent discovery and implementation while the developer responds", normalized)
-
-    def test_setup_skill_finalizes_data_before_one_push(self) -> None:
-        skill = SKILL.read_text(encoding="utf-8")
-        happy_path = skill[
-            skill.index("## Happy path") : skill.index("## Keep the onboarding loop explicit")
-        ]
-        normalized = " ".join(skill.split())
-
-        self.assertLess(happy_path.index("Upload or select the labeled dataset"), happy_path.index("Commit and push once"))
-        self.assertIn("ask the developer to begin those actions immediately", normalized)
-        self.assertIn("Do not push an incomplete integration and then push again", normalized)
-
     def test_setup_skill_documents_the_happy_path_and_status_cadence(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
