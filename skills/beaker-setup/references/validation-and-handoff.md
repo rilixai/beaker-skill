@@ -140,10 +140,13 @@ beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
 beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-When `config_defaults.dataset_ref` or `config_defaults.dataset_id` already
-selects the intended remote snapshot, a bare `beaker run smoke --strict` uses
-that selector after resolving the configured agent. Explicit `--dataset` and
-`--dataset-id` flags override configured selectors; provide exactly one.
+During onboarding, retain the immutable remote selector and pass it explicitly
+to smoke and the later trigger; do not commit an organization-specific selector
+to YAML by default. When a repository intentionally defines
+`config_defaults.dataset_ref` or `config_defaults.dataset_id`, a bare `beaker
+run smoke --strict` uses that selector after resolving the configured agent.
+Explicit `--dataset` and `--dataset-id` flags override configured selectors;
+provide exactly one.
 
 If the installed CLI does not recognize these flags, upgrade `beaker-sdk`
 through the repository's existing development-dependency workflow and retry.

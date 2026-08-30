@@ -35,7 +35,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 7. Replace every `TODO(beaker)` in the spec and wire the real model call.
 8. `beaker agent setup "<Agent Name>"` (add `--spec-id <id>` when the config has several specs). Setup records the agent key in `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
 9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
-10. Upload or select the labeled dataset, record its immutable selector in the config, confirm required hosted environment values, and validate with `beaker run smoke --strict`.
+10. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
 11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
 12. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
 13. Run `beaker onboarding status` after each completed step above, not after read-only probes.
@@ -558,6 +558,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
+- Do not commit an organization-specific `dataset_ref` or `dataset_id` to YAML
+  by default. Retain the uploaded immutable selector in the onboarding session
+  and pass it explicitly to smoke and launch; a repository dataset default is
+  an intentional opt-in.
 - Never trigger a hosted agent optimization run unless the developer explicitly asks.
 - The first hosted run is agent optimization of the production system. Launch
   it with a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`).

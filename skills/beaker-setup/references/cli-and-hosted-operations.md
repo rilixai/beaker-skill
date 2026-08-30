@@ -386,9 +386,10 @@ the failed run unchanged.
 
    Supply exactly one selector. Remote smoke authenticates and downloads the
    dataset through presigned URLs, but does not execute a rollout or scorer and
-   does not launch a hosted run. A configured `config_defaults.dataset_ref` or
-   `config_defaults.dataset_id` can supply the selector when it names this same
-   snapshot.
+   does not launch a hosted run. Retain this immutable selector for the later
+   trigger. A configured `config_defaults.dataset_ref` or
+   `config_defaults.dataset_id` is an optional convenience when the repository
+   intentionally owns that default.
 
 4. Trigger only with explicit developer authorization, reusing the selector
    that passed smoke:
@@ -423,11 +424,13 @@ Use the same selected agent for dataset inspection, upload, and launch.
 
 Dataset uploads create immutable revisions and normally promote the new
 revision to `production`. Re-uploading identical files is a no-op. Bare names
-resolve the production alias at command time, so use `name@revision`, artifact
-id, `config_defaults.dataset_ref`, or `config_defaults.dataset_id` when smoke
-and launch must use the same snapshot. Explicit `--dataset` and `--dataset-id`
-selectors override configured selectors and must not be combined. Never expose
-storage URIs.
+resolve the production alias at command time. During onboarding, retain the
+uploaded `name@revision` or artifact id and pass it explicitly to both smoke and
+launch so they use the same snapshot. Do not commit an organization-specific
+selector to YAML by default; `config_defaults.dataset_ref` and
+`config_defaults.dataset_id` remain optional repository defaults. Explicit
+`--dataset` and `--dataset-id` selectors override configured selectors and must
+not be combined. Never expose storage URIs.
 
 Preserve the full run UUID and the `View in UI:` link printed by trigger.
 Immediately tell the developer that repository setup is finished and the
