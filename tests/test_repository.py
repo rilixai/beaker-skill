@@ -328,12 +328,16 @@ class RepositoryContractTests(unittest.TestCase):
         skill = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
         content = "\n".join((skill, reference))
+        normalized = " ".join(content.split()).lower()
 
         self.assertIn("--config-file", content)
         self.assertIn("BEAKER_CONFIG_FILE", skill)
         self.assertIn("exit code `3` as an active run", skill)
         self.assertIn("full run `id`", skill)
         self.assertIn("`web_url`", skill)
+        self.assertIn("repository setup is finished and the hosted run has started", normalized)
+        self.assertIn("remaining wait is for beaker's hosted results, not more integration work", normalized)
+        self.assertIn("do not imply that repository integration is still underway", normalized)
         self.assertIn("Do not hand-author", skill)
         self.assertIn("Do not overwrite an existing result directory", skill)
         self.assertIn("use `$beaker-setup`", skill)
@@ -384,6 +388,16 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("the quality metric to hill-climb", normalized_datasets)
         self.assertIn("keep replacing `TODO(beaker)`", normalized_skill)
         self.assertIn("while waiting", normalized_datasets)
+
+    def test_setup_skill_keeps_predictions_compact_and_diagnostics_in_context(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+        content = " ".join((skill + datasets + handoff).split())
+
+        self.assertIn("keep `output` limited to fields the scorer reads", content)
+        self.assertIn("trajectories, tool history, end state, and other diagnostic evidence", content)
+        self.assertIn("do not duplicate large evidence in both", content)
 
     def test_setup_skill_installs_before_loading_and_batches_known_questions(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

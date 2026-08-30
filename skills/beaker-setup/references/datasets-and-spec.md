@@ -129,6 +129,11 @@ files, fixtures, snapshots, helpers, or test configuration for Beaker.
 | data loader | Real labeled rows and their validation contract |
 | `spec.required_env` | Names of application variables needed during candidate evaluation; never their values |
 
+Keep `CaseResult.output` limited to prediction fields the scorer reads. Put
+trajectories, tool history, end state, and other diagnostic evidence in
+`CaseResult.context`; do not duplicate large evidence in both. Both values must
+remain JSON-normalizable across the evaluator process boundary.
+
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
 
 Repository-mode case inputs and `CaseResult.output`/`context` cross a process

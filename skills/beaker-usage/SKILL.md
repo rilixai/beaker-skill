@@ -255,7 +255,10 @@ beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
 ```
 
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
-the full ID and clickable UI URL to the developer. Never shorten the ID.
+the full ID and clickable UI URL to the developer. Never shorten the ID. Tell
+them immediately that repository setup is finished and the hosted run has
+started. Name its current state and make clear that any remaining wait is for
+Beaker's hosted results, not more integration work.
 
 An agent may have several active runs, including runs that use the same
 selected model. Do not assume a fixed per-agent or per-model run limit.
@@ -289,8 +292,10 @@ and remain responsive:
 beaker run status <full-run-id> --watch --poll-interval 15 --poll-timeout 45 --json
 ```
 
-Report meaningful state changes. Do not start an indefinite foreground poll
-that prevents user updates.
+Report meaningful state changes. While the run remains active, say plainly
+that Beaker is still preparing or running it and that you are waiting for more
+hosted results; do not imply that repository integration is still underway. Do
+not start an indefinite foreground poll that prevents user updates.
 
 ## Pull completed results
 

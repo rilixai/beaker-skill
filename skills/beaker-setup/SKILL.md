@@ -37,7 +37,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
 10. Upload or select the labeled dataset, record its immutable selector in the config, confirm required hosted environment values, and validate with `beaker run smoke --strict`.
 11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
-12. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models.
+12. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
 13. Run `beaker onboarding status` after each completed step above, not after read-only probes.
 
 ## Keep the onboarding loop explicit
@@ -269,6 +269,9 @@ Use the selected agent's page to view its runs and score trends.
    - data loader and `dataset_schema`: validate the real JSONL row contract.
      Repository-mode case inputs and `CaseResult.output`/`context` must be
      JSON-normalizable because they cross the evaluator process boundary.
+   - `CaseResult`: keep `output` limited to fields the scorer reads. Put
+     trajectories, tool history, end state, and other diagnostic evidence in
+     `context`; do not duplicate large evidence in both.
    - `spec.required_env`: inspect every application path that hosted candidate
      evaluation can reach, including SDK defaults and fallback branches, and
      list the environment variable names those paths read directly. Do not

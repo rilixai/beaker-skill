@@ -236,6 +236,11 @@ through 100, and non-negative `--offset`.
 
 JSON polling emits one document: the final response observed during that
 invocation. A timeout message may also appear on stderr with exit code `3`.
+After launch, immediately tell the developer that repository setup is finished
+and the hosted run has started. Name the current state and explain that any
+remaining wait is for Beaker's hosted results, not more integration work.
+While monitoring, report meaningful state changes without making an active run
+sound like unfinished setup.
 
 ## Common failures
 

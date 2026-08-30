@@ -215,7 +215,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - The `@spec(repository=...)` scope contains the intended application source,
   and `_run_case` imports and executes that source with `targets=None`.
 - Repository-mode inputs and `CaseResult.output`/`context` are
-  JSON-normalizable, and the spec has no `seed_targets`.
+  JSON-normalizable, `output` contains only scorer-facing prediction fields,
+  diagnostic evidence stays in `context` without large duplication, and the
+  spec has no `seed_targets`.
 - An intentional `@spec(repository=None)` logical-target spec has real
   `seed_targets` that reach the corresponding model calls.
 - Runtime trace evidence comes from the candidate workflow rooted at the main
@@ -275,4 +277,8 @@ Summarize in plain English:
   runtime evidence;
 - exact hosted upload/run commands that remain.
 
-When a hosted run is triggered, include the full run UUID and UI link.
+When a hosted run is triggered, immediately tell the developer that repository
+setup is finished, include the full run UUID, UI link, and current state, and
+make clear that any remaining wait is for Beaker's hosted run rather than more
+integration work. If monitoring continues, report meaningful state changes
+without implying that setup is still in progress.

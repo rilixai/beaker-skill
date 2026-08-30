@@ -429,7 +429,10 @@ and launch must use the same snapshot. Explicit `--dataset` and `--dataset-id`
 selectors override configured selectors and must not be combined. Never expose
 storage URIs.
 
-Preserve the full run UUID and the `View in UI:` link printed by trigger. Use
-`beaker run status <full-run-id>` for a one-shot check; exit code 3 means the
-run is still active. Add `--watch` only when polling is intended. Use
-`beaker run pull <full-run-id>` for results.
+Preserve the full run UUID and the `View in UI:` link printed by trigger.
+Immediately tell the developer that repository setup is finished and the
+hosted run has started. Name its current state and make clear that any remaining
+wait is for Beaker's hosted results, not more integration work. Use `beaker run
+status <full-run-id>` for a one-shot check; exit code 3 means the run is still
+active. Add `--watch` only when polling is intended, and report meaningful
+state changes while waiting. Use `beaker run pull <full-run-id>` for results.
