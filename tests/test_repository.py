@@ -400,6 +400,10 @@ class RepositoryContractTests(unittest.TestCase):
 
     def test_setup_skill_finalizes_data_before_one_push(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        usage_reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
         happy_path = skill[
             skill.index("## Happy path") : skill.index("## Keep the onboarding loop explicit")
         ]
@@ -408,6 +412,10 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertLess(happy_path.index("Upload or select the labeled dataset"), happy_path.index("Commit and push once"))
         self.assertIn("ask the developer to begin those actions immediately", normalized)
         self.assertIn("Do not push an incomplete integration and then push again", normalized)
+        for content in (skill, operations, handoff, usage, usage_reference):
+            normalized_content = " ".join(content.split())
+            self.assertIn("Do not perform `integration_pushed`", normalized_content)
+            self.assertIn("`dataset_available` or `required_env_configured` is incomplete", normalized_content)
 
     def test_setup_skill_documents_the_happy_path_and_status_cadence(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
@@ -443,12 +451,13 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("read-only probes", text)
         all_setup_text = "\n".join(
             path.read_text(encoding="utf-8")
-            for path in SKILL.parent.rglob("*")
+            for path in (ROOT / "skills").rglob("*")
             if path.is_file()
         )
         for phrase in (
             "after every Beaker command",
             "after every CLI command",
+            "after each CLI command",
             "after every command",
         ):
             self.assertNotIn(phrase, all_setup_text)

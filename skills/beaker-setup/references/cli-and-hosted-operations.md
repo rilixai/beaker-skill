@@ -39,8 +39,10 @@ Use `beaker onboarding status --json` for automation:
   developer-owned step.
 - Relay only newly discovered actions in `blocked_on_developer` verbatim to
   the developer without attempting them, and track which actions were already
-  reported in this session. This report is not a halt: continue with the
-  returned `next.action`.
+  reported in this session. Continue with the returned `next.action` while
+  independent agent work remains. Do not perform `integration_pushed` while
+  `dataset_available` or `required_env_configured` is incomplete; wait once no
+  earlier agent work remains.
 - An `unknown` step has not been checked yet and never means that the
   developer must act. Offline or logged-out hosted checks are reported as
   `unknown`; run `beaker login` when it is the returned action.

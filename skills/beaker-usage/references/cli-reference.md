@@ -30,11 +30,11 @@ beaker onboarding status
 beaker onboarding status --json
 ```
 
-Use this command during setup validation and launch preparation, after each
-CLI command and whenever the next action is unclear. For inspecting,
-monitoring, pulling, or cancelling a known run with its preconditions met,
-run only the relevant command and consult onboarding status only after a
-failure or when the next action is unclear.
+Use this command during setup validation and launch preparation after a
+completed onboarding step, not after read-only probes, and whenever the next
+action is unclear. For inspecting, monitoring, pulling, or cancelling a known
+run with its preconditions met, run only the relevant command and consult
+onboarding status only after a failure or when the next action is unclear.
 
 Steps and completion:
 
@@ -76,7 +76,10 @@ Reading the JSON and acting on it:
   developer-owned step. Follow the returned action.
 - Relay only newly discovered blocked developer actions verbatim without
   attempting them, tracking what was already reported in this session, then
-  continue with the returned `next.action`.
+  continue with the returned `next.action` while independent agent work
+  remains. Do not perform `integration_pushed` while `dataset_available` or
+  `required_env_configured` is incomplete; wait once no earlier agent work
+  remains.
 - An `unknown` step has not been checked yet and never means the developer
   must act, so it is not listed in `blocked_on_developer`.
 - Stop and wait only when `next` itself is developer-owned.

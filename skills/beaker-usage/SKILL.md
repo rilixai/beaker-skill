@@ -21,7 +21,9 @@ During setup validation and launch preparation:
   the developer without attempting developer-owned work, tracking what was
   already reported in this session. Batch the currently known actions, ask the
   developer to begin them immediately, and continue with the returned
-  `next.action` so their work overlaps with yours.
+  `next.action` so their work overlaps with yours. Do not perform
+  `integration_pushed` while `dataset_available` or `required_env_configured`
+  is incomplete; wait once no earlier agent work remains.
 - An `unknown` step has not been checked yet and never means the developer
   must act. Stop and wait only when `next` itself is developer-owned.
 - Complete `dataset_available` and `required_env_configured` before

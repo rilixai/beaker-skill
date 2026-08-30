@@ -93,8 +93,10 @@ Interpret the payload with these rules:
 - Developer-owned steps known to be incomplete (`todo`) are listed in
   `blocked_on_developer` in canonical order; relay only newly discovered
   actions verbatim without attempting them, tracking what was already
-  reported in this session. This report is not a halt: continue with the
-  returned `next.action`.
+  reported in this session. Continue with the returned `next.action` while
+  independent agent work remains. Do not perform `integration_pushed` while
+  `dataset_available` or `required_env_configured` is incomplete; wait once no
+  earlier agent work remains.
 - An `unknown` step means the check has not completed yet, never that the
   developer must act, and it is not added to `blocked_on_developer`.
 - Stop and wait only when `next` itself is developer-owned.

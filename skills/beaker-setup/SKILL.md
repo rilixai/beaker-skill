@@ -58,7 +58,10 @@ Follow this order. The rest of this skill is constraints and recovery.
   without attempting them yourself, tracking what was already reported in
   this session. Batch the actions currently known, ask the developer to begin
   them immediately, and continue with the returned `next.action` so their work
-  overlaps with yours. This report is not a halt.
+  overlaps with yours. This report is not a halt during independent work. Do
+  not perform `integration_pushed` while `dataset_available` or
+  `required_env_configured` is incomplete; when no earlier agent work remains,
+  wait for those developer actions before the final push.
 - An `unknown` step has not been checked yet and never means that the
   developer must act.
 - Stop and wait only when `next` itself is developer-owned. Finish when
