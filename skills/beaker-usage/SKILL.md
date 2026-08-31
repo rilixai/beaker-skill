@@ -15,21 +15,25 @@ interpreting status exit codes, pulling results, or handling a CLI error.
 
 During setup validation and launch preparation:
 
-- Run `beaker onboarding status` at the start of the flow and after every CLI
-  command, then follow its returned action.
+- Run `beaker onboarding status` at the start of the flow and after a completed
+  onboarding step, not after read-only probes, then follow its returned action.
 - Relay only newly discovered actions in `blocked_on_developer` verbatim to
   the developer without attempting developer-owned work, tracking what was
-  already reported in this session. This report is not a halt: continue with
-  the returned `next.action`.
+  already reported in this session. Batch the currently known actions, ask the
+  developer to begin them immediately, and continue with the returned
+  `next.action` so their work overlaps with yours. Do not perform
+  `integration_pushed` while `dataset_available` or `required_env_configured`
+  is incomplete; wait once no earlier agent work remains.
 - An `unknown` step has not been checked yet and never means the developer
   must act. Stop and wait only when `next` itself is developer-owned.
-- `integration_pushed` is the final blocking agent-owned step: commit and push
-  the completed integration yourself, without asking the developer to confirm
+- Complete `dataset_available` and `required_env_configured` before
+  `integration_pushed`, the final blocking agent-owned step. Commit and push
+  the completed integration once, without asking the developer to confirm
   unless they told you not to take autonomous actions, to a
   `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch in the selected agent repository
-  before a hosted optimization run. The agent normally completes the later
-  `dataset_available` and `experiment_launched` steps too, but the developer
-  may also complete them, including through the platform UI.
+  before a hosted optimization run. The agent normally completes dataset
+  selection and `experiment_launched` too, but the developer may also complete
+  them through the platform UI.
 - Tracing is optional: if it applies, make a best effort to include it in
   that push, but never let it block the push; never commit secret files.
 
@@ -251,7 +255,10 @@ beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
 ```
 
 Capture the full run `id`, initial `status`, and `web_url` from the JSON. Relay
-the full ID and clickable UI URL to the developer. Never shorten the ID.
+the full ID and clickable UI URL to the developer. Never shorten the ID. Tell
+them immediately that repository setup is finished and the hosted run has
+started. Name its current state and make clear that any remaining wait is for
+Beaker's hosted results, not more integration work.
 
 An agent may have several active runs, including runs that use the same
 selected model. Do not assume a fixed per-agent or per-model run limit.
@@ -285,8 +292,10 @@ and remain responsive:
 beaker run status <full-run-id> --watch --poll-interval 15 --poll-timeout 45 --json
 ```
 
-Report meaningful state changes. Do not start an indefinite foreground poll
-that prevents user updates.
+Report meaningful state changes. While the run remains active, say plainly
+that Beaker is still preparing or running it and that you are waiting for more
+hosted results; do not imply that repository integration is still underway. Do
+not start an indefinite foreground poll that prevents user updates.
 
 ## Pull completed results
 

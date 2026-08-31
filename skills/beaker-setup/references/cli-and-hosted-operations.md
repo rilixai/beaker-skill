@@ -19,7 +19,8 @@ uncertain. Follow its one returned action. Do not run it after `--help`,
 unless you are stuck. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
 `github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
-`integration_pushed`, `dataset_available`, and `experiment_launched`. Onboarding is
+`dataset_available`, `required_env_configured`, `integration_pushed`, and
+`experiment_launched`. Onboarding is
 complete once `experiment_launched`
 is complete. Shipping a winning candidate pull request is developer-owned
 follow-up work outside the onboarding loop.
@@ -38,8 +39,10 @@ Use `beaker onboarding status --json` for automation:
   developer-owned step.
 - Relay only newly discovered actions in `blocked_on_developer` verbatim to
   the developer without attempting them, and track which actions were already
-  reported in this session. This report is not a halt: continue with the
-  returned `next.action`.
+  reported in this session. Continue with the returned `next.action` while
+  independent agent work remains. Do not perform `integration_pushed` while
+  `dataset_available` or `required_env_configured` is incomplete; wait once no
+  earlier agent work remains.
 - An `unknown` step has not been checked yet and never means that the
   developer must act. Offline or logged-out hosted checks are reported as
   `unknown`; run `beaker login` when it is the returned action.
@@ -61,10 +64,10 @@ Use `beaker onboarding status --json` for automation:
   without asking the developer to confirm, unless the developer told you not to
   take autonomous actions, on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch; a
   checkout sitting on `main`, `master`, `trunk`, or `develop` gets that branch
-  suggestion in the step reason instead of being pushed as-is. The agent
-  normally completes the later `dataset_available` and `experiment_launched`
-  steps too, but the developer may also complete them, including through the
-  platform UI.
+  suggestion in the step reason instead of being pushed as-is. Complete
+  `dataset_available` and `required_env_configured` before this final push. The
+  agent normally completes dataset selection and `experiment_launched` too,
+  but the developer may also complete them through the platform UI.
 
 ## GitHub App access
 
@@ -383,9 +386,10 @@ the failed run unchanged.
 
    Supply exactly one selector. Remote smoke authenticates and downloads the
    dataset through presigned URLs, but does not execute a rollout or scorer and
-   does not launch a hosted run. A configured `config_defaults.dataset_ref` or
-   `config_defaults.dataset_id` can supply the selector when it names this same
-   snapshot.
+   does not launch a hosted run. Retain this immutable selector for the later
+   trigger. A configured `config_defaults.dataset_ref` or
+   `config_defaults.dataset_id` is an optional convenience when the repository
+   intentionally owns that default.
 
 4. Trigger only with explicit developer authorization, reusing the selector
    that passed smoke:
@@ -420,13 +424,18 @@ Use the same selected agent for dataset inspection, upload, and launch.
 
 Dataset uploads create immutable revisions and normally promote the new
 revision to `production`. Re-uploading identical files is a no-op. Bare names
-resolve the production alias at command time, so use `name@revision`, artifact
-id, `config_defaults.dataset_ref`, or `config_defaults.dataset_id` when smoke
-and launch must use the same snapshot. Explicit `--dataset` and `--dataset-id`
-selectors override configured selectors and must not be combined. Never expose
-storage URIs.
+resolve the production alias at command time. During onboarding, retain the
+uploaded `name@revision` or artifact id and pass it explicitly to both smoke and
+launch so they use the same snapshot. Do not commit an organization-specific
+selector to YAML by default; `config_defaults.dataset_ref` and
+`config_defaults.dataset_id` remain optional repository defaults. Explicit
+`--dataset` and `--dataset-id` selectors override configured selectors and must
+not be combined. Never expose storage URIs.
 
-Preserve the full run UUID and the `View in UI:` link printed by trigger. Use
-`beaker run status <full-run-id>` for a one-shot check; exit code 3 means the
-run is still active. Add `--watch` only when polling is intended. Use
-`beaker run pull <full-run-id>` for results.
+Preserve the full run UUID and the `View in UI:` link printed by trigger.
+Immediately tell the developer that repository setup is finished and the
+hosted run has started. Name its current state and make clear that any remaining
+wait is for Beaker's hosted results, not more integration work. Use `beaker run
+status <full-run-id>` for a one-shot check; exit code 3 means the run is still
+active. Add `--watch` only when polling is intended, and report meaningful
+state changes while waiting. Use `beaker run pull <full-run-id>` for results.

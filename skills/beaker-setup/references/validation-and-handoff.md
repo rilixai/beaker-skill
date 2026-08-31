@@ -15,9 +15,10 @@ other read-only probes unless you are stuck. It reports these ordered steps:
 5. `agent_selected`
 6. `spec_integrated`
 7. `tracing_wired`
-8. `integration_pushed`
-9. `dataset_available`
-10. `experiment_launched`
+8. `dataset_available`
+9. `required_env_configured`
+10. `integration_pushed`
+11. `experiment_launched`
 
 `github_connected` reports only whether the organization's Beaker GitHub App
 installation is connected. `agent_selected` requires a selected Beaker agent
@@ -92,8 +93,10 @@ Interpret the payload with these rules:
 - Developer-owned steps known to be incomplete (`todo`) are listed in
   `blocked_on_developer` in canonical order; relay only newly discovered
   actions verbatim without attempting them, tracking what was already
-  reported in this session. This report is not a halt: continue with the
-  returned `next.action`.
+  reported in this session. Continue with the returned `next.action` while
+  independent agent work remains. Do not perform `integration_pushed` while
+  `dataset_available` or `required_env_configured` is incomplete; wait once no
+  earlier agent work remains.
 - An `unknown` step means the check has not completed yet, never that the
   developer must act, and it is not added to `blocked_on_developer`.
 - Stop and wait only when `next` itself is developer-owned.
@@ -101,9 +104,11 @@ Interpret the payload with these rules:
   `true` for all other steps. Tracing never blocks completion.
 - `integration_pushed` is the final blocking agent-owned step and must be
   complete before a hosted optimization run. It is not required before
-  dataset upload. The agent normally completes the later `dataset_available`
-  and `experiment_launched` steps too, but the developer may also complete
-  them, including through the platform UI.
+  dataset upload. Complete `dataset_available` and `required_env_configured`
+  first so the selected config, dataset, and dependency files need one final
+  integration push. The agent normally completes dataset selection and
+  `experiment_launched` too, but the developer may also complete them through
+  the platform UI.
 - Exit code `0` means the state and an actionable `next` were computed, even
   when steps remain incomplete; selection and hosted errors remain in
   `errors` but return `0` when `next` is actionable.
@@ -135,10 +140,13 @@ beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
 beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-When `config_defaults.dataset_ref` or `config_defaults.dataset_id` already
-selects the intended remote snapshot, a bare `beaker run smoke --strict` uses
-that selector after resolving the configured agent. Explicit `--dataset` and
-`--dataset-id` flags override configured selectors; provide exactly one.
+During onboarding, retain the immutable remote selector and pass it explicitly
+to smoke and the later trigger; do not commit an organization-specific selector
+to YAML by default. When a repository intentionally defines
+`config_defaults.dataset_ref` or `config_defaults.dataset_id`, a bare `beaker
+run smoke --strict` uses that selector after resolving the configured agent.
+Explicit `--dataset` and `--dataset-id` flags override configured selectors;
+provide exactly one.
 
 If the installed CLI does not recognize these flags, upgrade `beaker-sdk`
 through the repository's existing development-dependency workflow and retry.
@@ -210,7 +218,9 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - The `@spec(repository=...)` scope contains the intended application source,
   and `_run_case` imports and executes that source with `targets=None`.
 - Repository-mode inputs and `CaseResult.output`/`context` are
-  JSON-normalizable, and the spec has no `seed_targets`.
+  JSON-normalizable, `output` contains only scorer-facing prediction fields,
+  diagnostic evidence stays in `context` without large duplication, and the
+  spec has no `seed_targets`.
 - An intentional `@spec(repository=None)` logical-target spec has real
   `seed_targets` that reach the corresponding model calls.
 - Runtime trace evidence comes from the candidate workflow rooted at the main
@@ -270,4 +280,8 @@ Summarize in plain English:
   runtime evidence;
 - exact hosted upload/run commands that remain.
 
-When a hosted run is triggered, include the full run UUID and UI link.
+When a hosted run is triggered, immediately tell the developer that repository
+setup is finished, include the full run UUID, UI link, and current state, and
+make clear that any remaining wait is for Beaker's hosted run rather than more
+integration work. If monitoring continues, report meaningful state changes
+without implying that setup is still in progress.

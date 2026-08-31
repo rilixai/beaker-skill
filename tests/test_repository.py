@@ -328,12 +328,16 @@ class RepositoryContractTests(unittest.TestCase):
         skill = USAGE_SKILL.read_text(encoding="utf-8")
         reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
         content = "\n".join((skill, reference))
+        normalized = " ".join(content.split()).lower()
 
         self.assertIn("--config-file", content)
         self.assertIn("BEAKER_CONFIG_FILE", skill)
         self.assertIn("exit code `3` as an active run", skill)
         self.assertIn("full run `id`", skill)
         self.assertIn("`web_url`", skill)
+        self.assertIn("repository setup is finished and the hosted run has started", normalized)
+        self.assertIn("remaining wait is for beaker's hosted results, not more integration work", normalized)
+        self.assertIn("do not imply that repository integration is still underway", normalized)
         self.assertIn("Do not hand-author", skill)
         self.assertIn("Do not overwrite an existing result directory", skill)
         self.assertIn("use `$beaker-setup`", skill)
@@ -385,6 +389,54 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("keep replacing `TODO(beaker)`", normalized_skill)
         self.assertIn("while waiting", normalized_datasets)
 
+    def test_setup_skill_keeps_predictions_compact_and_diagnostics_in_context(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+        content = " ".join((skill + datasets + handoff).split())
+
+        self.assertIn("keep `output` limited to fields the scorer reads", content)
+        self.assertIn("trajectories, tool history, end state, and other diagnostic evidence", content)
+        self.assertIn("do not duplicate large evidence in both", content)
+
+    def test_setup_skill_installs_before_loading_and_batches_known_questions(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        skill = SKILL.read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
+
+        self.assertIn("finish before the newly installed skill is loaded", " ".join(readme.split()).lower())
+        self.assertIn("Never install or update the skill in parallel with loading it", normalized)
+        self.assertIn("all currently known unresolved decisions together", normalized)
+        self.assertIn("Do not wait for discovery to be exhaustive", normalized)
+        self.assertIn("continue independent discovery and implementation while the developer responds", normalized)
+        self.assertIn("Batching is best effort", normalized)
+        self.assertIn("if later discovery reveals another required decision, ask it then", normalized)
+
+    def test_setup_skill_finalizes_data_before_one_push(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(encoding="utf-8")
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(encoding="utf-8")
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        usage_reference = (USAGE_SKILL.parent / "references" / "cli-reference.md").read_text(encoding="utf-8")
+        happy_path = skill[
+            skill.index("## Happy path") : skill.index("## Keep the onboarding loop explicit")
+        ]
+        normalized = " ".join(skill.split())
+
+        self.assertLess(happy_path.index("Upload or select the labeled dataset"), happy_path.index("Commit and push once"))
+        self.assertIn("ask the developer to begin those actions immediately", normalized)
+        self.assertIn("Do not push an incomplete integration and then push again", normalized)
+        self.assertIn("pass that same selector explicitly to smoke and launch", normalized)
+        self.assertIn("Do not commit an organization-specific dataset selector to YAML by default", normalized)
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(encoding="utf-8")
+        normalized_datasets = " ".join(datasets.split())
+        self.assertIn("pass the same selector explicitly to smoke and launch", normalized_datasets)
+        self.assertNotIn("For hosted data, configure one immutable selector instead", datasets)
+        for content in (skill, operations, handoff, usage, usage_reference):
+            normalized_content = " ".join(content.split())
+            self.assertIn("Do not perform `integration_pushed`", normalized_content)
+            self.assertIn("`dataset_available` or `required_env_configured` is incomplete", normalized_content)
+
     def test_setup_skill_documents_the_happy_path_and_status_cadence(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         operations = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text(
@@ -419,12 +471,13 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("read-only probes", text)
         all_setup_text = "\n".join(
             path.read_text(encoding="utf-8")
-            for path in SKILL.parent.rglob("*")
+            for path in (ROOT / "skills").rglob("*")
             if path.is_file()
         )
         for phrase in (
             "after every Beaker command",
             "after every CLI command",
+            "after each CLI command",
             "after every command",
         ):
             self.assertNotIn(phrase, all_setup_text)
@@ -487,8 +540,9 @@ class RepositoryContractTests(unittest.TestCase):
         )
         self.assertIn("--dataset-id <artifact-id>", normalized)
         self.assertIn("local_dataset_path", setup_content)
-        self.assertIn("dataset_ref:", setup_content)
-        self.assertIn("dataset_id:", setup_content)
+        self.assertIn("config_defaults.dataset_ref", setup_content)
+        self.assertIn("config_defaults.dataset_id", setup_content)
+        self.assertIn("optional repository defaults", setup_content)
         self.assertIn("Local-path smoke is offline", setup_content)
         self.assertIn("presigned URLs", setup_content)
 

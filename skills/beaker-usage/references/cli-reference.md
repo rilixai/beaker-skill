@@ -30,18 +30,18 @@ beaker onboarding status
 beaker onboarding status --json
 ```
 
-Use this command during setup validation and launch preparation, after each
-CLI command and whenever the next action is unclear. For inspecting,
-monitoring, pulling, or cancelling a known run with its preconditions met,
-run only the relevant command and consult onboarding status only after a
-failure or when the next action is unclear.
+Use this command during setup validation and launch preparation after a
+completed onboarding step, not after read-only probes, and whenever the next
+action is unclear. For inspecting, monitoring, pulling, or cancelling a known
+run with its preconditions met, run only the relevant command and consult
+onboarding status only after a failure or when the next action is unclear.
 
 Steps and completion:
 
 - The ordered steps are `beaker_dependency_declared`, `config_present`,
   `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
-  `tracing_wired`, `integration_pushed`, `dataset_available`, and
-  `experiment_launched`.
+  `tracing_wired`, `dataset_available`, `required_env_configured`,
+  `integration_pushed`, and `experiment_launched`.
 - Onboarding is complete once `experiment_launched` is complete. Shipping a
   winning candidate pull request is developer-owned follow-up work outside
   the onboarding loop.
@@ -59,10 +59,10 @@ Steps and completion:
   `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch from the last hour, so a retry
   reuses it, and a newly stamped one otherwise. When the checkout sits on
   `main`, `master`, `trunk`, or `develop`, the step reason repeats that branch
-  suggestion rather than accepting a default-branch push. The agent normally
-  completes the later `dataset_available` and
-  `experiment_launched` steps too, but the developer may also complete them,
-  including through the platform UI.
+  suggestion rather than accepting a default-branch push. Complete
+  `dataset_available` and `required_env_configured` before this final push. The
+  agent normally completes dataset selection and `experiment_launched` too,
+  but the developer may also complete them through the platform UI.
 
 Reading the JSON and acting on it:
 
@@ -76,7 +76,10 @@ Reading the JSON and acting on it:
   developer-owned step. Follow the returned action.
 - Relay only newly discovered blocked developer actions verbatim without
   attempting them, tracking what was already reported in this session, then
-  continue with the returned `next.action`.
+  continue with the returned `next.action` while independent agent work
+  remains. Do not perform `integration_pushed` while `dataset_available` or
+  `required_env_configured` is incomplete; wait once no earlier agent work
+  remains.
 - An `unknown` step has not been checked yet and never means the developer
   must act, so it is not listed in `blocked_on_developer`.
 - Stop and wait only when `next` itself is developer-owned.
@@ -233,6 +236,11 @@ through 100, and non-negative `--offset`.
 
 JSON polling emits one document: the final response observed during that
 invocation. A timeout message may also appear on stderr with exit code `3`.
+After launch, immediately tell the developer that repository setup is finished
+and the hosted run has started. Name the current state and explain that any
+remaining wait is for Beaker's hosted results, not more integration work.
+While monitoring, report meaningful state changes without making an active run
+sound like unfinished setup.
 
 ## Common failures
 

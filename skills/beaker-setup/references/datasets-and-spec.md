@@ -25,27 +25,23 @@ If local data is unavailable, inspect hosted data with `beaker dataset list` and
 developer to upload or provide real examples and stop before finalizing the
 spec, running smoke validation, or uploading synthetic data.
 
-## Configure one dataset source
+## Select one dataset source
 
-Use `local_dataset_path` only for a real path that will remain available in the
-local checkout:
+For hosted onboarding, retain the uploaded immutable `name@revision` or artifact
+id in the current session and pass the same selector explicitly to smoke and
+launch:
 
-```yaml
-config_defaults:
-  local_dataset_path: data/evals
+```bash
+beaker run smoke --strict --dataset invoices@<revision>
+beaker run trigger --dataset invoices@<revision>
 ```
 
-For hosted data, configure one immutable selector instead:
-
-```yaml
-config_defaults:
-  dataset_ref: invoices@<revision>
-  # Or use dataset_id: <artifact-id>, never both.
-```
-
-Remote selection supersedes `local_dataset_path` during smoke validation.
-Explicit `--dataset` or `--dataset-id` flags supersede the configured remote
-selector. Do not place Beaker-owned S3 or presigned URLs in configuration.
+Do not commit an organization-specific `dataset_ref` or `dataset_id` to YAML by
+default. A repository may intentionally opt into a dataset default when it is
+tied to one Beaker organization; explicit `--dataset` or `--dataset-id` flags
+still override it. Use `local_dataset_path` only for a real path that will
+remain available in the local checkout. Never place Beaker-owned S3 or
+presigned URLs in configuration.
 
 ## Convert without persisting generated datasets
 
@@ -128,6 +124,11 @@ files, fixtures, snapshots, helpers, or test configuration for Beaker.
 | `llm_scorer_model` | Optional fixed canonical `provider:model` for an LLM judge; omit for deterministic scoring |
 | data loader | Real labeled rows and their validation contract |
 | `spec.required_env` | Names of application variables needed during candidate evaluation; never their values |
+
+Keep `CaseResult.output` limited to prediction fields the scorer reads. Put
+trajectories, tool history, end state, and other diagnostic evidence in
+`CaseResult.context`; do not duplicate large evidence in both. Both values must
+remain JSON-normalizable across the evaluator process boundary.
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
 
