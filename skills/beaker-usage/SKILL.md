@@ -209,7 +209,7 @@ Then:
 3. Repeat `--optimization-model provider:model` for each choice. The CLI has
    no `--execution-mode` flag; a non-empty model list is the comparison switch.
 4. Use the benchmark defaults unless the developer asks
-   to choose the benchmark split or case count. Valid splits are `VAL` and
+   to choose the benchmark split or case count. Valid splits are `TRAIN` and
    `TEST`; valid case counts are 1 through 1000.
 5. Add final evaluation splits only when the developer supplies them or asks
    to configure them. Do not invent tuning values. Do not offer

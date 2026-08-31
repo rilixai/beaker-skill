@@ -155,7 +155,7 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --optimization-model anthropic:<model-b> \
   --benchmark-split TEST \
   --benchmark-max-cases 30 \
-  --final-eval-split VAL \
+  --final-eval-split TRAIN \
   --json
 ```
 
@@ -191,9 +191,9 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 | Flag | Contract |
 |---|---|
 | `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. Currently requires `@spec(repository=None)` with populated `Spec.seed_targets`. |
-| `--benchmark-split` | `VAL` or `TEST`; requires `--optimization-model` |
+| `--benchmark-split` | `TRAIN` or `TEST`; requires `--optimization-model` |
 | `--benchmark-max-cases` | 1–1000; requires `--optimization-model` |
-| `--final-eval-split` | Repeatable `VAL` or `TEST`; requires `--optimization-model` |
+| `--final-eval-split` | Repeatable `TRAIN` or `TEST`; requires `--optimization-model` |
 | `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource agent optimization (`repository=None`), including resources such as `wiki`; repository-surface agent optimization and comparison-model runs ignore the flag and always test only the winner |
 
 Do not combine `--optimization-model` with an `optimization_config` supplied
