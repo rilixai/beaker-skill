@@ -1,6 +1,6 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker agent optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or launching the first hosted agent optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
+description: Set up, configure, or onboard a Python repository for Beaker agent optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests or CI/CD automation. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or launching the first hosted agent optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
 license: MIT
 ---
 
@@ -127,14 +127,15 @@ Keep every Beaker-owned file under the selected project's `.beaker/` whenever
 possible: config, spec, helper code, credentials, gitignore, and trace receipts. Do
 not add Beaker modules under application packages, import or initialize Beaker
 from production entrypoints, change deployment/runtime config, add or modify
-tests, or route normal traffic through Beaker.
+tests or CI/CD automation, or route normal traffic through Beaker.
 
 Allow files outside `.beaker/` only when required:
 
 - leave existing source-of-truth datasets where they already live; do not copy
   or move them into `.beaker/`;
-- inspect existing tests as read-only evidence when useful, but never create,
-  edit, move, or repurpose test files, fixtures, snapshots, or test config;
+- read existing tests as read-only evidence when useful, but never create,
+  edit, move, or repurpose test files, fixtures, snapshots, or test config, and
+  do not run the repository's test suite during onboarding;
 - record Beaker in development/tooling dependency metadata and its lockfile when
   the project supports that separation;
 - add the smallest optional application injection seam only when the spec and
@@ -146,6 +147,33 @@ Allow files outside `.beaker/` only when required:
 
 Before changing application code, explain why spec-only integration is
 insufficient. Do not refactor production code for Beaker.
+
+## Write no tests and no CI/CD automation
+
+Beaker onboarding adds no test code and no continuous-integration wiring, and
+does not run the repository's test suite. The integration is validated by
+`beaker run smoke --strict` and by hosted runs, so there is nothing for a test
+suite or a pipeline job to add.
+
+Do not create or modify:
+
+- test files, fixtures, snapshots, test helpers, or test configuration, for the
+  spec under `.beaker/` or for anything else;
+- CI/CD workflows or jobs, including GitHub Actions workflows, other pipeline
+  definitions, and edits to existing ones;
+- pre-commit hooks, `Makefile` targets, task-runner entries, or scripts whose
+  purpose is to run Beaker automatically.
+
+In particular, do not write a test that imports `beaker_spec.py`, asserts on the
+spec factory, loader, or scorer, or runs smoke; and do not add a scheduled or
+push-triggered job that runs `beaker run smoke` or `beaker run trigger`.
+
+Running the repository's existing linters, formatters, or type checkers on the
+files you changed is allowed. Do not run the repository's test suite as part of
+onboarding: it is often slow and proves nothing about the integration, which
+`beaker run smoke --strict` validates. Read existing tests for evidence instead.
+If the developer explicitly asks for a test or a pipeline job, build only what
+they asked for.
 
 ## Start safely
 
@@ -435,8 +463,9 @@ project source used by both local validation and hosted builds.
 
 Agent setup records the selected agent in `beaker.yaml` but does not provision
 runtime secrets. Runtime API keys come from Settings → Credentials → API keys
-and should be supplied to CI as `$BEAKER_API_KEY`; local provider and customer
-secrets may still live in `.beaker/.env`. Never print, echo, or commit secrets.
+and can be supplied to a developer-owned CI pipeline as `$BEAKER_API_KEY`; local
+provider and customer secrets may still live in `.beaker/.env`. Do not create
+that pipeline as part of onboarding. Never print, echo, or commit secrets.
 Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
 before working with credentials, datasets, hosted environment variables, or
 runs.
@@ -518,7 +547,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never save generated JSONL dataset files in the user's repository or under
   `.beaker/`; stage conversions in an OS-managed temporary directory and upload
   them before cleanup.
-- Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth.
+- Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth, and running the repository's test suite is not part of onboarding.
+- Never add CI/CD automation for Beaker: no GitHub Actions workflow or other pipeline job, no pre-commit hook, and no `Makefile`, task-runner, or script entry that runs Beaker. Smoke and hosted runs are the validation path. Existing linters and formatters may still be run.
 - Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped tracing wiring at the real model call site.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
 - Never edit application code until spec-only and `.beaker/` helper approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed tracing wiring.

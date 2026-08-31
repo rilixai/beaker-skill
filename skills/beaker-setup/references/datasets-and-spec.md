@@ -114,7 +114,9 @@ the authoritative check that the hosted snapshot can be downloaded and parsed.
 Keep the spec and helper code under `.beaker/`. Import the application's
 public or existing internal interfaces from the spec; do not create Beaker
 orchestration modules in the application package. Never create or modify test
-files, fixtures, snapshots, helpers, or test configuration for Beaker.
+files, fixtures, snapshots, helpers, or test configuration for Beaker, never run
+the repository's test suite during onboarding, and never add CI/CD automation
+that exercises the spec; `beaker_spec.py` ships without a test of its own.
 
 | Spec component | Repository source of truth |
 |---|---|
@@ -154,7 +156,7 @@ structural wiring; it does not execute the runner or prove candidate imports.
 When runtime proof is needed, exercise the repository's existing application
 or evaluation path under a local Beaker capture and inspect it with
 `beaker trace doctor --require-model-calls` and `beaker trace inspect`; do not
-add tests or test doubles.
+add tests, test doubles, or a pipeline job.
 
 The default `@spec()` scope is all eligible ordinary UTF-8 source. Use
 `repository=("path", ...)` when the developer wants a smaller source-relative
