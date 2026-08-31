@@ -366,7 +366,8 @@ Cancellation is a state-changing operation:
   side effect of run management.
 - Never add tests or CI/CD automation for Beaker: no workflow or pipeline job,
   no pre-commit hook, and no `Makefile`, task-runner, or script entry that runs
-  `beaker`. Launch and monitor runs from the CLI instead.
+  `beaker`. Launch and monitor runs from the CLI instead, and do not run the
+  repository's test suite as part of run management.
 - Never treat status exit code `3` as a failed run.
 - Never lose the full run ID or UI link after launch.
 - Never ask the developer what to do next before running `beaker onboarding

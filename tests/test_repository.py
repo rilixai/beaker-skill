@@ -363,6 +363,10 @@ class RepositoryContractTests(unittest.TestCase):
             "Running the repository's existing linters, formatters, or type checkers",
             normalized,
         )
+        self.assertIn("Do not run the repository's test suite as part of onboarding", normalized)
+        self.assertIn("do not run the repository's test suite during onboarding", normalized)
+        self.assertIn("running the repository's test suite is not part of onboarding", normalized)
+        self.assertIn("the repository's test suite was not run", normalized)
 
     def test_manifest_versions_match_central_version(self) -> None:
         version = VERSION_FILE.read_text(encoding="utf-8").strip()

@@ -133,8 +133,9 @@ Allow files outside `.beaker/` only when required:
 
 - leave existing source-of-truth datasets where they already live; do not copy
   or move them into `.beaker/`;
-- inspect existing tests as read-only evidence when useful, but never create,
-  edit, move, or repurpose test files, fixtures, snapshots, or test config;
+- read existing tests as read-only evidence when useful, but never create,
+  edit, move, or repurpose test files, fixtures, snapshots, or test config, and
+  do not run the repository's test suite during onboarding;
 - record Beaker in development/tooling dependency metadata and its lockfile when
   the project supports that separation;
 - add the smallest optional application injection seam only when the spec and
@@ -149,9 +150,10 @@ insufficient. Do not refactor production code for Beaker.
 
 ## Write no tests and no CI/CD automation
 
-Beaker onboarding adds no test code and no continuous-integration wiring. The
-integration is validated by `beaker run smoke --strict` and by hosted runs, so
-there is nothing for a test suite or a pipeline job to add.
+Beaker onboarding adds no test code and no continuous-integration wiring, and
+does not run the repository's test suite. The integration is validated by
+`beaker run smoke --strict` and by hosted runs, so there is nothing for a test
+suite or a pipeline job to add.
 
 Do not create or modify:
 
@@ -545,7 +547,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never save generated JSONL dataset files in the user's repository or under
   `.beaker/`; stage conversions in an OS-managed temporary directory and upload
   them before cleanup.
-- Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth.
+- Never create or modify tests, fixtures, snapshots, test helpers, or test configuration for Beaker; existing tests are read-only sources of truth, and running the repository's test suite is not part of onboarding.
 - Never add CI/CD automation for Beaker: no GitHub Actions workflow or other pipeline job, no pre-commit hook, and no `Makefile`, task-runner, or script entry that runs Beaker. Smoke and hosted runs are the validation path. Existing linters and formatters may still be run.
 - Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped tracing wiring at the real model call site.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.

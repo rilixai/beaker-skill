@@ -200,7 +200,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Beaker-owned config, specs, helper code, credentials, and traces are under
   the selected project's `.beaker/` directory.
 - No tests, fixtures, snapshots, test helpers, or test configuration were
-  created or modified; existing tests were read-only evidence.
+  created or modified, and the repository's test suite was not run; existing
+  tests were read-only evidence.
 - No CI/CD automation was created or modified: no workflow or pipeline job, no
   pre-commit hook, and no `Makefile`, task-runner, or script entry that runs
   Beaker.
