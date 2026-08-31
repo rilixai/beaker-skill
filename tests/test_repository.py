@@ -342,6 +342,28 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("Do not overwrite an existing result directory", skill)
         self.assertIn("use `$beaker-setup`", skill)
 
+    def test_skills_forbid_tests_and_cicd_automation(self) -> None:
+        setup = SKILL.read_text(encoding="utf-8")
+        datasets = (SKILL.parent / "references" / "datasets-and-spec.md").read_text(
+            encoding="utf-8"
+        )
+        handoff = (SKILL.parent / "references" / "validation-and-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        usage = USAGE_SKILL.read_text(encoding="utf-8")
+        content = "\n".join((setup, datasets, handoff, usage))
+        normalized = " ".join(content.split())
+
+        self.assertIn("never adding or modifying tests or CI/CD automation", setup)
+        self.assertIn("Write no tests and no CI/CD automation", setup)
+        self.assertIn("do not write a test that imports `beaker_spec.py`", normalized)
+        self.assertIn("Never add CI/CD automation for Beaker", normalized)
+        self.assertIn("No CI/CD automation was created or modified", normalized)
+        self.assertIn(
+            "Running the repository's existing linters, formatters, or type checkers",
+            normalized,
+        )
+
     def test_manifest_versions_match_central_version(self) -> None:
         version = VERSION_FILE.read_text(encoding="utf-8").strip()
         codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
