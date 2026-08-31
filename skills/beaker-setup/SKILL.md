@@ -167,9 +167,11 @@ spec factory, loader, or scorer, or runs smoke; and do not add a scheduled or
 push-triggered job that runs `beaker run smoke` or `beaker run trigger`.
 
 Running the repository's existing linters, formatters, or type checkers on the
-files you changed is fine and encouraged. Running the repository's existing test
-suite as read-only evidence is also fine; changing it is not. If the developer
-explicitly asks for a test or a pipeline job, build only what they asked for.
+files you changed is allowed. Do not run the repository's test suite as part of
+onboarding: it is often slow and proves nothing about the integration, which
+`beaker run smoke --strict` validates. Read existing tests for evidence instead.
+If the developer explicitly asks for a test or a pipeline job, build only what
+they asked for.
 
 ## Start safely
 
