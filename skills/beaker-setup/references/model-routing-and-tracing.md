@@ -246,6 +246,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LangChain / LangGraph | `beaker-sdk[tracing,langchain]` | `langchain.config(...)` passed as the invocation `config=` |
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
+| Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
 not replace the wiring guidance in this section. Install the framework extras
@@ -312,14 +313,51 @@ async with registered(current_trace()) as litellm_trace:
     await litellm_trace.flush()
 ```
 
+The Claude Agent SDK produces no telemetry itself: it runs the Claude Code CLI
+as a child process, and that CLI has its own OpenTelemetry instrumentation and
+exports over OTLP to whatever endpoint its environment names. So the
+integration does not instrument anything in Python — it opens an endpoint owned
+by the capture and hands the child the environment that points at it. Pass the
+result into the query instead of the application's options:
+
+```python
+from beaker.tracing import current_trace
+from beaker.tracing.integrations import claude_agent_sdk as beaker_claude
+
+async with beaker_claude.registered(current_trace()) as claude:
+    async for message in query(prompt=prompt, options=claude.options(app_options)):
+        handle(message)
+```
+
+`options(...)` returns a copy of the application's `ClaudeAgentOptions` with the
+telemetry variables merged into its `env`; nothing is mutated, so the same
+options object stays usable for queries made outside the capture. Use
+`claude.env(existing=...)` instead when the application builds the child
+environment itself. Both return the caller's values unchanged when no capture is
+active, so they can be called unconditionally. With a long-lived
+`ClaudeSDKClient`, keep the `registered(...)` scope open until the last
+`receive_response()` is consumed, and `await claude.flush()` before leaving a
+case — the CLI batches its exports, so telemetry still in flight when the
+capture closes is recorded as an omission and downgrades the capture to
+`incomplete`.
+
+Content is opt-in in Claude Code and the integration asks for it, so prompts,
+responses and tool input/output reach the capture for the optimizer to read.
+When the repository must not archive that content, use
+`registered(current_trace(), content=False)`: the receipt then reports absent
+model input/output coverage, and only structure survives — the tree, timings,
+tokens, model and tool names. Say so at handoff, because prompt optimization has
+no prompts to read in that mode.
+
 Use `with registered(current_trace()) as litellm_trace:` around synchronous
 `completion(...)` calls and call `litellm_trace.wait()` before leaving the
 case. An unflushed or unlogged call is dropped as a capture omission and
 downgrades the capture to `incomplete`; do not let the registration scope end
 before `flush()` or `wait()`.
 
-For frameworks absent from the list above — including provider SDKs and
-LlamaIndex today — wrap the real model call with `trace.model_call(...)`.
+For frameworks absent from the list above — including provider SDKs (the
+Anthropic SDK itself, not the Claude Agent SDK above) and LlamaIndex today —
+wrap the real model call with `trace.model_call(...)`.
 Wrap nested calls the same way, inside the enclosing operation, so they are
 recorded as its child spans. Otherwise the capture can contain stages but zero
 model calls, causing `beaker trace doctor --require-model-calls` to fail.
