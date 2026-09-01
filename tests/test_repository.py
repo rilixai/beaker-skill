@@ -26,6 +26,7 @@ class RepositoryContractTests(unittest.TestCase):
     def test_skills_declare_the_matching_sdk_version(self) -> None:
         version = VERSION_FILE.read_text(encoding="utf-8").strip()
         sdk_reference = re.compile(r"beaker-sdk(>=|==| )(\d+\.\d+\.\d+)")
+        threshold_reference = re.compile(r"(?:older than|newer than)\s+(\d+\.\d+\.\d+)")
         for skill in (SKILL, USAGE_SKILL):
             text = skill.read_text(encoding="utf-8")
             match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
@@ -40,6 +41,8 @@ class RepositoryContractTests(unittest.TestCase):
             )
             for reference in sdk_reference.finditer(body):
                 self.assertEqual(reference.group(2), version)
+            for reference in threshold_reference.finditer(body):
+                self.assertEqual(reference.group(1), version)
 
     def test_references_are_real_and_one_level_deep(self) -> None:
         text = SKILL.read_text(encoding="utf-8")
