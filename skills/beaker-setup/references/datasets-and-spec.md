@@ -12,7 +12,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - scoring rules and weights, confirmed by the developer when the
   repository does not already establish them, or when it's unclear which
   metric to use;
-- train and validation examples;
+- train and test examples (train is the optimization pool; test is held out);
 - stable row identifiers and optional grouping/metadata.
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
@@ -66,7 +66,7 @@ from pathlib import Path
 
 with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
     dataset_dir = Path(temp_dir)
-    splits = {"train": train_rows, "val": val_rows}
+    splits = {"train": train_rows, "test": test_rows}
 
     for split_name, rows in splits.items():
         split_path = dataset_dir / f"{split_name}.jsonl"
@@ -80,7 +80,7 @@ with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
             "--name", dataset_name,
             "--total-count", str(sum(len(rows) for rows in splits.values())),
             "--split", f"train={len(train_rows)}",
-            "--split", f"val={len(val_rows)}",
+            "--split", f"test={len(test_rows)}",
             "--agent", agent_key,
             "--json",
         ],

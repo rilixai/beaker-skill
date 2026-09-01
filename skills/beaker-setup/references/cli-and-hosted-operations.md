@@ -362,7 +362,7 @@ the failed run unchanged.
 2. Upload and inspect the dataset:
 
    ```bash
-   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split val=<n> --agent <selected-agent> --json
+   beaker dataset upload <dataset-dir> --name <dataset-name> --total-count <n> --split train=<n> --split test=<n> --agent <selected-agent> --json
    beaker dataset list --agent <selected-agent>
    beaker dataset show <dataset-name> --agent <selected-agent>
    ```
