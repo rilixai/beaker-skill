@@ -23,6 +23,24 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("license: MIT", frontmatter)
         self.assertNotIn("TODO", frontmatter)
 
+    def test_skills_declare_the_matching_sdk_version(self) -> None:
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        sdk_reference = re.compile(r"beaker-sdk(>=|==| )(\d+\.\d+\.\d+)")
+        for skill in (SKILL, USAGE_SKILL):
+            text = skill.read_text(encoding="utf-8")
+            match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
+            self.assertIsNotNone(match)
+            frontmatter = match.group(1) if match else ""
+            self.assertIn(f'version: "{version}"', frontmatter)
+            self.assertIn(f'beaker_sdk_version: "{version}"', frontmatter)
+            body = text[match.end() :] if match else text
+            self.assertIn(
+                f"This skill ({version}) is written for beaker-sdk {version}",
+                body,
+            )
+            for reference in sdk_reference.finditer(body):
+                self.assertEqual(reference.group(2), version)
+
     def test_references_are_real_and_one_level_deep(self) -> None:
         text = SKILL.read_text(encoding="utf-8")
         references = re.findall(r"\]\((references/[^)]+\.md)\)", text)

@@ -12,7 +12,18 @@ MANIFESTS = (
     ROOT / ".codex-plugin" / "plugin.json",
     ROOT / ".claude-plugin" / "marketplace.json",
 )
+SKILLS = (
+    ROOT / "skills" / "beaker-setup" / "SKILL.md",
+    ROOT / "skills" / "beaker-usage" / "SKILL.md",
+)
 VERSION_PATTERN = re.compile(r'("version"\s*:\s*")[^"]+(")')
+FRONTMATTER_PATTERN = re.compile(r"\A---\n(?P<frontmatter>.*?)\n---\n", flags=re.DOTALL)
+SKILL_VERSION_PATTERN = re.compile(r'(?m)^  version: "\d+\.\d+\.\d+"$')
+SKILL_SDK_VERSION_PATTERN = re.compile(r'(?m)^  beaker_sdk_version: "\d+\.\d+\.\d+"$')
+SKILL_TEXT_VERSION_PATTERN = re.compile(
+    r"beaker-sdk(?P<operator>>=|==| )(?P<sdk_version>\d+\.\d+\.\d+)"
+    r"|This skill \((?P<skill_version>\d+\.\d+\.\d+)\)"
+)
 
 
 def read_version() -> str:
@@ -29,6 +40,59 @@ def manifest_version(path: Path) -> str:
     return str(payload["metadata"]["version"])
 
 
+def skill_version(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    match = FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        raise ValueError(f"Could not find frontmatter in {path}")
+    version = re.search(r'(?m)^  beaker_sdk_version: "([^"]+)"$', match.group("frontmatter"))
+    if version is None:
+        raise ValueError(f"Could not find beaker_sdk_version in {path}")
+    return version.group(1)
+
+
+def sync_skill(path: Path, version: str, *, check: bool) -> bool:
+    text = path.read_text(encoding="utf-8")
+    match = FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        raise ValueError(f"Could not find frontmatter in {path}")
+    frontmatter = match.group("frontmatter")
+    sdk_version = skill_version(path)
+    in_sync = (
+        sdk_version == version
+        and f'  version: "{version}"' in frontmatter
+        and f'  beaker_sdk_version: "{version}"' in frontmatter
+        and all(
+            (match.group("sdk_version") or match.group("skill_version")) == version
+            for match in SKILL_TEXT_VERSION_PATTERN.finditer(text)
+        )
+    )
+    if in_sync:
+        return False
+
+    if check:
+        return True
+
+    updated_frontmatter, version_count = SKILL_VERSION_PATTERN.subn(
+        f'  version: "{version}"', frontmatter, count=1
+    )
+    updated_frontmatter, sdk_version_count = SKILL_SDK_VERSION_PATTERN.subn(
+        f'  beaker_sdk_version: "{version}"', updated_frontmatter, count=1
+    )
+    if version_count != 1 or sdk_version_count != 1:
+        raise ValueError(f"Could not find skill metadata versions in {path}")
+    updated = text[: match.start("frontmatter")] + updated_frontmatter + text[match.end("frontmatter") :]
+
+    def replace_text_version(text_match: re.Match[str]) -> str:
+        if text_match.group("operator") is not None:
+            return f"beaker-sdk{text_match.group('operator')}{version}"
+        return f"This skill ({version})"
+
+    updated = SKILL_TEXT_VERSION_PATTERN.sub(replace_text_version, updated)
+    path.write_text(updated, encoding="utf-8")
+    return True
+
+
 def sync_version(version: str, *, check: bool) -> int:
     mismatches: list[str] = []
     for path in MANIFESTS:
@@ -41,6 +105,9 @@ def sync_version(version: str, *, check: bool) -> int:
             if count != 1:
                 raise ValueError(f"Could not find a version field in {path}")
             path.write_text(updated, encoding="utf-8")
+    for path in SKILLS:
+        if sync_skill(path, version, check=check):
+            mismatches.append(str(path.relative_to(ROOT)))
     if mismatches and check:
         print(f"Version {version} is out of sync: {', '.join(mismatches)}")
         return 1
