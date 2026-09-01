@@ -80,8 +80,11 @@ npx skills update beaker-setup
 npx skills update beaker-usage
 ```
 
-The canonical version is stored in [`VERSION`](VERSION). When releasing a new
-version, update that file and run:
+The canonical version is stored in [`VERSION`](VERSION). It is also the
+`beaker-sdk` version the skills are written for; the skill and SDK are released
+in lockstep. When the SDK is bumped in `rilixai/beaker-ai`, bump `VERSION` here
+to the same number and run `python3 scripts/sync_version.py`, which now also
+stamps both `SKILL.md` files:
 
 ```bash
 python3 scripts/sync_version.py

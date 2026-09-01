@@ -2,6 +2,9 @@
 name: beaker-setup
 description: Set up, configure, or onboard a Python repository for Beaker agent optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests or CI/CD automation. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or launching the first hosted agent optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
 license: MIT
+metadata:
+  version: "0.4.8"
+  beaker_sdk_version: "0.4.8"
 ---
 
 # Beaker setup
@@ -21,6 +24,20 @@ before replacement, reload the installed skill; when the agent host cannot
 refresh skills in place, start a new agent session instead of continuing with
 stale instructions. A user who already has the requested version installed can
 load it normally without reinstalling it.
+
+## Version check
+
+This skill (0.4.8) is written for beaker-sdk 0.4.8. The skill and the SDK are
+released in lockstep with the same version number, so any difference between
+them means one side is stale. Before the happy path, run `beaker --version`
+(or `uvx --from 'beaker-sdk>=0.4.8' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.4.8, or does
+not recognize `--version`, upgrade `beaker-sdk` through the project's
+development-dependency workflow before continuing; older CLIs may lack commands
+or flags this skill relies on. If the CLI is newer than 0.4.8, this skill is
+stale: run `npx skills update beaker-setup` and `npx skills update
+beaker-usage`, then reload the skill as described above. Do not work around a
+mismatch by guessing at CLI behavior.
 
 ## Happy path
 
