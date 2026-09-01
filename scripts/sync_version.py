@@ -23,9 +23,8 @@ SKILL_SDK_VERSION_PATTERN = re.compile(r'(?m)^  beaker_sdk_version: "\d+\.\d+\.\
 SKILL_TEXT_VERSION_PATTERN = re.compile(
     r"beaker-sdk(?P<operator>>=|==| )(?P<sdk_version>\d+\.\d+\.\d+)"
     r"|This skill \((?P<skill_version>\d+\.\d+\.\d+)\)"
-    r"|(?P<threshold>older than|newer than) (?P<threshold_version>\d+\.\d+\.\d+)"
-    r"|(?P<wrapped_threshold>older than|newer than)\n"
-    r"(?P<wrapped_threshold_version>\d+\.\d+\.\d+)"
+    r"|(?P<threshold>older than|newer than)(?P<threshold_whitespace>\s+)"
+    r"(?P<threshold_version>\d+\.\d+\.\d+)"
 )
 
 
@@ -43,15 +42,19 @@ def manifest_version(path: Path) -> str:
     return str(payload["metadata"]["version"])
 
 
+def _frontmatter_sdk_version(frontmatter: str) -> str:
+    version = re.search(r'(?m)^  beaker_sdk_version: "([^"]+)"$', frontmatter)
+    if version is None:
+        raise ValueError("Could not find beaker_sdk_version in frontmatter")
+    return version.group(1)
+
+
 def skill_version(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
     match = FRONTMATTER_PATTERN.match(text)
     if match is None:
         raise ValueError(f"Could not find frontmatter in {path}")
-    version = re.search(r'(?m)^  beaker_sdk_version: "([^"]+)"$', match.group("frontmatter"))
-    if version is None:
-        raise ValueError(f"Could not find beaker_sdk_version in {path}")
-    return version.group(1)
+    return _frontmatter_sdk_version(match.group("frontmatter"))
 
 
 def sync_skill(path: Path, version: str, *, check: bool) -> bool:
@@ -60,7 +63,7 @@ def sync_skill(path: Path, version: str, *, check: bool) -> bool:
     if match is None:
         raise ValueError(f"Could not find frontmatter in {path}")
     frontmatter = match.group("frontmatter")
-    sdk_version = skill_version(path)
+    sdk_version = _frontmatter_sdk_version(frontmatter)
     in_sync = (
         sdk_version == version
         and f'  version: "{version}"' in frontmatter
@@ -70,7 +73,6 @@ def sync_skill(path: Path, version: str, *, check: bool) -> bool:
                 match.group("sdk_version")
                 or match.group("skill_version")
                 or match.group("threshold_version")
-                or match.group("wrapped_threshold_version")
             )
             == version
             for match in SKILL_TEXT_VERSION_PATTERN.finditer(text)
@@ -96,9 +98,10 @@ def sync_skill(path: Path, version: str, *, check: bool) -> bool:
         if text_match.group("operator") is not None:
             return f"beaker-sdk{text_match.group('operator')}{version}"
         if text_match.group("threshold") is not None:
-            return f"{text_match.group('threshold')} {version}"
-        if text_match.group("wrapped_threshold") is not None:
-            return f"{text_match.group('wrapped_threshold')}\n{version}"
+            return (
+                f"{text_match.group('threshold')}"
+                f"{text_match.group('threshold_whitespace')}{version}"
+            )
         return f"This skill ({version})"
 
     updated = SKILL_TEXT_VERSION_PATTERN.sub(replace_text_version, updated)
