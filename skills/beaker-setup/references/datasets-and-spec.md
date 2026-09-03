@@ -134,6 +134,74 @@ remain JSON-normalizable across the evaluator process boundary.
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
 
+### Declare the output kind and emit per-case checks
+
+Beaker's sample-level view does not compare `output` to the expected row
+itself; it renders what the spec declares. Two contract fields drive it:
+
+- `CaseResult(output=..., output_kind=...)`, one of `"record"` (a structured
+  dict compared field by field to an expected record), `"value"` (one short
+  answer), `"text"` (long documents; a dict becomes one expandable card per
+  string leaf), or `"none"` (the agent produced no answer and is graded on side
+  effects; pass `output=None`). Never place scores, assertion results, or end
+  state in `output`; scores go in `CaseScore`, evidence in `context`.
+- `CaseScore(..., checks=(Check(...), ...))`: one `Check` per thing the scorer
+  verified, passing ones included. `checks` is separate from `field_scores`:
+  `field_scores` is the small, stable set of run-level metrics aggregated across
+  cases; `checks` is the per-case explanation and its names are never
+  aggregated. Map the repository's own vocabulary onto it without adding new
+  fields:
+
+  `name`/`description` say what the check is; `expected`/`predicted`/`message`
+  say what the prediction did. Never put the check's definition (a criterion
+  sentence) in `expected`.
+
+  | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
+  |---|---|---|---|---|---|---|
+  | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
+  | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's comment | deliverable or document name |
+  | An assertion on end state | assertion type and target | assertion parameters, if useful | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail | app or system name |
+  | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
+
+  Set `informational=True` on checks that are computed but do not count toward
+  the objective (zero-weight metrics, assertions excluded from scoring); they
+  render muted and are left out of the failed-check count.
+
+  Limits: the hosted view keeps at most 100 checks per case and trims to 10
+  when the case's evidence response exceeds 256 KB, and `expected`/`predicted`
+  are shown as JSON text, not a structured diff. Do not emit one check per row
+  of a large table; check the aggregate and put the detail in `message`.
+
+```python
+from beaker import CaseResult, CaseScore, Check
+
+async def run_case(self, *, case, targets=None) -> CaseResult:
+    state = await run_agent(case.input)
+    return CaseResult(output=None, output_kind="none", context={"end_state": state})
+
+async def score_case(self, *, case, result) -> CaseScore:
+    outcomes = evaluate_assertions(case, result.context["end_state"])
+    checks = tuple(
+        Check(
+            name=f"{o.type} {o.target}",
+            verdict="pass" if o.passed else "fail",
+            expected=o.expected,
+            predicted=o.observed,
+            message=o.detail,
+            group=o.app,
+            informational=o.excluded,
+        )
+        for o in outcomes
+    )
+    scored = [o for o in outcomes if not o.excluded]
+    partial = sum(o.passed for o in scored) / len(scored) if scored else 0.0
+    return CaseScore(
+        objective=partial,
+        field_scores={"task_completed_correctly": float(all(o.passed for o in scored)), "partial_credit": partial},
+        checks=checks,
+    )
+```
+
 Repository-mode case inputs and `CaseResult.output`/`context` cross a process
 boundary and must be JSON-normalizable. The candidate process receives input
 without labels. The trusted controller retains ground truth and invokes the

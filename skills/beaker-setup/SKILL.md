@@ -316,7 +316,11 @@ Use the selected agent's page to view its runs and score trends.
      JSON-normalizable because they cross the evaluator process boundary.
    - `CaseResult`: keep `output` limited to fields the scorer reads. Put
      trajectories, tool history, end state, and other diagnostic evidence in
-     `context`; do not duplicate large evidence in both.
+     `context`; do not duplicate large evidence in both. Declare
+     `output_kind` and have the scorer return `CaseScore.checks` (one `Check`
+     per verified field, criterion, assertion, or requirement) so the hosted
+     sample view can explain each case; see
+     [datasets-and-spec.md](references/datasets-and-spec.md).
    - `spec.required_env`: inspect every application path that hosted candidate
      evaluation can reach, including SDK defaults and fallback branches, and
      list the environment variable names those paths read directly. Do not
