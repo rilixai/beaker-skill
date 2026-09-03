@@ -12,9 +12,9 @@ never edit or repurpose them for Beaker. For the selected task, identify:
   that shape and belong in `expected`, wrapped in an object because
   `expected` must be a JSON object (`expected: {"assertions": [...]}` or
   `{"criteria": [...]}`, never a top-level array); do not upload
-  `expected: {}` when they exist at dataset-build time. When the requirements only exist inside the
-  runner (a simulator's own assertions), `expected: {}` is correct and the
-  checks come from the runner's results via `context`;
+  `expected: {}` when they exist at dataset-build time. When the requirements
+  only exist inside the runner (a simulator's own assertions), `expected: {}`
+  is correct and the checks come from the runner's results via `context`;
 - prediction fields;
 - scoring rules and weights, confirmed by the developer when the
   repository does not already establish them, or when it's unclear which
