@@ -9,8 +9,10 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - input shape;
 - expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
   the requirements themselves (the assertion list, the rubric criteria) are
-  that shape and belong in `expected`; never upload `expected: {}` when
-  requirements exist;
+  that shape and belong in `expected`; do not upload `expected: {}` when they
+  exist at dataset-build time. When the requirements only exist inside the
+  runner (a simulator's own assertions), `expected: {}` is correct and the
+  checks come from the runner's results via `context`;
 - prediction fields;
 - scoring rules and weights, confirmed by the developer when the
   repository does not already establish them, or when it's unclear which
