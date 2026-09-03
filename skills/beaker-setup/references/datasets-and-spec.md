@@ -9,8 +9,10 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - input shape;
 - expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
   the requirements themselves (the assertion list, the rubric criteria) are
-  that shape and belong in `expected`; do not upload `expected: {}` when they
-  exist at dataset-build time. When the requirements only exist inside the
+  that shape and belong in `expected`, wrapped in an object because
+  `expected` must be a JSON object (`expected: {"assertions": [...]}` or
+  `{"criteria": [...]}`, never a top-level array); do not upload
+  `expected: {}` when they exist at dataset-build time. When the requirements only exist inside the
   runner (a simulator's own assertions), `expected: {}` is correct and the
   checks come from the runner's results via `context`;
 - prediction fields;
@@ -159,7 +161,10 @@ itself; it renders what the spec declares. Two contract fields drive both:
   requirements, `output` the answer (or `None`), `context` the observed end
   state; the scorer evaluates `expected` against `context`/`output` and emits
   one `Check` per requirement, `informational=True` for excluded or
-  zero-weight ones. `checks` is separate from `field_scores`:
+  zero-weight ones. The dataset row's `expected` arrives as
+  `case.ground_truth` in the Spec lane (`case.expected` in the integration
+  lane). The scorer must tolerate an empty `context`: the integration lane can
+  shed an oversized context and marks the case `context_dropped`. `checks` is separate from `field_scores`:
   `field_scores` is the small, stable set of run-level metrics aggregated across
   cases; `checks` is the per-case explanation and its names are never
   aggregated. Map the repository's own vocabulary onto it without adding new
@@ -196,7 +201,7 @@ async def run_case(self, *, case, targets=None) -> CaseResult:
     return CaseResult(output=None, output_kind="none", context={"end_state": state})
 
 async def score_case(self, *, case, result) -> CaseScore:
-    outcomes = evaluate_assertions(case.expected, result.context["end_state"])
+    outcomes = evaluate_assertions(case.ground_truth, result.context.get("end_state"))
     checks = tuple(
         Check(
             name=f"{o.type} {o.target}",
