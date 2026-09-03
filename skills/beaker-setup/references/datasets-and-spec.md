@@ -16,10 +16,8 @@ never edit or repurpose them for Beaker. For the selected task, identify:
   repository does not already establish them, or when it's unclear which
   metric to use;
 - train and test examples (train is the optimization pool; test is held out);
-- stable row identifiers and optional grouping/metadata: `metadata` keys such
-  as domain or practice area are what the optimizer slices results by
-  (`history breakdown --by metadata.<key>`); `group_key` is only an optional
-  dataset column.
+- stable row identifiers and optional labels: `metadata` keys such as domain
+  or practice area; `group_key` is only an optional dataset column.
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
 When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
@@ -144,10 +142,9 @@ Keep `score_case` async because Beaker awaits it, even for deterministic scoring
 
 `CaseScore.checks` is what the optimizer's proposer reads to diagnose why a
 case failed. Without checks (or scorer-authored `field_diffs`) it sees only
-scalar scores, its proposals degrade to generic advice, and the run reports a
-warning. Beaker's sample-level view likewise does not compare `output` to the
-expected row itself; it renders what the spec declares. Two contract fields
-drive both:
+scalar scores and its proposals degrade to generic advice. Beaker's
+sample-level view likewise does not compare `output` to the expected row
+itself; it renders what the spec declares. Two contract fields drive both:
 
 - `CaseResult(output=..., output_kind=...)`, one of `"record"` (a structured
   dict compared field by field to an expected record), `"value"` (one short
@@ -187,8 +184,7 @@ drive both:
   of a large table; check the aggregate and put the detail in `message`.
 
   `beaker run smoke` does not execute `run_case` or `score_case`, so it cannot
-  confirm that checks are emitted; the first run's warning (every TRAIN case
-  with empty `checks` and `field_diffs`) is the confirmation that they are not.
+  confirm that checks are emitted; inspect a scored case from the first run.
 
 ```python
 from beaker import CaseResult, CaseScore, Check
