@@ -167,6 +167,11 @@ itself; it renders what the spec declares. Two contract fields drive it:
   the objective (zero-weight metrics, assertions excluded from scoring); they
   render muted and are left out of the failed-check count.
 
+  Limits: the hosted view keeps at most 100 checks per case and trims to 10
+  when the case's evidence response exceeds 256 KB, and `expected`/`predicted`
+  are shown as JSON text, not a structured diff. Do not emit one check per row
+  of a large table; check the aggregate and put the detail in `message`.
+
 ```python
 from beaker import CaseResult, CaseScore, Check
 
