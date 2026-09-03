@@ -161,10 +161,9 @@ itself; it renders what the spec declares. Two contract fields drive both:
   requirements, `output` the answer (or `None`), `context` the observed end
   state; the scorer evaluates `expected` against `context`/`output` and emits
   one `Check` per requirement, `informational=True` for excluded or
-  zero-weight ones. The dataset row's `expected` arrives as
-  `case.ground_truth` in the Spec lane (`case.expected` in the integration
-  lane). The scorer must tolerate an empty `context`: the integration lane can
-  shed an oversized context and marks the case `context_dropped`. `checks` is separate from `field_scores`:
+  zero-weight ones. The dataset row's `expected` arrives in the scorer as
+  `case.ground_truth`. The scorer must tolerate an empty `context`. `checks`
+  is separate from `field_scores`:
   `field_scores` is the small, stable set of run-level metrics aggregated across
   cases; `checks` is the per-case explanation and its names are never
   aggregated. Map the repository's own vocabulary onto it without adding new
