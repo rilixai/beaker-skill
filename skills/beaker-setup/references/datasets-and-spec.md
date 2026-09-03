@@ -152,12 +152,16 @@ itself; it renders what the spec declares. Two contract fields drive it:
   aggregated. Map the repository's own vocabulary onto it without adding new
   fields:
 
-  | Scorer verifies | `name` | `verdict` | `expected` / `predicted` | `message` | `group` |
-  |---|---|---|---|---|---|
-  | A field of a record | field name | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
-  | A rubric criterion judged by an LLM | criterion title | `"pass"`/`"fail"` | `expected` = criterion text, `predicted` omitted | the judge's comment | deliverable or document name |
-  | An assertion on end state | assertion type and target | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail | app or system name |
-  | A graded metric (F1, recall, partial credit) | metric name | float in `[0, 1]` | omit | how the score was obtained | omit |
+  `name`/`description` say what the check is; `expected`/`predicted`/`message`
+  say what the prediction did. Never put the check's definition (a criterion
+  sentence) in `expected`.
+
+  | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
+  |---|---|---|---|---|---|---|
+  | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
+  | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's comment | deliverable or document name |
+  | An assertion on end state | assertion type and target | assertion parameters, if useful | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail | app or system name |
+  | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
   Set `informational=True` on checks that are computed but do not count toward
   the objective (zero-weight metrics, assertions excluded from scoring); they
