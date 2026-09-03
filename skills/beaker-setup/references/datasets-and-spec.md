@@ -185,7 +185,7 @@ async def score_case(self, *, case, result) -> CaseScore:
         for o in outcomes
     )
     scored = [o for o in outcomes if not o.excluded]
-    partial = sum(o.passed for o in scored) / len(scored)
+    partial = sum(o.passed for o in scored) / len(scored) if scored else 0.0
     return CaseScore(
         objective=partial,
         field_scores={"task_completed_correctly": float(all(o.passed for o in scored)), "partial_credit": partial},
