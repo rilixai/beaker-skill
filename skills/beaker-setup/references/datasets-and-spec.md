@@ -7,13 +7,21 @@ or uploaded datasets. Treat existing tests and fixtures as read-only evidence;
 never edit or repurpose them for Beaker. For the selected task, identify:
 
 - input shape;
-- expected/ground-truth shape;
+- expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
+  the requirements themselves (the assertion list, the rubric criteria) are
+  that shape and belong in `expected`, wrapped in an object because
+  `expected` must be a JSON object (`expected: {"assertions": [...]}` or
+  `{"criteria": [...]}`, never a top-level array); do not upload
+  `expected: {}` when they exist at dataset-build time. When the requirements
+  only exist inside the runner (a simulator's own assertions), `expected: {}`
+  is correct and the checks come from the runner's results via `context`;
 - prediction fields;
 - scoring rules and weights, confirmed by the developer when the
   repository does not already establish them, or when it's unclear which
   metric to use;
 - train and test examples (train is the optimization pool; test is held out);
-- stable row identifiers and optional grouping/metadata.
+- stable row identifiers and optional labels: `metadata` keys such as domain
+  or practice area; `group_key` is only an optional dataset column.
 
 Declare the matching JSON Schema through the loader/spec so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
 When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
@@ -136,8 +144,11 @@ Keep `score_case` async because Beaker awaits it, even for deterministic scoring
 
 ### Declare the output kind and emit per-case checks
 
-Beaker's sample-level view does not compare `output` to the expected row
-itself; it renders what the spec declares. Two contract fields drive it:
+`CaseScore.checks` is what the optimizer's proposer reads to diagnose why a
+case failed. Without checks (or scorer-authored `field_diffs`) it sees only
+scalar scores and its proposals degrade to generic advice. Beaker's
+sample-level view likewise does not compare `output` to the expected row
+itself; it renders what the spec declares. Two contract fields drive both:
 
 - `CaseResult(output=..., output_kind=...)`, one of `"record"` (a structured
   dict compared field by field to an expected record), `"value"` (one short
@@ -146,7 +157,13 @@ itself; it renders what the spec declares. Two contract fields drive it:
   effects; pass `output=None`). Never place scores, assertion results, or end
   state in `output`; scores go in `CaseScore`, evidence in `context`.
 - `CaseScore(..., checks=(Check(...), ...))`: one `Check` per thing the scorer
-  verified, passing ones included. `checks` is separate from `field_scores`:
+  verified, passing ones included. The case's `expected` holds the
+  requirements, `output` the answer (or `None`), `context` the observed end
+  state; the scorer evaluates `expected` against `context`/`output` and emits
+  one `Check` per requirement, `informational=True` for excluded or
+  zero-weight ones. The dataset row's `expected` arrives in the scorer as
+  `case.ground_truth`. The scorer must tolerate an empty `context`. `checks`
+  is separate from `field_scores`:
   `field_scores` is the small, stable set of run-level metrics aggregated across
   cases; `checks` is the per-case explanation and its names are never
   aggregated. Map the repository's own vocabulary onto it without adding new
@@ -154,12 +171,12 @@ itself; it renders what the spec declares. Two contract fields drive it:
 
   `name`/`description` say what the check is; `expected`/`predicted`/`message`
   say what the prediction did. Never put the check's definition (a criterion
-  sentence) in `expected`.
+  sentence) in `Check.expected`.
 
   | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
   |---|---|---|---|---|---|---|
   | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
-  | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's comment | deliverable or document name |
+  | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
   | An assertion on end state | assertion type and target | assertion parameters, if useful | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
@@ -172,6 +189,9 @@ itself; it renders what the spec declares. Two contract fields drive it:
   are shown as JSON text, not a structured diff. Do not emit one check per row
   of a large table; check the aggregate and put the detail in `message`.
 
+  `beaker run smoke` does not execute `run_case` or `score_case`, so it cannot
+  confirm that checks are emitted; inspect a scored case from the first run.
+
 ```python
 from beaker import CaseResult, CaseScore, Check
 
@@ -180,7 +200,7 @@ async def run_case(self, *, case, targets=None) -> CaseResult:
     return CaseResult(output=None, output_kind="none", context={"end_state": state})
 
 async def score_case(self, *, case, result) -> CaseScore:
-    outcomes = evaluate_assertions(case, result.context["end_state"])
+    outcomes = evaluate_assertions(case.ground_truth, result.context.get("end_state"))
     checks = tuple(
         Check(
             name=f"{o.type} {o.target}",

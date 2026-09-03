@@ -319,8 +319,10 @@ Use the selected agent's page to view its runs and score trends.
      `context`; do not duplicate large evidence in both. Declare
      `output_kind` and have the scorer return `CaseScore.checks` (one `Check`
      per verified field, criterion, assertion, or requirement) so the hosted
-     sample view can explain each case; see
-     [datasets-and-spec.md](references/datasets-and-spec.md).
+     sample view can explain each case. Checks are what the optimizer reads to
+     diagnose failures; for rubric- or assertion-scored tasks put the
+     requirements in the dataset's `expected` when they exist at dataset-build
+     time; see [datasets-and-spec.md](references/datasets-and-spec.md).
    - `spec.required_env`: inspect every application path that hosted candidate
      evaluation can reach, including SDK defaults and fallback branches, and
      list the environment variable names those paths read directly. Do not
