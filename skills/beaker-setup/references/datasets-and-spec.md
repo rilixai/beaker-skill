@@ -197,7 +197,7 @@ itself; it renders what the spec declares. Two contract fields drive both:
   |---|---|---|---|---|---|---|
   | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
   | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
-  | An assertion on end state | assertion type and its targets by name (`member_exists · Jane Doe · Q1 Webinar`) | one line: what the assertion verifies, plus literal parameters (`body_contains=...`) | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail, or why it is excluded | app or system name |
+  | An assertion on end state | assertion type and its targets by name (`member_exists · Jane Doe · Q1 Webinar`) | one line: what the assertion verifies, plus literal parameters (`body_contains=...`) | `"pass"`/`"fail"` | omit; a boolean assertion has none, and the value it compares against is already in `description` | assertion failure detail, or why it is excluded | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
   Set `informational=True` on checks that are computed but do not count toward
