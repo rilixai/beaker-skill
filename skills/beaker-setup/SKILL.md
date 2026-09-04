@@ -315,10 +315,12 @@ Use the selected agent's page to view its runs and score trends.
      Repository-mode case inputs and `CaseResult.output`/`context` must be
      JSON-normalizable because they cross the evaluator process boundary.
    - `CaseResult`: keep `output` limited to fields the scorer reads. Put
-     trajectories, tool history, end state, and other diagnostic evidence in
-     `context`; do not duplicate large evidence in both. Declare
-     `output_kind` and have the scorer return `CaseScore.checks` (one `Check`
-     per verified field, criterion, assertion, or requirement) so the hosted
+     what the scorer needs beyond the answer (observed end state, runner
+     assertion outcomes) in `context`; do not duplicate large evidence in
+     both. `context` feeds the scorer only; model and tool calls go in the
+     trace. Declare `output_kind` and have the scorer return
+     `CaseScore.checks` (one `Check` per verified field, criterion, assertion,
+     or requirement, readable without the dataset row open) so the hosted
      sample view can explain each case. Checks are what the optimizer reads to
      diagnose failures; for rubric- or assertion-scored tasks put the
      requirements in the dataset's `expected` when they exist at dataset-build
