@@ -263,16 +263,19 @@ Distinguish execution failure from a bad answer:
 - Do not convert every exception into an error-shaped output object.
 - When a harness catches its own rollout errors and hands back a result anyway
   (an agent framework that stores the exception in its state and still
-  returns the untouched world), inspect that error before scoring: a
-  model, provider, or infrastructure failure means the case did not run and
-  is `CaseResult.failed(...)`; an agent-side failure (a bad tool call, an
-  overlong prompt) is a legitimate zero and stays a scored result with the
-  error in the checks' `message`. Check how the harness hands the error back
-  before classifying it: it often arrives serialized (a dict or string, not
-  the exception), and an `isinstance` check against that is always false, so
+  returns the untouched world), classify that error in `run_case`, before
+  constructing the `CaseResult`: a model, provider, or infrastructure failure
+  means the case did not run and is `CaseResult.failed(...)`; an agent-side
+  failure (a bad tool call, an overlong prompt) is a legitimate zero, so
+  return `CaseResult(output=..., context={"error": ...})` and let `score_case`
+  put the error in the checks' `message`. `score_case` receives a finished
+  `CaseResult` and cannot turn it into a failure, so this decision cannot
+  wait until scoring. Check how the harness hands the error back before
+  classifying it: it often arrives serialized (a dict or string, not the
+  exception), and an `isinstance` check against that is always false, so
   rebuild it with the harness's own helper first or every crash silently
   scores zero. A batch of zeros that finished in milliseconds is a crash, not
-  a baseline, and the scorer is the only place that can tell the difference.
+  a baseline.
 
 ## Prove repository candidate execution
 
