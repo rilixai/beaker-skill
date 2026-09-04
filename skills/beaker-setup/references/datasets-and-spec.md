@@ -188,8 +188,9 @@ itself; it renders what the spec declares. Two contract fields drive both:
   already holds state that names them (the initial or observed end state, a
   document manifest), put those names in `name` instead of the ids; a
   deterministic boolean assertion has no `expected`/`predicted` pair, so its
-  `name` and `description` carry the whole meaning. Keep rows short: one line
-  each for `name` and `description`. Ten rows that differ only in an id are
+  `name` and `description` carry the whole meaning; do not repeat the same
+  values in both. Keep rows short: one line each for `name` and `description`.
+  Ten rows that differ only in an id are
   ten indistinguishable rows; when no such state exists, leave the ids and
   explain the scoring in the recipe's README instead.
 
@@ -197,7 +198,7 @@ itself; it renders what the spec declares. Two contract fields drive both:
   |---|---|---|---|---|---|---|
   | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
   | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
-  | An assertion on end state | assertion type and its targets by name (`member_exists · Jane Doe · Q1 Webinar`) | one line: what the assertion verifies, plus literal parameters (`body_contains=...`) | `"pass"`/`"fail"` | omit; a boolean assertion has none, and the value it compares against is already in `description` | assertion failure detail, or why it is excluded | app or system name |
+  | An assertion on end state | assertion type and its parameters, ids replaced by names (`member_exists · Jane Doe · Q1 Webinar`) | omit when `name` already carries every parameter; otherwise one line naming what the assertion verifies | `"pass"`/`"fail"` | omit; a boolean assertion has none, and the value it compares against is already in `name` | assertion failure detail, or why it is excluded | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
   Set `informational=True` on checks that are computed but do not count toward
@@ -234,7 +235,6 @@ async def score_case(self, *, case, result) -> CaseScore:
     checks = tuple(
         Check(
             name=" · ".join([o.type, *(names.get(t, t) for t in o.targets)]),
-            description=o.describe(names),
             verdict="pass" if o.passed else "fail",
             message=o.detail,
             group=o.app,
