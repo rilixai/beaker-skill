@@ -234,7 +234,7 @@ async def score_case(self, *, case, result) -> CaseScore:
     names = record_names(initial_state_for(case), end_state)  # id -> "Jane Doe"
     checks = tuple(
         Check(
-            name=" · ".join([o.type, *(names.get(t, t) for t in o.targets)]),
+            name=" · ".join([o.type, *(names.get(v, v) for v in o.params.values())]),
             verdict="pass" if o.passed else "fail",
             message=o.detail,
             group=o.app,
