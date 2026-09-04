@@ -241,11 +241,8 @@ each turn's span carries that turn's full message list, so tool calls and
 simulated tool results are captured as messages. Token usage is read off the
 recorded response's `usage` block (OpenAI, Anthropic, and Gemini shapes); call
 `call.usage(input_tokens=..., output_tokens=...)` yourself only when the
-harness returns a response without one. `model_call(...)` requires
-`operation`, `provider`, `model`, and `input_messages` as keywords; a call
-missing one raises inside every case, so exercise the subclass once locally
-against the real client before the hosted run. Leave a comment at the subclass
-saying why the built-in integrations do not apply.
+harness returns a response without one. Leave a comment at the subclass saying
+why the built-in integrations do not apply.
 
 ### Framework integrations
 

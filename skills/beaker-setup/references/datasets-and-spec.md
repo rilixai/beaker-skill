@@ -9,8 +9,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - input shape. The case's `input` is what the sample view shows as the ask,
   so it must carry what the agent was actually given (the task prompt, the
   question, the document reference), not only a lookup key the runner
-  resolves internally. Changing the input shape later means a new dataset
-  revision: re-upload and pass the new selector;
+  resolves internally;
 - expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
   the requirements themselves (the assertion list, the rubric criteria) are
   that shape and belong in `expected`, wrapped in an object because
@@ -153,12 +152,6 @@ error that prevented execution belongs in `CaseResult.failed(...)`, and one
 that the application survived belongs in the affected checks' `message`.
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
-When the benchmark exposes both a strict all-or-nothing metric and a graded one
-(fraction of requirements met), make the graded one the `objective` — it gives
-the optimizer a signal on every case, the strict one is flat at zero for most
-of them — and keep the strict one in `field_scores` for reporting. State that
-choice and its reason in the recipe README so the next person or agent does
-not flip it.
 
 ### Declare the output kind and emit per-case checks
 
@@ -217,10 +210,7 @@ itself; it renders what the spec declares. Two contract fields drive both:
   alone. When the scorer also holds the initial state, evaluate each
   requirement against it too: a failed requirement that held initially is a
   regression ("held in the initial state; broken by the run"), not a
-  never-satisfied one, and the optimizer treats those differently. Derive
-  `group` from the app or system the requirement targets as a person would name
-  it, collapsing sub-services the harness splits (`facebook_pages`,
-  `facebook_ads`) into the one name.
+  never-satisfied one, and the optimizer treats those differently.
 
   Limits: the hosted view keeps at most 100 checks per case and trims to 10
   when the case's evidence response exceeds 256 KB, and `expected`/`predicted`
@@ -228,11 +218,7 @@ itself; it renders what the spec declares. Two contract fields drive both:
   of a large table; check the aggregate and put the detail in `message`.
 
   `beaker run smoke` does not execute `run_case` or `score_case`, so it cannot
-  confirm that checks are emitted. Before the first hosted run, drive
-  `score_case` locally over every dataset row with an untouched or recorded end
-  state and confirm that no row raises and that the rendered check names are
-  distinguishable; the first hosted run is too expensive to be the scorer's
-  first execution. Then inspect a scored case from that run.
+  confirm that checks are emitted; inspect a scored case from the first run.
 
 ```python
 from beaker import CaseResult, CaseScore, Check
