@@ -184,18 +184,20 @@ itself; it renders what the spec declares. Two contract fields drive both:
   say what the prediction did. Never put the check's definition (a criterion
   sentence) in `Check.expected`. A check must be readable without the dataset
   row or the runner's internals open: when the requirement refers to things by
-  opaque identifiers (record ids, row numbers, file hashes), resolve them to
-  the names a person would use from state the scorer already holds (the
-  initial or observed end state, the document manifest) and keep the raw id in
-  parentheses; a deterministic boolean assertion has no `expected`/`predicted`
-  pair, so its `name` and `description` carry the whole meaning. Ten rows that
-  differ only in an id are ten indistinguishable rows.
+  opaque identifiers (record ids, row numbers, file hashes) and the scorer
+  already holds state that names them (the initial or observed end state, a
+  document manifest), put those names in `name` instead of the ids; a
+  deterministic boolean assertion has no `expected`/`predicted` pair, so its
+  `name` and `description` carry the whole meaning. Keep rows short: one line
+  each for `name` and `description`. Ten rows that differ only in an id are
+  ten indistinguishable rows; when no such state exists, leave the ids and
+  explain the scoring in the recipe's README instead.
 
   | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
   |---|---|---|---|---|---|---|
   | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
   | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
-  | An assertion on end state | assertion type and resolved target (`member_exists · Jane Doe · Q1 Webinar`) | what the assertion verifies, then its parameters with ids resolved to names | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail, or why it is excluded | app or system name |
+  | An assertion on end state | assertion type and its targets by name (`member_exists · Jane Doe · Q1 Webinar`) | one line: what the assertion verifies, plus literal parameters (`body_contains=...`) | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail, or why it is excluded | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
   Set `informational=True` on checks that are computed but do not count toward
