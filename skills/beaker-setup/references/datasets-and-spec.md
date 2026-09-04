@@ -142,11 +142,10 @@ Keep `CaseResult.output` limited to prediction fields the scorer reads. Put
 what the scorer needs beyond the answer — the observed end state, tool results
 it checks, the runner's own assertion outcomes — in `CaseResult.context`; do
 not duplicate large evidence in both. Both values must remain JSON-normalizable
-across the evaluator process boundary. `context` is scorer input: the scorer
-distills it into `CaseScore.checks`, and the checks plus the trace are what the
-proposer and the hosted case view read afterwards, so anything a person or the
-optimizer should later see must reach one of those two. Model calls and tool
-calls belong in the trace (see
+across the evaluator process boundary. `context` is scorer input and is not
+persisted: the scorer distills it into `CaseScore.checks`, and only the checks
+and the trace are kept, so anything the optimizer should later see must reach
+one of those two. Model calls and tool calls belong in the trace (see
 [model-routing-and-tracing.md](model-routing-and-tracing.md)); a rollout
 error that prevented execution belongs in `CaseResult.failed(...)`, and one
 that the application survived belongs in the affected checks' `message`.
