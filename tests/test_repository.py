@@ -442,8 +442,10 @@ class RepositoryContractTests(unittest.TestCase):
         content = " ".join((skill + datasets + handoff).split())
 
         self.assertIn("keep `output` limited to fields the scorer reads", content)
-        self.assertIn("trajectories, tool history, end state, and other diagnostic evidence", content)
+        self.assertIn("what the scorer needs beyond the answer", content)
         self.assertIn("do not duplicate large evidence in both", content)
+        self.assertIn("`context` is scorer input", content)
+        self.assertIn("Model calls and tool calls belong in the trace", content)
 
     def test_setup_skill_installs_before_loading_and_batches_known_questions(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

@@ -231,6 +231,20 @@ exception is a framework-specific adapter that preserves the exact public base
 type the framework validates. An unresolved tracing warning never blocks
 handoff; a rejected client fails the whole run.
 
+When a benchmark or agent harness owns the loop and takes the client object as
+a parameter (no framework from the table below is involved, so no integration
+sees the calls), that adapter is a subclass of the harness's own client class
+that overrides the single method every turn goes through and wraps only the
+`super()` call in `current_trace().model_call(operation=..., provider=...,
+model=..., input_messages=...)` (all four keywords are required), recording
+the response with `call.output(...)`. The subclass passes the harness's
+`isinstance` check; each turn's span carries that turn's full message list, so
+tool calls and simulated tool results are captured as messages. Token usage is
+read off the recorded response's `usage` block (OpenAI, Anthropic, and Gemini
+shapes); call `call.usage(input_tokens=..., output_tokens=...)` yourself only
+when the harness returns a response without one. Leave a comment at the
+subclass saying why the built-in integrations do not apply.
+
 ### Framework integrations
 
 Use a built-in framework integration first, scoped only to the candidate-workflow

@@ -6,7 +6,10 @@ Find real labeled examples in local evals, tests, JSONL/CSV files, API fixtures,
 or uploaded datasets. Treat existing tests and fixtures as read-only evidence;
 never edit or repurpose them for Beaker. For the selected task, identify:
 
-- input shape;
+- input shape. The case's `input` is what the sample view shows as the ask,
+  so it must carry what the agent was actually given (the task prompt, the
+  question, the document reference), not only a lookup key the runner
+  resolves internally;
 - expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
   the requirements themselves (the assertion list, the rubric criteria) are
   that shape and belong in `expected`, wrapped in an object because
@@ -136,9 +139,16 @@ that exercises the spec; `beaker_spec.py` ships without a test of its own.
 | `spec.required_env` | Names of application variables needed during candidate evaluation; never their values |
 
 Keep `CaseResult.output` limited to prediction fields the scorer reads. Put
-trajectories, tool history, end state, and other diagnostic evidence in
-`CaseResult.context`; do not duplicate large evidence in both. Both values must
-remain JSON-normalizable across the evaluator process boundary.
+what the scorer needs beyond the answer — the observed end state, tool results
+it checks, the runner's own assertion outcomes — in `CaseResult.context`; do
+not duplicate large evidence in both. Both values must remain JSON-normalizable
+across the evaluator process boundary. `context` is scorer input and is not
+persisted: the scorer distills it into `CaseScore.checks`, and only the checks
+and the trace are kept, so anything the optimizer should later see must reach
+one of those two. Model calls and tool calls belong in the trace (see
+[model-routing-and-tracing.md](model-routing-and-tracing.md)); a rollout
+error that prevented execution belongs in `CaseResult.failed(...)`, and one
+that the application survived belongs in the affected checks' `message`.
 
 Keep `score_case` async because Beaker awaits it, even for deterministic scoring. Use `objective_score(..., field_weights=...)` when fields have different importance.
 
@@ -171,18 +181,36 @@ itself; it renders what the spec declares. Two contract fields drive both:
 
   `name`/`description` say what the check is; `expected`/`predicted`/`message`
   say what the prediction did. Never put the check's definition (a criterion
-  sentence) in `Check.expected`.
+  sentence) in `Check.expected`. A check must be readable without the dataset
+  row or the runner's internals open: when the requirement refers to things by
+  opaque identifiers (record ids, row numbers, file hashes) and the scorer
+  already holds state that names them (the initial or observed end state, a
+  document manifest), put those names in `name` instead of the ids; a
+  deterministic boolean assertion has no `expected`/`predicted` pair, so its
+  `name` and `description` carry the whole meaning; do not repeat the same
+  values in both. Keep rows short: one line each for `name` and `description`.
+  Ten rows that differ only in an id are
+  ten indistinguishable rows; when no such state exists, leave the ids and
+  explain the scoring in the recipe's README instead.
 
   | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
   |---|---|---|---|---|---|---|
   | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
   | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
-  | An assertion on end state | assertion type and target | assertion parameters, if useful | `"pass"`/`"fail"` | both values when the assertion compares one; otherwise omit | assertion failure detail | app or system name |
+  | An assertion on end state | assertion type and its parameters, ids replaced by names (`member_exists · Jane Doe · Q1 Webinar`) | omit when `name` already carries every parameter; otherwise one line naming what the assertion verifies | `"pass"`/`"fail"` | omit; a boolean assertion has none, and the value it compares against is already in `name` | assertion failure detail, or why it is excluded | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
 
   Set `informational=True` on checks that are computed but do not count toward
   the objective (zero-weight metrics, assertions excluded from scoring); they
-  render muted and are left out of the failed-check count.
+  render muted and are left out of the failed-check count. Say why in
+  `message` (excluded by the task author, or already true before the agent
+  acted), since the two mean different things to a reader.
+
+  Make `message` carry the diagnosis a reader cannot get from the verdict
+  alone. When the scorer also holds the initial state, evaluate each
+  requirement against it too: a failed requirement that held initially is a
+  regression ("held in the initial state; broken by the run"), not a
+  never-satisfied one, and the optimizer treats those differently.
 
   Limits: the hosted view keeps at most 100 checks per case and trims to 10
   when the case's evidence response exceeds 256 KB, and `expected`/`predicted`
@@ -200,13 +228,13 @@ async def run_case(self, *, case, targets=None) -> CaseResult:
     return CaseResult(output=None, output_kind="none", context={"end_state": state})
 
 async def score_case(self, *, case, result) -> CaseScore:
-    outcomes = evaluate_assertions(case.ground_truth, result.context.get("end_state"))
+    end_state = result.context.get("end_state")
+    outcomes = evaluate_assertions(case.ground_truth, end_state)
+    names = record_names(initial_state_for(case), end_state)  # id -> "Jane Doe"
     checks = tuple(
         Check(
-            name=f"{o.type} {o.target}",
+            name=" · ".join([o.type, *(names.get(v, v) for v in o.params.values())]),
             verdict="pass" if o.passed else "fail",
-            expected=o.expected,
-            predicted=o.observed,
             message=o.detail,
             group=o.app,
             informational=o.excluded,
@@ -232,6 +260,21 @@ Distinguish execution failure from a bad answer:
 - Return `CaseResult.failed(error, retryable=...)` for harness, dependency, or infrastructure failures that prevented execution.
 - Return `CaseResult(output=...)` when the application ran, even when output is empty or incorrect.
 - Do not convert every exception into an error-shaped output object.
+- When a harness catches its own rollout errors and hands back a result anyway
+  (an agent framework that stores the exception in its state and still
+  returns the untouched world), classify that error in `run_case`, before
+  constructing the `CaseResult`: a model, provider, or infrastructure failure
+  means the case did not run and is `CaseResult.failed(...)`; an agent-side
+  failure (a bad tool call, an overlong prompt) is a legitimate zero, so
+  return `CaseResult(output=..., context={"error": ...})` and let `score_case`
+  put the error in the checks' `message`. `score_case` receives a finished
+  `CaseResult` and cannot turn it into a failure, so this decision cannot
+  wait until scoring. Check how the harness hands the error back before
+  classifying it: it often arrives serialized (a dict or string, not the
+  exception), and an `isinstance` check against that is always false, so
+  rebuild it with the harness's own helper first or every crash silently
+  scores zero. A batch of zeros that finished in milliseconds is a crash, not
+  a baseline.
 
 ## Prove repository candidate execution
 
