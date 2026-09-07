@@ -214,6 +214,15 @@ handoffs. At application model call sites, use
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
 
+When the application or harness executes tools itself (its own dispatch loop,
+no framework from the table below), wrap that dispatch in
+`current_trace().tool_call(name, arguments=..., call_id=...)` and record the
+result with `call.output(...)`. Without tool spans Beaker only knows which tools
+the model *asked* for (read off the model response), never what they returned,
+how long they took, or whether they raised, so the optimizer sees requests, not
+executions. Pass only the model-visible arguments; keep injected state such as
+simulator handles or credentials out of `arguments`.
+
 ### Preserve the client type
 
 Tracing must not change the type or identity of any object the application
@@ -261,14 +270,17 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
+| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance, or a `verifiers.registered(env)` scope; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
 not replace the wiring guidance in this section. Install the framework extras
 above rather than relying only on `beaker-sdk[tracing]`.
 
-Every integration takes the application's existing telemetry through `existing=`
-and composes with it, so an app's own OpenInference, LangSmith, or Logfire
-instrumentation keeps working; no integration patches global state.
+Every integration that attaches to a framework's telemetry takes the
+application's existing telemetry through `existing=` and composes with it, so an
+app's own OpenInference, LangSmith, or Logfire instrumentation keeps working; no
+integration patches global state. (`verifiers` has no telemetry to compose with,
+so its `instrument(...)` takes none.)
 
 For PydanticAI, pass the application's existing instrumentation through
 `existing=` so Beaker composes with it:
@@ -368,6 +380,34 @@ Use `with registered(current_trace()) as litellm_trace:` around synchronous
 case. An unflushed or unlogged call is dropped as a capture omission and
 downgrades the capture to `incomplete`; do not let the registration scope end
 before `flush()` or `wait()`.
+
+`verifiers` exports no telemetry and runs the agent's tools itself, so its
+integration wraps the environment *instance* — never the class or the package:
+
+```python
+from beaker.tracing.integrations import verifiers as beaker_verifiers
+
+env = beaker_verifiers.instrument(load_environment(...))
+result = await env.run_rollout(rollout_input, client, model, sampling_args)
+```
+
+Every `env.call_tool(...)` becomes one `tool_call` span: tool name, call id,
+the arguments the model sent, the tool message content, and the exception when
+the tool raised (re-raised, so the model still sees the error message).
+Arguments a `StatefulToolEnv` injects itself (`add_tool(..., args_to_skip=[...])`,
+typically the hidden world state) are recorded by name only. Instrumenting the
+same environment twice is a no-op, so a cached environment shared across cases
+can be instrumented once; without a pinned `trace=` each call records under the
+capture active when it runs. Use `registered(env)` when the instrumentation must
+be undone after the block.
+
+This integration is the one exception to the ownership rule above: it records
+tools only. `verifiers` drives the model through its own client wrappers, so
+keep the application's `trace.model_call(...)` around the client's request
+method (a `verifiers` client subclass that delegates to the real client) or use
+the provider adapter — do not drop it because the adapter is installed. `beaker
+trace instrument --check` accordingly does not count a wired `verifiers` adapter
+as model coverage. The v1 `verifiers.v1.Toolset` API is not covered.
 
 For frameworks absent from the list above — including provider SDKs (the
 Anthropic SDK itself, not the Claude Agent SDK above) and LlamaIndex today —
