@@ -214,6 +214,15 @@ handoffs. At application model call sites, use
 there. Preserve the application's existing instrumentation and avoid global
 instrumentation changes.
 
+When the application or harness executes tools itself (its own dispatch loop,
+no framework from the table below), wrap that dispatch in
+`current_trace().tool_call(name, arguments=..., call_id=...)` and record the
+result with `call.output(...)`. Without tool spans Beaker only knows which tools
+the model *asked* for (read off the model response), never what they returned,
+how long they took, or whether they raised, so the optimizer sees requests, not
+executions. Pass only the model-visible arguments; keep injected state such as
+simulator handles or credentials out of `arguments`.
+
 ### Preserve the client type
 
 Tracing must not change the type or identity of any object the application
