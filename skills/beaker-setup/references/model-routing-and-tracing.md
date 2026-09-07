@@ -247,6 +247,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
+| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance, or a `verifiers.registered(env)` scope; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
 not replace the wiring guidance in this section. Install the framework extras
@@ -354,6 +355,34 @@ Use `with registered(current_trace()) as litellm_trace:` around synchronous
 case. An unflushed or unlogged call is dropped as a capture omission and
 downgrades the capture to `incomplete`; do not let the registration scope end
 before `flush()` or `wait()`.
+
+`verifiers` exports no telemetry and runs the agent's tools itself, so its
+integration wraps the environment *instance* — never the class or the package:
+
+```python
+from beaker.tracing.integrations import verifiers as beaker_verifiers
+
+env = beaker_verifiers.instrument(load_environment(...))
+result = await env.run_rollout(rollout_input, client, model, sampling_args)
+```
+
+Every `env.call_tool(...)` becomes one `tool_call` span: tool name, call id,
+the arguments the model sent, the tool message content, and the exception when
+the tool raised (re-raised, so the model still sees the error message).
+Arguments a `StatefulToolEnv` injects itself (`add_tool(..., args_to_skip=[...])`,
+typically the hidden world state) are recorded by name only. Instrumenting the
+same environment twice is a no-op, so a cached environment shared across cases
+can be instrumented once; without a pinned `trace=` each call records under the
+capture active when it runs. Use `registered(env)` when the instrumentation must
+be undone after the block.
+
+This integration is the one exception to the ownership rule above: it records
+tools only. `verifiers` drives the model through its own client wrappers, so
+keep the application's `trace.model_call(...)` around the client's request
+method (a `verifiers` client subclass that delegates to the real client) or use
+the provider adapter — do not drop it because the adapter is installed. `beaker
+trace instrument --check` accordingly does not count a wired `verifiers` adapter
+as model coverage. The v1 `verifiers.v1.Toolset` API is not covered.
 
 For frameworks absent from the list above — including provider SDKs (the
 Anthropic SDK itself, not the Claude Agent SDK above) and LlamaIndex today —
