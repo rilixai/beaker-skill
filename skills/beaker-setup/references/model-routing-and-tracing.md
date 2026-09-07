@@ -253,9 +253,11 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 not replace the wiring guidance in this section. Install the framework extras
 above rather than relying only on `beaker-sdk[tracing]`.
 
-Every integration takes the application's existing telemetry through `existing=`
-and composes with it, so an app's own OpenInference, LangSmith, or Logfire
-instrumentation keeps working; no integration patches global state.
+Every integration that attaches to a framework's telemetry takes the
+application's existing telemetry through `existing=` and composes with it, so an
+app's own OpenInference, LangSmith, or Logfire instrumentation keeps working; no
+integration patches global state. (`verifiers` has no telemetry to compose with,
+so its `instrument(...)` takes none.)
 
 For PydanticAI, pass the application's existing instrumentation through
 `existing=` so Beaker composes with it:
