@@ -145,7 +145,12 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
 Repository Integrations use `repository(...)` and document Integrations use
 `documents(groups=...)`. Both support comparison models. Keep the production
 model behavior when `runtime.model` is absent. When a comparison is explicitly
-requested, inject the selected model through `inference_target(runtime)`.
+requested, verify that the selected model reaches the application through its
+existing injection seam. Compatible Chat Completions clients can use
+`inference_target(runtime)`; native clients use their supported model override
+and retain their request shape. If the client cannot run the selected provider
+and model, report the limitation instead of using the production model. See
+[model-selection guidance](../../beaker-setup/references/model-routing-and-tracing.md#model-selection-boundary).
 TRAIN drives search. Without model comparison, TEST evaluates the selected
 winner. Comparisons evaluate the unchanged setup and each model's seed and
 selected winner on TEST.

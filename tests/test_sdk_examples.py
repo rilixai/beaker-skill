@@ -1,4 +1,4 @@
-"""Run with matching beaker-sdk installed to verify the documented lifecycle."""
+"""Require the matching beaker-sdk to verify the documented lifecycle."""
 
 import asyncio
 import importlib.util
@@ -13,10 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "skills/beaker-setup/references"
 
 
-@unittest.skipUnless(
-    importlib.util.find_spec("beaker"),
-    "Install matching beaker-sdk to execute contract examples",
-)
 class IntegrationExamples(unittest.TestCase):
     def test_examples_use_public_types_and_complete_lifecycle(self):
         import beaker

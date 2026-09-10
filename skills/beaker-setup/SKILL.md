@@ -162,8 +162,8 @@ Allow files outside `.beaker/` only when required:
   wiring: `current_trace()` is a no-op outside a capture, and Beaker remains a
   development/tooling dependency.
 
-Before changing application code, explain why integration-only integration is
-insufficient. Do not refactor production code for Beaker.
+Before changing application code, explain why the integration and helpers under
+`.beaker/` are insufficient. Do not refactor production code for Beaker.
 
 ## Write no tests and no CI/CD automation
 
@@ -265,7 +265,9 @@ When smoke or onboarding reports a path correction such as `Set source_dir to se
 update the existing YAML to that exact repository-relative
 value and rerun the failed check; do not move or recreate the config.
 Use `--agent-key`, `--target`, and `--integration-id` to select explicit init
-values; use `--discover` to locate exported Integration values.
+values. To register an Integration outside the default file, pass
+`--target path/to/integration.py` or `--target module:attribute`; init does not
+scan the repository for Integrations.
 
 Before hosted validation or launch, complete the Beaker YAML preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
