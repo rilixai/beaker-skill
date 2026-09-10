@@ -6,19 +6,19 @@ Before entering the loop, authenticate and run `beaker agent list --json`
 through `uvx --from beaker-sdk` when Beaker is not installed in the project.
 Match the current GitHub repository. If a matching agent exists, select its
 repository-relative `beaker_config_path`, read that YAML's Git-root-relative
-`spec.source_dir`, and run the loop from that project with the same config
+`integrations.<id>.source_dir`, and run the loop from that project with the same config
 selector. Only initialize a config after discovery establishes that no
 applicable agent/config exists. Status searches upward and does not discover a
 nested config below the Git root.
 
 Run `beaker onboarding status` after a completed onboarding step — `beaker init`,
-the dependency install, a meaningful spec edit, `beaker agent setup`, the push,
+the dependency install, a meaningful integration edit, `beaker agent setup`, the push,
 dataset selection, smoke, or trigger — and whenever the next action is
 uncertain. Follow its one returned action. Do not run it after `--help`,
 `--print`, a discovery-only `beaker agent list`, or other read-only probes
 unless you are stuck. The ordered state checks
 are `beaker_dependency_declared`, `config_present`, `logged_in`,
-`github_connected`, `agent_selected`, `spec_integrated`, `tracing_wired`,
+`github_connected`, `agent_selected`, `integration_configured`, `tracing_wired`,
 `dataset_available`, `required_env_configured`, `integration_pushed`, and
 `experiment_launched`. Onboarding is
 complete once `experiment_launched`
@@ -103,14 +103,14 @@ Use `beaker onboarding status --json` for automation:
   selected.
 - `beaker agent setup "<selected-agent>"` selects an existing optimization
   target and records the selected agent key in the selected YAML. Pass
-  `--spec-id <id>` when the config has several specs, and pass
+  `--integration-id <id>` when the config has several integrations, and pass
   `--repo <owner/name>` only when the existing target needs a repository
   association.
 - An unknown name passed to `beaker agent setup` creates a target. Only do this
   after discovery finds no suitable agent or the developer explicitly chooses
   a different agent; creation requires `--repo <owner/name>`.
-- Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `agent_key` in `.beaker/beaker.yaml`.
-- `beaker agent setup` records the printed agent key in `agent_key` in the selected `.beaker/beaker.yaml`; pass `--spec-id <id>` when the config has several specs. A developer-supplied agent name is approval; do not ask again.
+- Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `integrations.<id>.agent_key` in `.beaker/beaker.yaml`.
+- `beaker agent setup` records the printed agent key in `integrations.<id>.agent_key` in the selected `.beaker/beaker.yaml`; pass `--integration-id <id>` when the config has several integrations. A developer-supplied agent name is approval; do not ask again.
 - Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
@@ -156,7 +156,7 @@ project's ordinary `beaker` command.
 `BEAKER_CONFIG_FILE` is equivalent to `--config-file`. The CLI converts the
 discovered location to a Git-root-relative `beaker_config_path`, such as
 `services/invoices/.beaker/beaker.yaml`, when creating or selecting the agent.
-The selected YAML's `spec.source_dir` is also Git-root-relative, so a nested
+The selected YAML's `integrations.<id>.source_dir` is also Git-root-relative, so a nested
 project records `source_dir: services/invoices`; `package_import_root` remains
 relative to that source directory. Local smoke and hosted GitHub builds use
 this same base. `source_dir: "."` means the Git root even when the YAML is
@@ -164,13 +164,21 @@ nested; it does not mean the directory containing the YAML. Absolute paths and
 paths containing `..` are rejected. If smoke or onboarding reports `Set
 source_dir to services/invoices`, apply that exact repository-relative value to
 the existing config and rerun the check.
-After `beaker init`, verify the generated `spec.source_dir` names the project's
+After `beaker init`, verify the generated `integrations.<id>.source_dir` names the project's
 Git-root-relative directory and set it yourself when the project's
 `pyproject.toml` is not at the Git root.
 If a later command runs from the Git root, pass that full repository-relative
 path as its selector. Paths must remain inside the Git repository. Run agent
 setup from the intended project root so it discovers the selected config and
 keeps its repository association aligned with that project.
+
+Choose the integration once and keep it across commands. Selection is explicit
+`--integration-id <id>`, then `default_integration`, then the sole entry in
+`integrations`. Ambiguous selections fail and list available IDs. Use that same
+ID for init, agent setup, environment checks, onboarding status, smoke and launch.
+`beaker agent setup` writes `integrations.<id>.agent_key`. Explicit agent flags
+and `BEAKER_AGENT_KEY` take precedence over that key. Top-level `agent_key`
+and `project_key` are not used.
 
 ## Beaker YAML preflight
 
@@ -179,47 +187,48 @@ the committed repository. Do not assume generated or previously working values
 still match the checkout:
 
 ```yaml
-spec:
-  target: "beaker_spec:build_spec"
-  source_dir: "services/example"
-  package_import_root: ".beaker"
-  required_env:
-    - DATABASE_API_KEY
+default_integration: example
+integrations:
+  example:
+    entrypoint: "beaker_integration:integration"
+    source_dir: "services/example"
+    package_import_root: ".beaker"
+    required_env:
+      - DATABASE_API_KEY
 ```
 
 Check each field that controls the hosted evaluator:
 
-- Resolve `spec.source_dir` from the Git checkout root. It defaults to `.`, so
+- Resolve `integrations.<id>.source_dir` from the Git checkout root. It defaults to `.`, so
   in a monorepo set it to the package or service directory rather than
   assuming the Git root is the project root.
-- Resolve `spec.package_import_root` inside `spec.source_dir`, and check that
+- Resolve `integrations.<id>.package_import_root` inside `integrations.<id>.source_dir`, and check that
   the resulting directory exists in the pushed commit. Do not read it relative
-  to wherever the local CLI happens to run. Both fields are optional, and
-  `beaker init` writes them only when they differ from the defaults, so add
-  them only when the layout needs them.
+  to wherever the local CLI happens to run. `beaker init` writes both fields explicitly. Preserve the selected project
+  layout when editing either field.
 - Install the evaluator's dependencies from the pushed bundle. When
-  `spec.source_dir` contains a `pyproject.toml`, the hosted image installs that
+  `integrations.<id>.source_dir` contains a `pyproject.toml`, the hosted image installs that
   package and its dependency closure. Otherwise list every runtime dependency
-  in `spec.pip_install` and system packages in `spec.apt_install`. A dependency
+  in `integrations.<id>.pip_install` and system packages in `integrations.<id>.apt_install`. A dependency
   that exists only in the local environment fails the image build or the first
   import inside the evaluator.
-- Derive `spec.required_env` from variables read by code that runs in the
+- Derive `integrations.<id>.required_env` from variables read by code that runs in the
   candidate evaluator child process. The list is an allowlist: storing a value
   in agent settings does not expose it unless its name is declared here.
 
-Commit and push changes to these fields before launch so the hosted spec build
+Commit and push changes to these fields before launch so the hosted integration build
 reads them. Runs are immutable snapshots: changing YAML or agent settings does
 not repair an existing failed run, so start a new run after correcting either.
 A passing structural smoke check does not prove that the hosted image builds,
 that `run_case` executes, or that an environment value reaches the child
 process.
 
-Paths inside the selected spec table use hosted checkout coordinates:
+Paths inside the selected integration table use hosted checkout coordinates:
 
 - `source_dir` is relative to the Git checkout root, regardless of where the
   YAML lives;
 - `package_import_root` is relative to `source_dir`; and
-- `target` is imported from `package_import_root`.
+- `entrypoint` is imported from `package_import_root`.
 
 For this nested layout:
 
@@ -229,16 +238,18 @@ repo/
     pyproject.toml
     .beaker/
       beaker.yaml
-      beaker_spec.py
+      beaker_integration.py
 ```
 
 use:
 
 ```yaml
-spec:
-  target: beaker_spec:build_spec
-  source_dir: services/invoices
-  package_import_root: .beaker
+default_integration: example
+integrations:
+  example:
+    entrypoint: beaker_integration:integration
+    source_dir: services/invoices
+    package_import_root: .beaker
 ```
 
 Validate the hosted coordinate system from the Git root, carrying the full
@@ -263,10 +274,10 @@ described in [Config location and monorepos](#config-location-and-monorepos).
 | Error or symptom | Cause | Fix |
 |---|---|---|
 | `Configured source_dir is not a directory in the GitHub checkout: '<path>'` | `source_dir` was written relative to the YAML, current directory, or package rather than the Git root. | Set `source_dir` to the project directory as seen from the repository root, commit, push, and launch a new run from that branch. |
-| `Configured package_import_root is not a directory in the GitHub checkout: '.beaker'` | A nested project used `source_dir: .`, so hosted resolution searched for repository-root `.beaker`. | Set `source_dir` to the Git-root-relative project path and keep `package_import_root: .beaker` when the spec file is under that project's `.beaker/`. |
-| `could not find source for target ...` or `ModuleNotFoundError` while loading the spec | `target` is not importable from `package_import_root`, or a path component is not a Python identifier. | Resolve the target as `module.path:callable` from the configured import root; adjust the import root or module path without moving Beaker policy into application source. |
-| Hosted build cannot import application dependencies even though local smoke loads the spec. | `source_dir` does not point at the project containing `pyproject.toml`, so the image builder does not install that package. | Point `source_dir` at the nested Python project, or declare only genuinely external build requirements through the supported image dependency fields. |
-| `Package '<name>' requires a different Python: 3.12.x not in '>=3.13'` during image build | Hosted images default to Python 3.12, but the selected project's `requires-python` excludes it. | Set `spec.environment_base: debian_slim:3.13` (or another supported version satisfying the project), commit, push, and launch a new run. Do not weaken the project's Python requirement merely to satisfy the default image. |
+| `Configured package_import_root is not a directory in the GitHub checkout: '.beaker'` | A nested project used `source_dir: .`, so hosted resolution searched for repository-root `.beaker`. | Set `source_dir` to the Git-root-relative project path and keep `package_import_root: .beaker` when the integration file is under that project's `.beaker/`. |
+| `could not find source for target ...` or `ModuleNotFoundError` while loading the integration | `target` is not importable from `package_import_root`, or a path component is not a Python identifier. | Resolve the target as `module.path:attribute` from the configured import root; adjust the import root or module path without moving Beaker policy into application source. |
+| Hosted build cannot import application dependencies even though local smoke loads the integration. | `source_dir` does not point at the project containing `pyproject.toml`, so the image builder does not install that package. | Point `source_dir` at the nested Python project, or declare only genuinely external build requirements through the supported image dependency fields. |
+| `Package '<name>' requires a different Python: 3.12.x not in '>=3.13'` during image build | Hosted images default to Python 3.12, but the selected project's `requires-python` excludes it. | Set `integrations.<id>.environment_base: debian_slim:3.13` (or another supported version satisfying the project), commit, push, and launch a new run. Do not weaken the project's Python requirement merely to satisfy the default image. |
 
 After any hosted failure, inspect it with `beaker run status <run-id>`, fix the
 root cause rather than retrying the same immutable commit, push the fix, launch
@@ -277,9 +288,9 @@ a new run, and monitor it with `beaker run status <new-run-id> --watch`.
 ### Credential preflight
 
 Before a hosted launch, derive credential requirements from every application
-path that `Spec.run_case` can reach. Include SDK defaults and fallback branches
+path that `Integration.run_case` can reach. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
-only on names already present in `spec.required_env`. Read the application
+only on names already present in `integrations.<id>.required_env`. Read the application
 source to collect the variable *names* it reads; this inspection never reads,
 prints, or copies a secret value. Search the first-party source paths,
 adjusting them to this repository's layout:
@@ -291,7 +302,7 @@ rg -n 'os\.environ|os\.getenv' .beaker <application-source-dir>
 Classify each credential before configuring it:
 
 - When candidate application code reads an environment variable directly,
-  declare its name in `spec.required_env` and store its hosted value in the
+  declare its name in `integrations.<id>.required_env` and store its hosted value in the
   selected agent's encrypted environment settings.
 - Calls routed through `inference_target(runtime)` or
   `scoring_inference_target()` need no credential setup. Do not declare a
@@ -302,7 +313,7 @@ Classify each credential before configuring it:
   choice the customer makes in the UI.
 - Before declaring a provider key, check whether the gateway can serve that
   call instead. Route what it can serve through `inference_target(runtime)` and
-  leave that key out of `spec.required_env`; see
+  leave that key out of `integrations.<id>.required_env`; see
   [model-routing-and-tracing.md](model-routing-and-tracing.md).
 - A call site the gateway cannot serve still needs its own key declared and
   set, even when other calls in the same run are gateway-routed.
@@ -315,14 +326,16 @@ validate these credentials. Set any missing value with the commands below, then
 list the names again before launch.
 
 Declare application variables needed by candidate evaluation as names under the
-selected YAML spec. Values never belong in YAML:
+selected YAML integration. Values never belong in YAML:
 
 ```yaml
-spec:
-  target: beaker_spec:build_spec
-  required_env:
-    - DATABASE_URL
-    - SERVICE_TOKEN
+default_integration: example
+integrations:
+  example:
+    entrypoint: beaker_integration:integration
+    required_env:
+      - DATABASE_URL
+      - SERVICE_TOKEN
 ```
 
 Use uppercase POSIX-style names. A declaration may contain at most 50 unique
@@ -348,7 +361,7 @@ Beaker lists names and non-revealing hints only and never returns plaintext
 values. Never log or commit secret values.
 
 Agent environment variables configured through the UI or `beaker agent env
-set` are injected into hosted runs. `spec.required_env` identifies which
+set` are injected into hosted runs. `integrations.<id>.required_env` identifies which
 variables must be configured before a run can start. A missing or empty
 required value fails the run before candidate code starts. Set the value,
 verify its name with `beaker agent env list`, and start a new run; do not retry

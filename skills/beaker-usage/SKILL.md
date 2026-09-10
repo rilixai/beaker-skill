@@ -1,25 +1,25 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker spec; use beaker-setup for setup work.
+description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker integration; use beaker-setup for setup work.
 license: MIT
 metadata:
-  version: "0.4.10"
-  beaker_sdk_version: "0.4.10"
+  version: "0.5.0"
+  beaker_sdk_version: "0.5.0"
 ---
 
 # Beaker usage
 
 Operate the repository's connected Beaker integration through the `beaker`
-CLI. Keep this workflow operational: do not edit the spec, application, tests,
+CLI. Keep this workflow operational: do not edit the integration, application, tests,
 datasets, CI/CD automation, or Beaker config merely to launch or manage a run.
 
 ## Version check
 
-This skill (0.4.10) is written for beaker-sdk 0.4.10; skill and SDK share one
+This skill (0.5.0) is written for beaker-sdk 0.5.0; skill and SDK share one
 version number and release together. Run `beaker --version` first. If the CLI
-is older than 0.4.10 or does not recognize `--version`, upgrade `beaker-sdk`
+is older than 0.5.0 or does not recognize `--version`, upgrade `beaker-sdk`
 through the project's development-dependency workflow. If it is newer than
-0.4.10, run `npx skills update beaker-usage` and `npx skills update
+0.5.0, run `npx skills update beaker-usage` and `npx skills update
 beaker-setup`, then reload the skill before continuing.
 
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
@@ -61,7 +61,7 @@ if a command fails or the next action is unclear.
    GitHub checkout, and select the matching optimization target. Its
    `beaker_config_path` is the authoritative repository-relative config
    location. If several matching agents could fit, show them and ask which
-   target to use. Read the selected YAML's Git-root-relative `spec.source_dir`
+   target to use. Read the selected YAML's Git-root-relative `integrations.<id>.source_dir`
    to locate its project source; do not assume the Git root.
 2. Run every command from that project root. If the project uses a non-default
    config path, preserve the same global selector on every command:
@@ -74,9 +74,16 @@ if a command fails or the next action is unclear.
    command group.
 3. Treat `.beaker/.env` as secret. Never print, parse, copy, or commit it. Let
    the CLI load credentials.
-4. If the config, selected agent, GitHub association, dataset contract, or spec
+4. If the config, selected agent, GitHub association, dataset contract, or integration
    is missing or broken, stop the usage workflow and use `$beaker-setup`. Do
    not repair setup incidentally.
+
+Select one `integrations.<id>` entry: explicit `--integration-id`, then
+`default_integration`, then the sole entry. If selection is ambiguous, use the
+available IDs to identify the intended target. Keep the same ID on
+`onboarding status`, `agent env check`, `run smoke`, and `run trigger`.
+Agent-key fallback comes from `integrations.<id>.agent_key`;
+explicit `--agent` and `BEAKER_AGENT_KEY` take precedence.
 
 For status, listing, result pulls, and cancellation of a known run, execute only
 the relevant checks. Do not force the developer through launch discovery again.
@@ -115,7 +122,7 @@ Before a hosted launch:
    beaker dataset list --agent <selected-agent> --json
    ```
 
-   If the selected spec declares `spec.required_env`, compare those names with:
+   If the selected integration declares `integrations.<id>.required_env`, compare those names with:
 
    ```bash
    beaker agent env list --agent <selected-agent>
@@ -143,93 +150,30 @@ desired commit; do not launch with the tag or SHA.
 
 ## Agent optimization and the editable surface
 
-Inspect the selected `@spec` registration and `Spec.seed_targets` without
-editing them. The decorator selects what Beaker may edit. Agent optimization
-is the only run type. The **Beaker agent** is the named target (`beaker agent
-setup`, `--agent`); **agent optimization** is the run. Do not use “the agent”
-for both.
+Inspect the selected `Integration.targets` without changing it. Repository
+Integrations use `repository(...)` and a `RepositoryRunSetup` class; document
+Integrations use `documents(groups=...)` and a `DocumentRunSetup` class.
+Both launch with `beaker run trigger` and support model comparison.
 
-| Editable surface | Spec contract | Launch |
-|---|---|---|
-| Repository | `@spec()` or `@spec(repository=...)`; no `seed_targets`; `run_case` receives `targets=None` | Agent optimization (plain `beaker run trigger`) |
-| Named resources | `@spec(repository=None)`; `Spec.seed_targets` supplies each complete named resource, such as `wiki` | Agent optimization (plain `beaker run trigger`) |
+The normal first run optimizes the production system. Do not add
+`--optimization-model` unless the developer explicitly asks to compare models.
+When model comparison is requested, verify that the evaluation call uses
+`inference_target(runtime)` when `runtime.model` is present and preserves
+production defaults otherwise. The usage workflow must not rewrite the integration
+to repair routing; direct such work to setup.
 
-A plain GitHub-backed launch starts agent optimization of the production
-system for either editable surface. This is the launch to use: when the
-developer asks to optimize, launch agent optimization unless they explicitly
-ask to benchmark or compare specific models. Launch the plain command with no
-flag that changes the run type — no `--optimization-model`, no
-`--test-all-candidates` — unless the developer asked for that flag in this
-conversation. Setup may have happened in another session, so do not assume you
-know a Beaker agent's history: `beaker run list --agent <key> --json` reports
-`total`, and `total` of `0` means the agent has never run.
-The seed starts with the configured production-system model behavior unless a
-supported launch-time model selection is explicit. During
-optimization, the optimizer may modify the editable source or resource,
-including model selection and model-call behavior, when that improves the
-objective.
+Discover allowed models with `beaker model list --available-only --json`.
+Repeat `--optimization-model provider:model` for 1–8 distinct selected models.
+Keep the same Integration, source branch and immutable dataset for every model.
+Do not change the editable surface to make a comparison possible.
 
-Repository mode has no `seed_targets`; `run_case` receives `targets=None`.
-Named-resource mode passes the complete declared resources through
-`seed_targets`. Both use agent optimization.
-
-`--optimization-model` still selects the legacy comparison optimizer until
-the runtime unifies on agent optimization. Pass it only when the developer
-explicitly asks to benchmark or compare specific models. Comparison models
-need `@spec(repository=None)` with populated `Spec.seed_targets`. A
-repository-mode `@spec()` spec cannot take `--optimization-model`. Do not
-invent models, and do not pass the flag the developer did not ask for.
-
-Apply TEST candidate policy by editable surface:
-
-- Repository surface (`@spec()` or `@spec(repository=...)`): TEST evaluates
-  only the selected winner. The runtime ignores `--test-all-candidates` for
-  this surface, including agent optimization runs.
-- Named-resource surface (`@spec(repository=None)`):
-  `--test-all-candidates` applies to agent optimization and evaluates every
-  persisted candidate on TEST, including resources such as `wiki`. Without the
-  flag, only the selected winner is TEST-evaluated. Comparison-model runs also
-  ignore the flag and always TEST-evaluate only each model's winner.
-
-### Compare specific models
-
-"Optimize" never means "compare models". When the developer only asks to
-optimize, do not offer a comparison, do not run `beaker model list`, and do
-not ask them to choose models: launch agent optimization of the production
-system.
-
-Comparison runs are a rare explicit opt-in, and most specs cannot do one: they
-need `@spec(repository=None)` with populated `Spec.seed_targets`, which the
-recommended repository-mode `@spec()` does not have. So when the developer
-does ask to benchmark or compare specific models, inspect the selected `@spec`
-first. If it has no `Spec.seed_targets`, stop and say so; do not launch
-`--optimization-model`, and do not add targets or change `repository` to make
-the run possible. Switching a spec to `@spec(repository=None)` is a product
-decision for the developer, taken through `$beaker-setup`.
-
-Then:
-
-1. Discover models whose provider credentials are configured:
-
-   ```bash
-   beaker model list --available-only --json
-   ```
-
-2. Ask the developer which models to use (one to eight canonical
-   `provider:model` values). Offer only values returned by the command. Do not substitute a similar
-   model, infer a default, or choose based on cost or speed without direction.
-3. Repeat `--optimization-model provider:model` for each choice. The CLI has
-   no `--execution-mode` flag; a non-empty model list is the comparison switch.
-4. Use the benchmark defaults unless the developer asks
-   to choose the benchmark split or case count. Valid splits are `TRAIN` and
-   `TEST`; valid case counts are 1 through 1000.
-5. Add final evaluation splits only when the developer supplies them or asks
-   to configure them. Do not invent tuning values. Do not offer
-   `--test-all-candidates` for comparison-model runs: the runtime ignores it and
-   always TEST-evaluates only each model's winner.
-
-Use the typed flags described in the CLI reference. Do not hand-author
-`optimization_config` JSON.
+TRAIN drives optimization; TEST measures the baseline and selected winners.
+Keep `--test-all-candidates` off for the first run. Do not infer authorization
+to apply repository changes or document ChangeSets from permission to run.
+For a document winner, review its `document-change-set.json`: creates name a
+group and document path; updates/deletes include source IDs and base hashes,
+plus source versions when available. Apply only on an explicit request and
+only while the current source matches those preconditions.
 
 ## Authorize and launch
 
@@ -353,9 +297,8 @@ Cancellation is a state-changing operation:
   `beaker model list --available-only --json`.
 - Never pass `--optimization-model` unless the developer explicitly asked to
   compare specific models.
-- Never use `--optimization-model` when `Spec.seed_targets` is absent;
-  comparison models currently need `@spec(repository=None)` with populated
-  seed_targets.
+- Model comparison requires a configured Integration and an explicit comparison request.
+
 - Never default to a comparison-model run; launch agent optimization of the
   production system unless the developer explicitly asks to benchmark or
   compare specific models.
@@ -363,8 +306,9 @@ Cancellation is a state-changing operation:
   developer did not ask for those flags on; trigger it plain. When a Beaker
   agent was set up in another session, `beaker run list --agent <key> --json`
   shows whether it has run before.
-- Never infer the run type from `repository`; `repository=None` selects named
-  resources and still uses agent optimization.
+- Preserve `Integration.targets`: `repository(...)` optimizes source files and
+  `documents(groups=...)` optimizes named content. Both support explicitly
+  requested model comparison.
 - Never treat unpushed local changes as part of a hosted run.
 - Never ask the developer for permission to commit or push the integration
   unless they told you not to take autonomous actions, and never push it to
@@ -374,7 +318,7 @@ Cancellation is a state-changing operation:
   remote branches only.
 - Never cancel a run without explicit authorization for the resolved run ID.
 - Never expose secrets or bypass the CLI with `curl` or private API calls.
-- Never change the spec, application, tests, datasets, agent, or config as a
+- Never change the integration, application, tests, datasets, agent, or config as a
   side effect of run management.
 - Never add tests or CI/CD automation for Beaker: no workflow or pipeline job,
   no pre-commit hook, and no `Makefile`, task-runner, or script entry that runs

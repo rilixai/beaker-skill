@@ -23,6 +23,17 @@ beaker --config-file services/invoices/.beaker/beaker.yaml run list --json
 Select an agent before a dataset or run command. State which agent you selected,
 then pass it with `--agent` so every command uses the same one.
 
+Choose `integrations.<id>` with `--integration-id <id>`. Without an explicit
+ID, the CLI uses `default_integration`, then a sole entry; multiple entries
+without a selection fail and list the available IDs. Pass the selected ID to
+onboarding status, environment checks, smoke and launch:
+
+```bash
+beaker onboarding status --integration-id invoices --json
+beaker agent env check --integration-id invoices --agent <selected-agent>
+beaker run trigger --integration-id invoices --agent <selected-agent> --dataset <name@revision>
+```
+
 ## Onboarding status
 
 ```bash
@@ -39,7 +50,7 @@ onboarding status only after a failure or when the next action is unclear.
 Steps and completion:
 
 - The ordered steps are `beaker_dependency_declared`, `config_present`,
-  `logged_in`, `github_connected`, `agent_selected`, `spec_integrated`,
+  `logged_in`, `github_connected`, `agent_selected`, `integration_configured`,
   `tracing_wired`, `dataset_available`, `required_env_configured`,
   `integration_pushed`, and `experiment_launched`.
 - Onboarding is complete once `experiment_launched` is complete. Shipping a
@@ -131,31 +142,18 @@ placeholders but adding no `--optimization-model` or `--test-all-candidates`:
 beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
 ```
 
-Repository mode uses `@spec()` or `@spec(repository=...)`, has no
-`seed_targets`, passes `targets=None`, and TEST-evaluates only the selected
-winner. Named-resource mode uses `@spec(repository=None)` and supplies each
-complete named resource through `Spec.seed_targets`. For named-resource
-agent optimization, `--test-all-candidates` evaluates every persisted
-candidate on TEST; without it, only the selected winner is TEST-evaluated.
-Repository-surface agent optimization always evaluates only the winner on TEST
-and ignores the flag.
-The seed starts with the configured production-system model behavior, but
-optimization may change model selection or model-call behavior within the editable
-surface when that improves the objective.
+Repository Integrations use `repository(...)` and document Integrations use
+`documents(groups=...)`. Both support comparison models. Keep the production
+model behavior when `runtime.model` is absent. When a comparison is explicitly
+requested, inject the selected model through `inference_target(runtime)`.
+TRAIN drives search and TEST measures each model's seed and selected winner.
 
-Agent optimization comparing specific models. Use it only when the developer
-explicitly asks to benchmark or compare models, and only for a spec with
-`@spec(repository=None)` and populated `Spec.seed_targets`. The split values
-below are illustrative, not defaults; use the benchmark defaults unless the
-developer chooses splits:
+Agent optimization comparing explicitly selected models:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> \
   --optimization-model openai:<model-a> \
   --optimization-model anthropic:<model-b> \
-  --benchmark-split TEST \
-  --benchmark-max-cases 30 \
-  --final-eval-split TRAIN \
   --json
 ```
 
@@ -176,8 +174,8 @@ flag with the global `--config-file` option, which selects the YAML file.
 Prefer typed flags whenever one exists. Use `--config` only for launch keys
 that have no typed flag, when the developer explicitly asks for them:
 `spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
-and `extra` (opaque passthrough to the spec factory via
-`OptimizationContext.config`). Never
+and `extra` (opaque passthrough to the Integration setup via
+`SetupRuntime.config`). Never
 hand-author `optimization_config` inside `--config`: typed model flags
 reject it, and plain runs should let the platform choose.
 
@@ -190,17 +188,13 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 
 | Flag | Contract |
 |---|---|
-| `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. Currently requires `@spec(repository=None)` with populated `Spec.seed_targets`. |
-| `--benchmark-split` | `TRAIN` or `TEST`; requires `--optimization-model` |
-| `--benchmark-max-cases` | 1–1000; requires `--optimization-model` |
-| `--final-eval-split` | Repeatable `TRAIN` or `TEST`; requires `--optimization-model` |
-| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for named-resource agent optimization (`repository=None`), including resources such as `wiki`; repository-surface agent optimization and comparison-model runs ignore the flag and always test only the winner |
+| `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. Requires a configured Integration with model routing wired. |
+| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for supported document optimization runs; repository-surface agent optimization and comparison-model runs ignore the flag and always test only the winner |
 
-Do not combine `--optimization-model` with an `optimization_config` supplied
-through `--config`. The CLI has no `--execution-mode` flag; a non-empty
-`--optimization-model` list is the comparison switch. Until the runtime
-unifies on agent optimization, comparison models need
-`@spec(repository=None)` with populated `Spec.seed_targets`.
+`--optimization-model` supplies `optimization_config.optimization_models`.
+Other supported `optimization_config` settings may be supplied through
+`--config`, but do not provide `optimization_models` there at the same time.
+The CLI has no `--execution-mode` flag.
 
 ## Run lifecycle
 
@@ -258,11 +252,6 @@ sound like unfinished setup.
 - **Missing required evaluation environment variables:** the run fails before
   candidate dispatch. Use `$beaker-setup` to set each declared name with
   `beaker agent env set NAME --value-stdin`, then start a new run.
-- **Comparison models require `Spec.seed_targets`:** `--optimization-model`
-  was used with a spec that has no targets. Stop; do not mutate the spec as a
-  run-management side effect. Launch agent optimization without
-  `--optimization-model`, or use `$beaker-setup` only when the developer wants
-  an explicit `@spec(repository=None)` product decision.
 - **No available models:** comparison-model launch is not ready. Ask the
   developer to configure provider credentials or launch agent optimization
   without `--optimization-model`.

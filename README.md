@@ -2,7 +2,7 @@
 
 Portable agent guidance for setting up and operating
 [Beaker](https://pypi.org/project/beaker-sdk/) optimization runs in a Python
-repository, with explicit support for existing logical-target specs.
+repository, with explicit support for existing logical-target integrations.
 
 The canonical Agent Skills are:
 
@@ -102,3 +102,5 @@ python3 -m unittest discover -s tests
 ```
 
 The skill is MIT licensed. Review agent instructions before installation just as you would review executable tooling.
+
+To validate the executable Integration examples, install the matching `beaker-sdk==0.5.0` into the test environment, then run `python -m unittest discover -s tests`. Without the SDK, repository checks run and execution checks are skipped.

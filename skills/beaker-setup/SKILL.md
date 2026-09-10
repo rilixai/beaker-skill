@@ -1,16 +1,16 @@
 ---
 name: beaker-setup
-description: Set up, configure, or onboard a Python repository for Beaker agent optimization while isolating evaluation tooling under .beaker, leaving normal runtime behavior unchanged, and never adding or modifying tests or CI/CD automation. Use when adding Beaker, scaffolding or completing a Beaker @spec factory, selecting the repository files Beaker may optimize, configuring beaker.yaml or spec.required_env, connecting real labeled datasets and an agent or LLM evaluation path, connecting the Beaker GitHub App, validating with beaker run smoke, or launching the first hosted agent optimization run. Also use when preserving an existing logical-target spec that explicitly uses @spec(repository=None).
+description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.4.10"
-  beaker_sdk_version: "0.4.10"
+  version: "0.5.0"
+  beaker_sdk_version: "0.5.0"
 ---
 
 # Beaker setup
 
 Turn the repository's real LLM or agent task into a repository optimization
-spec. Find the application entrypoint, candidate source, model call, scorer,
+integration. Find the application entrypoint, candidate source, model call, scorer,
 and labeled data before completing the integration. Finish with a passing local
 structural smoke check when real labeled examples are available; launch
 remotely only when the developer requests it.
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.4.10) is written for beaker-sdk 0.4.10. The skill and the SDK are
+This skill (0.5.0) is written for beaker-sdk 0.5.0. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.4.10' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.4.10, or does
+(or `uvx --from 'beaker-sdk>=0.5.0' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.5.0, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.4.10, this skill is
+or flags this skill relies on. If the CLI is newer than 0.5.0, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
@@ -46,11 +46,11 @@ Follow this order. The rest of this skill is constraints and recovery.
 1. `beaker auth status` (run `beaker login` only if it fails), then `beaker agent list --json`. Use `uvx --from beaker-sdk beaker ...` until the project dependency is installed.
 2. Identify the package or service being optimized, not the Git root: in a monorepo that is the directory holding the task's own `pyproject.toml`.
 3. Select that project's existing Beaker config, or enter the project root and run `beaker init`.
-4. Check the generated `spec.source_dir` right away: it must be the project's Git-root-relative directory, for example `services/invoices`, and `"."` only when the project is the Git root. Fix it immediately if it disagrees; do not wait for a migration hint.
+4. Check the generated `integrations.<id>.source_dir` right away: it must be the project's Git-root-relative directory, for example `services/invoices`, and `"."` only when the project is the Git root. Fix it immediately if it disagrees.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
 6. After initial discovery, ask all currently known unresolved decisions together, such as which metric to optimize, the labeled-data source, quick-start versus full dataset size, agent name, judge model, or required credentials. Do not wait for discovery to be exhaustive, and continue independent discovery and implementation while the developer responds. Batching is best effort: if later discovery reveals another required decision, ask it then rather than guessing or delaying current work.
-7. Replace every `TODO(beaker)` in the spec and wire the real model call.
-8. `beaker agent setup "<Agent Name>"` (add `--spec-id <id>` when the config has several specs). Setup records the agent key in `agent_key` in the selected YAML. A name the developer supplied is approval; do not ask again.
+7. Replace every `TODO(beaker)` in the integration and wire the real model call.
+8. `beaker agent setup "<Agent Name>"` (add `--integration-id <id>` when the config has several integrations). Setup records the agent key in `integrations.<id>.agent_key`. A name the developer supplied is approval; do not ask again.
 9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
 10. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
 11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
@@ -66,7 +66,7 @@ Follow this order. The rest of this skill is constraints and recovery.
   applies, or establish that no matching agent exists. Status searches upward
   from the working directory; it does not discover nested configs below the
   Git root.
-- Run it after a completed onboarding step — `beaker init`, the dependency install, a meaningful spec edit, `beaker agent setup`, the push, dataset selection, smoke, trigger — and whenever the next step is unclear. Do not ask the developer what to do next before consulting this command.
+- Run it after a completed onboarding step — `beaker init`, the dependency install, a meaningful integration edit, `beaker agent setup`, the push, dataset selection, smoke, trigger — and whenever the next step is unclear. Do not ask the developer what to do next before consulting this command.
 - Do not run it after `--help`, `--print`, a discovery-only `beaker agent list`, or other read-only probes unless you are stuck.
 - Follow its single returned next action exactly. The returned action is
   normally the first incomplete agent-owned step in canonical order.
@@ -105,7 +105,7 @@ slugified, for example `beaker/20260821-1339-invoice-extraction`:
 ```bash
 git checkout -b beaker/$(date +%Y%m%d-%H%M)-invoice-extraction
 git status --short
-git add -- "<selected-config>" "<spec-and-helper-files>" \
+git add -- "<selected-config>" "<integration-and-helper-files>" \
   "<dependency-and-lock-files>" "<intentional-tracing-files>"
 git diff --cached --name-only
 git commit -m "Add Beaker integration"
@@ -141,7 +141,7 @@ pushed.
 
 Treat Beaker as development/evaluation tooling, not an application runtime.
 Keep every Beaker-owned file under the selected project's `.beaker/` whenever
-possible: config, spec, helper code, credentials, gitignore, and trace receipts. Do
+possible: config, integration, helper code, credentials, gitignore, and trace receipts. Do
 not add Beaker modules under application packages, import or initialize Beaker
 from production entrypoints, change deployment/runtime config, add or modify
 tests or CI/CD automation, or route normal traffic through Beaker.
@@ -155,14 +155,14 @@ Allow files outside `.beaker/` only when required:
   do not run the repository's test suite during onboarding;
 - record Beaker in development/tooling dependency metadata and its lockfile when
   the project supports that separation;
-- add the smallest optional application injection seam only when the spec and
+- add the smallest optional application injection seam only when the integration and
   helper code under `.beaker/` cannot reuse an existing interface. Preserve
   identical production defaults and keep all non-tracing Beaker imports inside
   `.beaker/`. The only application-code exception is narrowly scoped tracing
   wiring: `current_trace()` is a no-op outside a capture, and Beaker remains a
   development/tooling dependency.
 
-Before changing application code, explain why spec-only integration is
+Before changing application code, explain why integration-only integration is
 insufficient. Do not refactor production code for Beaker.
 
 ## Write no tests and no CI/CD automation
@@ -175,14 +175,14 @@ suite or a pipeline job to add.
 Do not create or modify:
 
 - test files, fixtures, snapshots, test helpers, or test configuration, for the
-  spec under `.beaker/` or for anything else;
+  integration under `.beaker/` or for anything else;
 - CI/CD workflows or jobs, including GitHub Actions workflows, other pipeline
   definitions, and edits to existing ones;
 - pre-commit hooks, `Makefile` targets, task-runner entries, or scripts whose
   purpose is to run Beaker automatically.
 
-In particular, do not write a test that imports `beaker_spec.py`, asserts on the
-spec factory, loader, or scorer, or runs smoke; and do not add a scheduled or
+In particular, do not write a test that imports `beaker_integration.py`, asserts on the
+Integration module, loader, or scorer, or runs smoke; and do not add a scheduled or
 push-triggered job that runs `beaker run smoke` or `beaker run trigger`.
 
 Running the repository's existing linters, formatters, or type checkers on the
@@ -210,11 +210,11 @@ they asked for.
 2. Filter agents to an exact `github_repository` match. If one agent clearly
    matches the task, use its `beaker_config_path`. If several agents could
    match, ask the developer which target to use. From the Git root, select that config,
-   read its Git-root-relative `spec.source_dir`, and enter that source/project
+   read its Git-root-relative `integrations.<id>.source_dir`, and enter that source/project
    root. Do not initialize or scan for a replacement config.
 3. Most new users will not have an agent yet. If no agent matches the
    repository, inspect the checkout for
-   `pyproject.toml`, existing `@spec` factories, `beaker.yaml`, prompt
+   `pyproject.toml`, existing exported `Integration` values, `beaker.yaml`, prompt
    definitions, model/agent calls, evals, and labeled fixtures. In a monorepo,
    identify the package or service being optimized before choosing the config
    location; do not assume the Git root. If multiple tasks are plausible,
@@ -243,29 +243,29 @@ they asked for.
    Git root with the full repository-relative selector, for example
    `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`;
    both select the same config. In a monorepo,
-   `spec.source_dir` is relative to the Git checkout root during hosted builds,
-   and `spec.package_import_root` is relative to `source_dir`, not to the YAML.
-   For a spec at `services/invoices/.beaker/beaker_spec.py`, use
+   `integrations.<id>.source_dir` is relative to the Git checkout root during hosted builds,
+   and `integrations.<id>.package_import_root` is relative to `source_dir`, not to the YAML.
+   For an integration at `services/invoices/.beaker/beaker_integration.py`, use
    `source_dir: services/invoices` and `package_import_root: .beaker`.
    Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
    before launching any nested-project integration.
-5. Never overwrite an existing spec or populated config. Fill the existing integration instead.
+5. Never overwrite an existing integration or populated config. Fill the existing integration instead.
 6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 
 By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
-`.beaker/beaker_spec.py` under the selected project root. `--config-file` or
+`.beaker/beaker_integration.py` under the selected project root. `--config-file` or
 `BEAKER_CONFIG_FILE` relocates the YAML inside that project. Init does not create
-credentials or placeholder datasets. Persisted `spec.source_dir` values are
+credentials or placeholder datasets. Persisted `integrations.<id>.source_dir` values are
 always relative to the Git root, not the directory containing the YAML. For
 example, initializing `services/invoices` records `source_dir:
 services/invoices`; `package_import_root` remains relative to that source
 directory. `source_dir: "."` always means the Git root, including when the
 selected YAML is nested. Absolute paths and paths containing `..` are invalid.
-When smoke or onboarding reports a migration such as `Set source_dir to services/invoices`,
+When smoke or onboarding reports a path correction such as `Set source_dir to services/invoices`,
 update the existing YAML to that exact repository-relative
 value and rerun the failed check; do not move or recreate the config.
-Use `--name`, `--task-type`, `--target`, and `--spec-id` when defaults are
-ambiguous; use `--discover` to locate existing factories.
+Use `--agent-key`, `--target`, and `--integration-id` to select explicit init
+values; use `--discover` to locate exported Integration values.
 
 Before hosted validation or launch, complete the Beaker YAML preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
@@ -278,122 +278,55 @@ Use the selected agent's page to view its runs and score trends.
 
 ## Implement the real integration
 
-1. Identify the selected task's input, expected answer, scored fields,
-   application call path, and the ordinary source files Beaker may improve.
-2. Derive dataset rows only from real evals, fixtures, files, hosted previews, or examples supplied by the developer. If none exist, stop and request labeled examples or an upload.
-   When existing labeled data must be converted to JSONL for Beaker, keep the
-   converter under `.beaker/`, stage its generated files with
-   `tempfile.TemporaryDirectory()`, and invoke `beaker dataset upload` before
-   leaving that context. Never save generated JSONL in the user's repository or
-   under `.beaker/`. Existing source-of-truth datasets remain in their established
-   locations.
-3. Replace every `TODO(beaker)` in the selected spec:
-   - `@spec`: keep the default repository scope when all eligible ordinary
-     source may be optimized, or pass a tuple such as
-     `repository=("src/app", "config")` to restrict it. Do not add
-     `seed_targets` for repository optimization.
-   - `_run_case`: accept `targets=None`, import the real application normally,
-     and call the real agent/LLM. Each candidate repository is imported in a
-     fresh evaluator process.
-   - scorer: score the quality metric the developer chose to hill-climb. If
-     the repository does not already establish a single scoring metric (an
-     existing eval or scorer with clear fields and weights), ask the developer
-     which metric to optimize; never make that decision implicitly. Ask this as
-     soon as several plausible scored fields are found; asking is not a halt:
-     keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset
-     conversion while waiting, then insert the chosen field into the scorer
-     when the answer arrives. If it uses an LLM judge, set
-     `Spec.llm_scorer_model` to that agent's fixed
-     canonical `provider:model`, then route hosted judge calls through
-     `scoring_inference_target()` so gateway accounting and run budgets include
-     them. The judge model must not follow `runtime.model`; retain the same
-     local judge model and normal provider client only for local application or evaluation runs where
-     the helper returns `None`. Omit the field for deterministic scorers. If an
-     LLM judge exists but its intended model is not established, ask the
-     developer rather than choosing a default.
-   - data loader and `dataset_schema`: validate the real JSONL row contract.
-     Repository-mode case inputs and `CaseResult.output`/`context` must be
-     JSON-normalizable because they cross the evaluator process boundary.
-   - `CaseResult`: keep `output` limited to fields the scorer reads. Put
-     what the scorer needs beyond the answer (observed end state, runner
-     assertion outcomes) in `context`; do not duplicate large evidence in
-     both. `context` feeds the scorer only; model and tool calls go in the
-     trace. Declare `output_kind` and have the scorer return
-     `CaseScore.checks` (one `Check` per verified field, criterion, assertion,
-     or requirement, readable without the dataset row open) so the hosted
-     sample view can explain each case. Checks are what the optimizer reads to
-     diagnose failures; for rubric- or assertion-scored tasks put the
-     requirements in the dataset's `expected` when they exist at dataset-build
-     time; see [datasets-and-spec.md](references/datasets-and-spec.md).
-   - `spec.required_env`: inspect every application path that hosted candidate
-     evaluation can reach, including SDK defaults and fallback branches, and
-     list the environment variable names those paths read directly. Do not
-     infer this list from existing config alone. Keep local values in
-     `.beaker/.env` and hosted values in encrypted agent settings; never put
-     values in YAML. Declare a provider key here only for model calls the
-     gateway does not serve; gateway-routed calls need no credential setup.
-     Before the first hosted run, do not launch until `beaker agent env list`
-     confirms that every name in `spec.required_env` is configured on the
-     selected agent. If one is missing, ask the developer to configure it in
-     the UI or set it with `beaker agent env set NAME --value-stdin`.
-4. Keep the spec and helper code under `.beaker/`. Import application code
-   from there; do not move Beaker orchestration into the application package.
-5. Return `CaseResult.failed(...)` only when the rollout could not run. Return a normal `CaseResult(output=...)` for an executed but incorrect answer so the scorer can evaluate it.
-6. Inspect the real call path to verify `_run_case` executes the application
-   code inside the selected repository scope, then run `beaker run smoke
-   --strict` with either the real local dataset path or the exact hosted
-   dataset revision to validate config, spec, dataset, runner, and scorer
-   wiring.
-   Smoke does not execute `run_case` or the
-   scorer and does not support `--trace`. Smoke also warns, without failing,
-   when no framework integration or `runtime.trace.model_call` is wired in
-   application code; treat that warning as a prompt to finish the tracing
-   wiring described in
-   [model-routing-and-tracing.md](references/model-routing-and-tracing.md),
-   not as a structural failure. When runtime evidence is needed,
-   exercise the repository's existing application or evaluation path under a
-   local Beaker capture, then use
-   `beaker trace doctor --require-model-calls` and
-   `beaker trace inspect`. Do not add tests or modify the user's existing test
-   suite for Beaker validation.
+Use a module-level `integration = Integration(...)` under `.beaker/`. Import
+contract types from `beaker`. The integration declares `targets`, a `run_setup`
+class, and async `run_case` and `score_case` callables; it holds no run state.
 
-Read [datasets-and-spec.md](references/datasets-and-spec.md) before deriving data or editing the spec.
+- Declare the real typed dataset row as `run_setup.row_model`. Beaker derives
+  the JSON Schema and validates all rows before setup performs I/O.
+- Implement async `load_cases(row, *, runtime)` to yield one or more
+  `Case(id=..., input=..., expected=...)` values. IDs must be unique across the
+  attempt. Stage input files through `runtime.case_files_dir(case_id)` and
+  declare them with `CaseFile`.
+- Put shared clients in an async-context-manager `prepare_run(*, runtime)`.
+  Beaker creates one setup instance per attempt and owns cleanup. Customer
+  options arrive through `SetupRuntime.config` from `config_defaults.extra`.
+- Implement `run_case(*, case_input, runtime)` by calling the real application.
+  Return `CaseResult(output=..., output_kind=...)` with a JSON application
+  result. Use `runtime.trace` for model/tool telemetry.
+- Implement `score_case(*, case, result, case_files_dir)` with the real quality
+  metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`.
+  Ask the developer to choose objective weights when several metrics are plausible;
+  continue independent wiring while waiting. Never invent labeled data or scores.
 
-## Select the repository optimization surface
+Read [datasets-and-integration.md](references/datasets-and-integration.md)
+for typed rows, setup, output/check guidance, and executable examples.
 
-`@spec()` now means repository optimization and is equivalent to
-`@spec(repository="all")`. The factory, loader, runner, scorer, evidence
-provider, and finalizer stay under `.beaker/` and are immutable evaluation
-policy. Ordinary application source is the candidate.
+## Select the editable surface
 
-Use a normalized tuple of source-relative files or directories to narrow the
-editable surface. Agent optimization is the run type; the Beaker agent is the
-named target (`beaker agent setup`, `--agent`). Do not use “the agent” for both.
+Use `targets=repository()` with a `RepositoryRunSetup` subclass for ordinary
+repository optimization. Narrow eligible source with
+`repository(("src/invoice_agent", "config/prompts"))` when needed. Beaker
+protects `.beaker/`, hidden paths, dependencies, lockfiles, build configuration,
+and other excluded files. Keep scoring and evaluation policy under `.beaker/`.
 
-```python
-@spec(
-    dataset_schema=DATASET_SCHEMA,
-    repository=("src/invoice_agent", "config/prompts"),
-)
-def build_spec(ctx: OptimizationContext) -> Spec:
-    return Spec(data_loader=loader, run_case=run_case, scorer=scorer)
-```
+Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
+for an intentional document/resource workflow. Its `prepare_run()` yields
+`DocumentRunSetupResult(target_documents=...)` with the real seed documents.
+Use `open_candidate(*, targets_dir, scratch_dir)` when the application needs
+an index or other runtime object; `run_case` receives it through
+`runtime.candidate_runtime`. The candidate document tree is at
+`runtime.targets_dir`. Results are create/update/delete `ChangeSet` operations
+conditioned on seed content hashes and optional versions; do not auto-apply them.
 
-Hidden paths, `.beaker`, dependency and lock files, build configuration,
-vendored or binary files, and files outside the declared scope are protected.
-Do not move evaluation policy into editable application source to bypass that
-boundary. Repository mode does not accept `Spec.seed_targets`; it passes
-`targets=None` to `run_case` and evaluates TEST only after selecting the
-winner.
-
-Use `@spec(repository=None)` only for an existing intentional logical-resource
-or prompt-target workflow. That mode requires `Spec.seed_targets`. Do not
-silently convert one mode into the other.
+Both target types support explicitly requested model comparison. Preserve the
+selected editable surface; never change it just to enable a run.
+The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
 
-Keep Beaker-selected model routing inside `.beaker/` and the evaluation/spec
-path. First connect through the spec or helper code under `.beaker/`. Touch
+Keep Beaker-selected model routing inside `.beaker/` and the evaluation/integration
+path. First connect through the integration or helper code under `.beaker/`. Touch
 application code only when no existing injection interface can be reused. If
 `runtime.model` is absent, retain the application's existing client and model
 defaults.
@@ -404,7 +337,7 @@ The gateway serves every supported provider but takes only the OpenAI Chat
 Completions shape, so classify the call site by its SDK surface, not its
 provider. Calls it cannot serve keep the application's client and credentials.
 
-Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the spec must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
+Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the integration must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
 ## Connect hosted access and validate
 
@@ -456,9 +389,9 @@ Select an existing agent with:
 beaker agent setup "<selected-agent>"
 ```
 
-`beaker agent setup` records the selected agent key in `agent_key` in the selected
-YAML, so `beaker onboarding status` and `beaker run trigger` select the same
-Beaker agent. Add `--spec-id <id>` when the config has several specs. An exported
+`beaker agent setup` records the selected agent key in `integrations.<id>.agent_key`,
+so `beaker onboarding status` and `beaker run trigger` select the same
+Beaker agent. Add `--integration-id <id>` when the config has several integrations. An exported
 `$BEAKER_AGENT_KEY` still overrides the YAML for commands that explicitly need
 that behavior. When the developer supplied the agent name, treat it as approval
 and do not ask again.
@@ -483,7 +416,7 @@ agent as `beaker_config_path` relative to the Git root. Rerunning setup also
 synchronizes that path for an existing repository-associated agent. A hosted
 run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
-The YAML's `spec.source_dir` independently identifies the Git-root-relative
+The YAML's `integrations.<id>.source_dir` independently identifies the Git-root-relative
 project source used by both local validation and hosted builds.
 
 Agent setup records the selected agent in `beaker.yaml` but does not provision
@@ -497,8 +430,8 @@ runs.
 
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
-required variables from the real `Spec.run_case` call path, then compare them
-with `spec.required_env` and `beaker agent env list --agent <selected-agent>`.
+required variables from the real `Integration.run_case` call path, then compare them
+with `integrations.<id>.required_env` and `beaker agent env list --agent <selected-agent>`.
 Provider calls routed through Beaker need no credential setup and never block a
 launch. Local shell variables and `.beaker/.env` values are not hosted
 settings. Do not trigger a run while a required credential is missing. A
@@ -521,8 +454,8 @@ beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
 beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-- Smoke loads and parses the configured dataset. It does not execute a rollout, model call, or scoring call.
-- Local-path smoke is offline. Remote-dataset smoke authenticates to Beaker,
+- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed and enters/closes `open_candidate()` once. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
+- Local-path smoke reads local rows; customer setup hooks may still perform external I/O. Remote-dataset smoke authenticates to Beaker,
   resolves the selected snapshot, and downloads it through presigned URLs
   before validating every row. It does not launch a hosted run.
 - Use the same immutable `name@revision` or artifact id for smoke and the later
@@ -535,7 +468,7 @@ beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
   tracing block the push.
 - When execution evidence matters, run `beaker trace instrument --check`,
   exercise the repository's candidate workflow rooted at the main workflow
-  agent inside `Spec.run_case` under a local Beaker capture, then run
+  agent inside `Integration.run_case` under a local Beaker capture, then run
   `beaker trace doctor --require-model-calls` and inspect `.beaker/traces`
   with `beaker trace inspect`. Include the workflow's sub-agents, tools,
   retrievers, and nested model calls; a judge- or scorer-only capture does
@@ -576,25 +509,24 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never add CI/CD automation for Beaker: no GitHub Actions workflow or other pipeline job, no pre-commit hook, and no `Makefile`, task-runner, or script entry that runs Beaker. Smoke and hosted runs are the validation path. Existing linters and formatters may still be run.
 - Never import or initialize Beaker from production entrypoints, application startup, request handling, or deployment configuration, except for narrowly scoped tracing wiring at the real model call site.
 - Never make production execution require Beaker; keep it in development/tooling dependencies when the project supports that separation.
-- Never edit application code until spec-only and `.beaker/` helper approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed tracing wiring.
+- Never edit application code until integration-only and `.beaker/` helper approaches have been exhausted; if an edit is unavoidable, add only an optional seam with unchanged defaults, except for the explicitly allowed tracing wiring.
 - Never ask the developer for permission to commit or push the integration;
   `integration_pushed` is agent-owned. The only exception is a developer who
   told you not to take autonomous actions.
 - Never push the integration to `main`, `master`, or the default branch unless
   the developer asks; use `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
 - Never write a real secret outside `.beaker/.env`; use `--value-stdin` for hosted secret values.
-- Never add `seed_targets` to a repository-mode spec or assume `targets` is a
-  prompt bundle there; repository mode passes `None`.
-- Never leave `@spec(repository=None)` on an existing logical-target spec
-  without real `seed_targets` that reach the real model call.
-- Never place environment values in `beaker.yaml`; `spec.required_env` contains
+- Preserve the declared repository or document targets during setup.
+
+
+- Never place environment values in `beaker.yaml`; `integrations.<id>.required_env` contains
   names only.
 - Never route normal production traffic through Beaker inference.
 - Never let a hosted LLM judge bypass `scoring_inference_target()`; direct
   provider clients are only the local application/evaluation fallback.
 - Never instrument scorer, rubric judge, evaluator, post-processing, or
   post-rollout model calls. Candidate tracing covers the workflow rooted at the
-  main workflow agent inside `Spec.run_case`, including its sub-agents, tools,
+  main workflow agent inside `Integration.run_case`, including its sub-agents, tools,
   retrievers, and nested model calls. Scope tracing at the candidate-workflow
   invocation boundary, excluding those calls even when clients or wrappers are
   shared. Scorer traffic is accounted for separately through
@@ -609,7 +541,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   conversion, lifecycle, and request methods, and passes the application's
   resolver or type check before a hosted baseline. When tracing cannot keep that
   type, keep the plain client and report the tracing gap.
-- Never set `llm_scorer_model` for a deterministic scorer, infer it from
+- Never set `scorer_model` for a deterministic scorer, infer it from
   `runtime.model`, or invent a default for an LLM judge.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
@@ -621,9 +553,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - The first hosted run is agent optimization of the production system. Launch
   it with a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`).
   Do not pass `--optimization-model` unless the developer explicitly asked to
-  compare specific models. Comparison models currently need
-  `@spec(repository=None)` with populated `Spec.seed_targets`; do not add them
-  to a repository-mode spec. Do not pass `--test-all-candidates` on that first run.
+  compare specific models. Comparison models are supported by repository and document Integrations. Do not pass `--test-all-candidates` on that first run.
 - Call the named target the **Beaker agent** (`beaker agent setup`, `--agent`)
   and the run type **agent optimization**. Do not use “the agent” for both.
 - Before starting a hosted agent optimization run, commit and push the completed
