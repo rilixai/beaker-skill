@@ -122,14 +122,17 @@ Before a hosted launch:
    beaker dataset list --agent <selected-agent> --json
    ```
 
-   If the selected integration declares `integrations.<id>.required_env`, compare those names with:
+   Check the selected integration's hosted `required_env` readiness:
 
    ```bash
-   beaker agent env list --agent <selected-agent>
+   beaker agent env check --integration-id <id> --agent <selected-agent>
    ```
 
-   Do not read or print local secret values. If a declared hosted value is
-   missing, stop and use `$beaker-setup`; a run would fail before dispatch.
+   The check recognizes stored agent variables, organization provider
+   credentials, and server-confirmed Beaker provider routing for supported
+   hosted calls. Use its result to decide readiness. If it reports missing
+   required variables, stop and use `$beaker-setup`. Do not read or print local
+   secret values.
 
 4. Use the CLI's branch selection unless the developer supplied a ref. Without
    `--ref`, `beaker run trigger` uses the current checked-out branch when it
