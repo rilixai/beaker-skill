@@ -166,15 +166,17 @@ points to the intended commit instead.
 ## Launch config overrides with `--config`
 
 `beaker run trigger --config '<json>'` takes a JSON object of launch-config
-overrides. `config_defaults` in `.beaker/beaker.yaml` form the base and
-`--config` overrides them; the merged object must satisfy the strict server
-launch contract, which rejects unknown keys with `422`. Do not confuse this
-flag with the global `--config-file` option, which selects the YAML file.
+overrides. Optional top-level `config_defaults` in `.beaker/beaker.yaml` form
+the base and apply to every integration in that file; `--config` overrides them.
+Leave the mapping absent unless shared defaults are needed. The merged object
+must satisfy the strict server launch contract, which rejects unknown keys with
+`422`. Do not confuse this flag with the global `--config-file` option, which
+selects the YAML file.
 
 Prefer typed flags whenever one exists. Use `--config` only for launch keys
 that have no typed flag, when the developer explicitly asks for them:
-`spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
-and `extra` (opaque passthrough to the Integration setup via
+`spend_budget_usd`, `scorer_model`, `max_concurrency`, `prompts_to_update`,
+`top_k_test_eval`, `test_baseline`, and `extra` (opaque passthrough to the Integration setup via
 `SetupRuntime.config`). Supported non-model `optimization_config` settings can
 also be supplied there. With `--optimization-model`, omit
 `optimization_config.optimization_models` from `--config` to avoid conflicting

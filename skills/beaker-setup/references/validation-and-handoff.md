@@ -247,8 +247,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   with no provider key declared for them. Any call
   site the gateway cannot serve is named at handoff, with the provider
   credential it still needs.
-- Any LLM judge declares its fixed canonical model with
-  `config_defaults.scorer_model`, independent of `runtime.model`, and uses the hosted
+- Any LLM judge declares its fixed canonical model with launch
+  `scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
 - Credential requirements were derived from every hosted-reachable setup,

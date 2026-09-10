@@ -197,6 +197,12 @@ integrations:
       - DATABASE_API_KEY
 ```
 
+`config_defaults` is optional; init leaves it out. Add it at the top level only
+when shared run defaults are needed, such as a fixed `scorer_model` or a lower
+`max_concurrency` for rate-limited or stateful calls. It applies to every
+integration in this YAML; explicit run options override it. Preserve existing
+configured defaults, and do not add an empty mapping during onboarding.
+
 Check each field that controls the hosted evaluator:
 
 - Resolve `integrations.<id>.source_dir` from the Git checkout root. It defaults to `.`, so

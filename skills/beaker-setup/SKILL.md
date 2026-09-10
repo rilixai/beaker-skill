@@ -292,7 +292,7 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   `prepare_run(*, runtime)`. Beaker owns cleanup. Repository candidates execute in
   a fresh evaluator process; setup clients and in-memory state do not transfer
   to `run_case`. Customer options arrive through `SetupRuntime.config` from
-  `config_defaults.extra`.
+  launch `extra`, supplied per run or through optional `config_defaults.extra`.
 - Implement `run_case(*, case_input, runtime)` by calling the real application.
   Return `CaseResult(output=..., output_kind=...)` with a JSON application
   result. Output is retained as the prediction, so keep observed state needed by

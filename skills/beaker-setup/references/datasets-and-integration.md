@@ -140,7 +140,7 @@ examples must remain `SCAFFOLD` under `beaker run smoke --strict`.
 | `load_cases` | Async row-to-case conversion; JSON inputs and expected values |
 | `run_case(case_input, runtime)` | Real async application path |
 | `score_case(case, result, case_files_dir)` | Agreed objective, checks and field metrics |
-| `config_defaults.scorer_model` | Optional fixed canonical model for an LLM judge |
+| Launch `scorer_model` | Fixed canonical model when using an LLM judge; per run or in optional `config_defaults` |
 | `integrations.<id>.required_env` | Names of variables used by setup and evaluation |
 
 Return the JSON application result in `CaseResult.output`, including the observed

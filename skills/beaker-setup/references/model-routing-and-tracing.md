@@ -108,7 +108,9 @@ provided through `runtime.targets_dir` or `runtime.candidate_runtime`.
 
 ## LLM-as-a-judge scoring
 
-Configure a fixed judge independently from the compared model:
+Configure a fixed `scorer_model` independently from the compared model. Pass it
+per run with `--config '{"scorer_model":"openai:gpt-4.1-mini"}'`, or add a shared
+default when every integration in the YAML uses the same judge:
 
 ```yaml
 config_defaults:
@@ -131,7 +133,7 @@ and per-criterion checks in async `score_case(*, case, result, case_files_dir)`.
 from openai import AsyncOpenAI
 from beaker import scoring_inference_target
 
-LOCAL_JUDGE_MODEL = "gpt-4.1-mini"  # Same judge as config_defaults.scorer_model.
+LOCAL_JUDGE_MODEL = "gpt-4.1-mini"  # Same judge as the run's scorer_model.
 
 async def call_judge(question: str) -> str:
     target = scoring_inference_target()
@@ -182,7 +184,7 @@ tracing at the candidate-workflow invocation boundary so those calls are
 excluded. For example, a LiteLLM `registered(...)` scope wraps the complete
 candidate workflow, not the judge call.
 
-LLM-judge traffic must still declare `config_defaults.scorer_model` and use
+LLM-judge traffic must still declare launch `scorer_model` and use
 `scoring_inference_target()` during hosted runs. That provides scorer accounting
 and budget enforcement; it does not authorize adding the judge to the candidate
 workflow trace.
