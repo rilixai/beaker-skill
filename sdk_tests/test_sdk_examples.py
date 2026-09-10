@@ -1,4 +1,4 @@
-"""Require the matching beaker-sdk to verify the documented lifecycle."""
+"""Explicit SDK compatibility suite; requires the SDK version declared in VERSION."""
 
 import asyncio
 import importlib.util

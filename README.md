@@ -95,18 +95,26 @@ The repository checks fail if either marketplace manifest drifts from
 
 ## Development
 
-Run the repository and Integration example checks in a Python 3.12+ environment
-with the SDK version declared in `VERSION`:
+Run the regular repository checks without installing the SDK:
 
 ```bash
-python3 -m pip install "beaker-sdk==$(cat VERSION)"
+python3 scripts/sync_version.py --check
 python3 -m unittest discover -s tests
 ```
 
-The full suite requires the matching SDK; missing dependencies fail rather than
-skip the executable examples. CI installs that exact release from PyPI, so the
-SDK must be published before the corresponding skill checks can pass there.
-Before publication, install the SDK from the matching local `beaker-ai` checkout
-instead, for example `python3 -m pip install ../beaker-ai/packages/beaker`.
+CI runs these metadata, version, reference, and Python syntax checks.
+
+When SDK contracts or executable examples change, and before each release, run
+the separate SDK compatibility suite in a Python 3.12+ environment:
+
+```bash
+python3 -m pip install ../beaker-ai/packages/beaker
+python3 -m unittest discover -s sdk_tests -v
+```
+
+Use a local `beaker-ai` checkout containing the intended SDK changes and the
+version declared in `VERSION`. For an already published SDK, install
+`beaker-sdk==<VERSION>` instead. Compatibility tests fail if the SDK is missing
+or its version differs; they are not part of ordinary PR checks.
 
 The skill is MIT licensed. Review agent instructions before installation just as you would review executable tooling.

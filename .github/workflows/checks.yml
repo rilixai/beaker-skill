@@ -17,8 +17,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: python scripts/sync_version.py --check
-      - name: Install matching SDK
-        run: |
-          sdk_version="$(cat VERSION)"
-          python -m pip install "beaker-sdk==${sdk_version}"
-      - run: python -m unittest discover -s tests
+      - name: Check repository without SDK dependencies
+        run: python -m unittest discover -s tests
