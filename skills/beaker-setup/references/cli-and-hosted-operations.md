@@ -343,12 +343,18 @@ Classify each credential before configuring it:
 
 Treat process environment variables and values in `.beaker/.env` as local
 only. Beaker does not copy them to hosted settings. Immediately before launch,
-run `beaker agent env list --agent <selected-agent>` and resolve missing required
-values. Account for organization provider credentials and confirmed proxy
-coverage; sandbox placeholders are not stored agent secrets. All other missing
-required values block launch. Structural smoke does not execute `run_case`, so
-it cannot validate these credentials or proxy support. Set missing secrets with
-the commands below, then list the names again before launch.
+check the selected integration's declared requirements:
+
+```bash
+beaker agent env check --integration-id <id> --agent <selected-agent>
+```
+
+Use the check's result to decide readiness: it recognizes stored agent variables,
+organization provider credentials, and server-confirmed Beaker provider routing
+for supported hosted calls. Resolve missing required values and rerun the check
+before launch. Use `beaker agent env list` to inspect agent-stored variables;
+sandbox placeholders are not stored agent secrets. Structural smoke does not
+execute `run_case`, so it cannot validate credentials or application proxy support.
 
 Declare application variables needed by candidate evaluation as names under the
 selected YAML integration. Values never belong in YAML:
@@ -389,8 +395,8 @@ Agent environment variables configured through the UI or `beaker agent env
 set` are injected into hosted runs. `integrations.<id>.required_env` identifies which
 variables the hosted path needs. A missing required value that neither hosted
 credentials nor provider routing covers fails the run before candidate code
-starts. Set the value, verify its name with `beaker agent env list`, and start
-a new run; do not retry the failed run unchanged.
+starts. Set the value, rerun `beaker agent env check` with the same integration
+and agent, and start a new run; do not retry the failed run unchanged.
 
 ## Hosted data and run ordering
 
@@ -417,9 +423,9 @@ a new run; do not retry the failed run unchanged.
    optimization:
 
    ```bash
-   beaker run smoke --strict --agent <selected-agent> --dataset <dataset-name@revision>
+   beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset <dataset-name@revision>
    # Or, equivalently:
-   beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+   beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
    ```
 
    Supply exactly one selector. Remote smoke authenticates and downloads the
@@ -433,7 +439,7 @@ a new run; do not retry the failed run unchanged.
    that passed smoke:
 
    ```bash
-   beaker run trigger --agent <selected-agent> --dataset <dataset-name@revision>
+   beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <dataset-name@revision>
    # Or use --dataset-id <artifact-id> instead.
    ```
 

@@ -139,7 +139,7 @@ and a Beaker agent's first run must use this form, filling in the
 placeholders but adding no `--optimization-model`:
 
 ```bash
-beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> --json
 ```
 
 Repository Integrations use `repository(...)` and document Integrations use
@@ -158,7 +158,7 @@ selected winner on TEST.
 Agent optimization comparing explicitly selected models:
 
 ```bash
-beaker run trigger --agent <selected-agent> --dataset <name@revision> \
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> \
   --optimization-model openai:<model-a> \
   --optimization-model anthropic:<model-b> \
   --json
@@ -191,7 +191,7 @@ model selections; let the platform choose defaults for settings the developer
 has not requested.
 
 ```bash
-beaker run trigger --agent <selected-agent> --dataset <name@revision> \
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> \
   --config '{"spend_budget_usd": 5}' --json
 ```
 

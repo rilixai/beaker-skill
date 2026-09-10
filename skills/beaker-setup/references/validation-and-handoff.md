@@ -131,20 +131,21 @@ Choose one dataset source:
 
 ```bash
 # Local dataset: setup hooks may still perform external I/O.
-beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --integration-id <id> --config '{"local_dataset_path":"<dataset-dir>"}'
 
 # Remote: validate an immutable hosted revision for the selected agent.
-beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset <name@revision>
 
 # Equivalent remote selection by artifact id.
-beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
 During onboarding, retain the immutable remote selector and pass it explicitly
 to smoke and the later trigger; do not commit an organization-specific selector
 to YAML by default. When a repository intentionally defines
-`config_defaults.dataset_ref` or `config_defaults.dataset_id`, a bare `beaker
-run smoke --strict` uses that selector after resolving the configured agent.
+`config_defaults.dataset_ref` or `config_defaults.dataset_id`, `beaker run smoke
+--strict --integration-id <id>` uses that dataset selector after resolving the
+configured agent.
 Explicit `--dataset` and `--dataset-id` flags override configured selectors;
 provide exactly one.
 
@@ -292,7 +293,7 @@ Summarize in plain English:
 - files created or changed;
 - selected optimization target;
 - dataset and scoring contract;
-- the repository optimization scope and how `_run_case` reaches candidate
+- the repository optimization scope and how `run_case` reaches candidate
   application code;
 - model-routing behavior;
 - structural validation command and result, plus any separately captured

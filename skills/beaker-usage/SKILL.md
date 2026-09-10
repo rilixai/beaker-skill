@@ -212,10 +212,10 @@ Prefer JSON output so the run identity is unambiguous:
 
 ```bash
 # Agent optimization of the production system
-beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <dataset-ref> --json
 
 # Agent optimization comparing specific models
-beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <dataset-ref> \
   --optimization-model <provider:model> --json
 ```
 

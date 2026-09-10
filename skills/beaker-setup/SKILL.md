@@ -241,7 +241,7 @@ they asked for.
    absolute paths and paths containing `..` are rejected. Commands may run
    either from the selected project root with its default config, or from the
    Git root with the full repository-relative selector, for example
-   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict`;
+   `beaker --config-file services/invoices/.beaker/beaker.yaml run smoke --strict --integration-id <id>`;
    both select the same config. In a monorepo,
    `integrations.<id>.source_dir` is relative to the Git checkout root during hosted builds,
    and `integrations.<id>.package_import_root` is relative to `source_dir`, not to the YAML.
@@ -268,6 +268,10 @@ Use `--agent-key`, `--target`, and `--integration-id` to select explicit init
 values. To register an Integration outside the default file, pass
 `--target path/to/integration.py` or `--target module:attribute`; init does not
 scan the repository for Integrations.
+
+Keep the selected `--integration-id <id>` on agent setup, onboarding status,
+environment checks, smoke and launch. Each command resolves the integration
+again; selecting it in an earlier command does not change the configured default.
 
 Before hosted validation or launch, complete the Beaker YAML preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Check
@@ -451,19 +455,24 @@ runs.
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from setup, case loading, candidate initialization, application
-execution and scoring paths, then compare them
-with `integrations.<id>.required_env` and `beaker agent env list --agent <selected-agent>`.
-Provider calls routed through Beaker need no credential setup and never block a
-launch. Local shell variables and `.beaker/.env` values are not hosted
-settings. Do not trigger a run while a required credential is missing. A
-passing smoke check does not prove credentials are ready, because smoke does
-not execute `run_case`.
+execution and scoring paths, then declare them in `integrations.<id>.required_env`.
+Check hosted readiness with:
+
+```bash
+beaker agent env check --integration-id <id> --agent <selected-agent>
+```
+
+The check recognizes stored agent variables, organization provider credentials,
+and server-confirmed Beaker provider routing for supported hosted calls. Resolve
+any missing required variables it reports before launch. Local shell variables
+and `.beaker/.env` values are not hosted settings. A passing smoke check does not
+prove credentials are ready, because smoke does not execute `run_case`.
 
 Run structural smoke validation only after real labeled examples are
 available. Use the local path when the source data remains on disk:
 
 ```bash
-beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --integration-id <id> --config '{"local_dataset_path":"<dataset-dir>"}'
 ```
 
 Use the selected hosted dataset when local data is unavailable or has already
@@ -471,8 +480,8 @@ been removed after temporary conversion. Prefer its immutable revision; an
 artifact id is equivalent:
 
 ```bash
-beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
-beaker run smoke --strict --agent <selected-agent> --dataset-id <artifact-id>
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset <name@revision>
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
 - Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed and enters/closes `open_candidate()` once. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
@@ -514,7 +523,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   when several metrics are plausible or when scoring aggregates or averages
   multiple metrics; ask the developer which metric and weights to optimize. Ask
   as soon as several plausible scored fields are found. Asking is not a halt:
-  keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset
+  keep replacing `TODO(beaker)`, wiring `run_case`, and preparing dataset
   conversion while waiting, then insert the chosen field into the scorer when
   the answer arrives. A single clearly established metric needs no confirmation.
 - Always communicate with the developer in plain English, avoiding internal jargon and technical arcana.

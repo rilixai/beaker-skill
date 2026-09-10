@@ -27,11 +27,11 @@ never edit or repurpose them for Beaker. For the selected task, identify:
   or practice area; `group_key` is only an optional dataset column.
 
 Declare the matching typed `run_setup.row_model`; Beaker derives its JSON Schema to validate dataset rows. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
-When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
+When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
 
 If local data is unavailable, inspect hosted data with `beaker dataset list` and
 `beaker dataset show`. Validate a usable hosted snapshot with `beaker run smoke
---strict --agent <selected-agent> --dataset <name@revision>` or
+--strict --integration-id <id> --agent <selected-agent> --dataset <name@revision>` or
 `--dataset-id <artifact-id>`. If neither source has usable labels, direct the
 developer to upload or provide real examples and stop before finalizing the
 integration, running smoke validation, or uploading synthetic data.
@@ -43,8 +43,8 @@ id in the current session and pass the same selector explicitly to smoke and
 launch:
 
 ```bash
-beaker run smoke --strict --dataset invoices@<revision>
-beaker run trigger --dataset invoices@<revision>
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset invoices@<revision>
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset invoices@<revision>
 ```
 
 Do not commit an organization-specific `dataset_ref` or `dataset_id` to YAML by
@@ -66,7 +66,8 @@ Never write generated JSONL into the repository, `.beaker/`, an existing
 fixture directory, or another persistent output directory.
 
 Use `tempfile.TemporaryDirectory()` instead of an open `NamedTemporaryFile`, so
-the Beaker subprocess can reopen the files reliably across platforms:
+the Beaker subprocess can reopen the files reliably across platforms. Reuse the
+selected `integration_id` and `agent_key`:
 
 ```python
 import json
@@ -106,6 +107,7 @@ with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
 subprocess.run(
     [
         "beaker", "run", "smoke", "--strict",
+        "--integration-id", integration_id,
         "--agent", agent_key,
         "--dataset", dataset_ref,
     ],

@@ -160,7 +160,7 @@ client and can use automatic routing:
 ```python
 from beaker import CaseResult, inference_target
 
-async def _run_case(*, case_input, runtime):
+async def run_case(*, case_input, runtime):
     if runtime.model:
         target = inference_target(runtime)
         model_or_client = build_framework_client(
@@ -528,8 +528,8 @@ First verify structural wiring with the real local dataset or the exact hosted
 snapshot selected for launch:
 
 ```bash
-beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
-beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
+beaker run smoke --strict --integration-id <id> --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset <name@revision>
 ```
 
 Smoke verifies structural wiring only; it neither opens a capture nor executes
