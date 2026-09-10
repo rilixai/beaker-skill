@@ -54,7 +54,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
 10. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
 11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
-12. The first hosted run is a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
+12. The first hosted run uses `beaker run trigger` (Beaker agent, dataset, optional `--ref`, and required judge configuration when applicable). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
 13. Run `beaker onboarding status` after each completed step above, not after read-only probes.
 
 ## Keep the onboarding loop explicit
@@ -344,7 +344,9 @@ an OpenAI Chat Completions-compatible client and the SDK can serve the call.
 Use customer clients and credentials as the last resort, or when the developer
 explicitly requests them. Do not copy local provider keys into hosted settings
 by default; preserve existing hosted credential choices. The explicit gateway
-uses platform keys when no agent or organization key is configured.
+uses platform keys when no agent or organization key is configured. For
+automatic routing, organization keys must reach the sandbox through declared
+provider variables to keep their direct provider billing.
 
 Identify and wire an optional model/client override during setup when a narrow
 injection seam exists, so later comparisons do not require a rewrite. The
@@ -558,8 +560,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   conversion, lifecycle, and request methods, and passes the application's
   resolver or type check before a hosted baseline. When tracing cannot keep that
   type, keep the plain client and report the tracing gap.
-- Never set `scorer_model` for a deterministic scorer, infer it from
-  `runtime.model`, or invent a default for an LLM judge.
+- Never set `scorer_model` or call `scoring_inference_target()` for a deterministic
+  scorer. For an LLM judge, confirm its approved fixed `scorer_model` is in the
+  launch configuration; never infer it from `runtime.model` or invent a default.
 - Never require `runtime.model` for ordinary application/evaluation runs or prompt-only optimization.
 - Never use Beaker-owned S3 URIs as user-facing dataset selectors.
 - Do not commit an organization-specific `dataset_ref` or `dataset_id` to YAML
@@ -568,9 +571,10 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   an intentional opt-in.
 - Never trigger a hosted agent optimization run unless the developer explicitly asks.
 - The first hosted run is agent optimization of the production system. Launch
-  it with a plain `beaker run trigger` (Beaker agent, dataset, optional `--ref`).
+  it with `beaker run trigger` (Beaker agent, dataset, optional `--ref`, and
+  required judge configuration when applicable).
   Do not pass `--optimization-model` unless the developer explicitly asked to
-  compare specific models. Comparison models are supported by repository and document Integrations. Do not pass `--test-all-candidates` on that first run.
+  compare specific models. Comparison models are supported by repository and document Integrations. Integration runs do not support `--test-all-candidates`.
 - Call the named target the **Beaker agent** (`beaker agent setup`, `--agent`)
   and the run type **agent optimization**. Do not use “the agent” for both.
 - Before starting a hosted agent optimization run, commit and push the completed

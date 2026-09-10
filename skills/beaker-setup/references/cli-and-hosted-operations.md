@@ -322,9 +322,12 @@ Classify each credential before configuring it:
   supports the setup, host, endpoint, and model. When enabled, it supplies platform
   access without changing the client or requiring a real provider key. Keep
   canonical key names in `integrations.<id>.required_env` when application code
-  reads them; the sandbox supplies placeholders for missing keys. Preserve
-  existing hosted keys and customer billing choices; do not copy local provider
-  keys into hosted settings by default.
+  reads them. Declared variables can receive organization keys unless an agent
+  value is set; real keys keep direct provider billing. The sandbox supplies
+  placeholders for still-missing keys, and keyless proxy calls use platform
+  credentials without looking up organization keys. Preserve existing hosted
+  keys and customer billing choices; do not copy local provider keys into hosted
+  settings by default.
 - If automatic routing cannot serve the setup, prefer a compatible OpenAI Chat
   Completions gateway client before requesting customer credentials. The current
   `inference_target(runtime)` helper requires a selected model; report that limit
@@ -435,8 +438,15 @@ a new run; do not retry the failed run unchanged.
    ```
 
    The first hosted run is agent optimization of the production system.
-   Use this plain command. Do not add `--optimization-model` or
-   `--test-all-candidates` unless the developer explicitly asked for them.
+   Keep the application's production model defaults. Do not add
+   `--optimization-model` unless the developer explicitly asked for it.
+   Integration runs do not support `--test-all-candidates`.
+
+   For an LLM judge, ensure the approved fixed `scorer_model` is supplied through
+   `config_defaults` or `--config '{"scorer_model":"<provider>:<model>"}'`.
+   Without it, `scoring_inference_target()` raises during hosted scoring; the
+   passing smoke check does not validate scoring. Deterministic scorers omit
+   this field and do not call the helper.
 
    Before triggering, commit and push the completed integration yourself, to
    the `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch you intend to use. Do not

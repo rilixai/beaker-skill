@@ -251,22 +251,26 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   existing hosted billing choices are preserved. The optional model/client
   override is wired when a narrow injection seam exists; comparison support is
   checked separately from routing success.
-- Any LLM judge declares its fixed canonical model with launch
-  `scorer_model`, independent of `runtime.model`, and uses the hosted
-  gateway via `scoring_inference_target()`; deterministic scorers omit the
-  field. A judge call recorded by the automatic proxy is not dedicated scorer
-  accounting; direct judge clients remain the local application/evaluation fallback.
+- Any LLM judge's approved fixed canonical `scorer_model` is present in the
+  actual launch configuration, independent of `runtime.model`, and it uses the
+  hosted gateway via `scoring_inference_target()`. A missing model raises during
+  hosted scoring and is not checked by smoke. Deterministic scorers omit the
+  field and do not call the helper. A judge call recorded by the automatic proxy
+  is not dedicated scorer accounting; direct judge clients remain the local
+  application/evaluation fallback.
 - Credential requirements were derived from every hosted-reachable setup,
   case-loading, document-initialization, application and scoring path, including
   SDK defaults and fallback branches, not from existing
   `integrations.<id>.required_env` entries alone.
 - `integrations.<id>.required_env` contains the variables those paths read directly,
   including setup-only credentials. Required secrets are available from hosted
-  settings, including organization provider keys where applicable. Missing
-  canonical provider keys can instead be covered by confirmed hosted proxy
-  routing for supported calls. No real provider key was created or waited on
-  solely for such routing or explicit gateway access. Local shell and
-  `.beaker/.env` values were not treated as hosted settings.
+  settings. Readable organization provider keys fill declared canonical variables
+  when no agent value is set and keep direct provider billing. Missing canonical
+  keys can instead be covered by confirmed hosted proxy routing for supported
+  calls, using platform credentials without an organization-key lookup. No real
+  provider key was created or waited on solely for such routing or explicit
+  gateway access. Local shell and `.beaker/.env` values were not treated as hosted
+  settings.
 - Every Beaker YAML or agent-setting correction was followed by a new run;
   existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local

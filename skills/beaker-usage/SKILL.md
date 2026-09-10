@@ -175,9 +175,11 @@ Repeat `--optimization-model provider:model` for 1–8 distinct selected models.
 Keep the same Integration, source branch and immutable dataset for every model.
 Do not change the editable surface to make a comparison possible.
 
-TRAIN drives optimization; TEST measures the baseline and selected winners.
-Keep `--test-all-candidates` off for the first run. Do not infer authorization
-to apply repository changes or document ChangeSets from permission to run.
+TRAIN drives optimization. Without model comparison, TEST measures the selected
+winner. Comparisons measure the unchanged setup and each model's seed and
+selected winner. Integration runs do not support optional controls for testing
+extra candidates or baselines. Do not infer authorization to apply repository
+changes or document ChangeSets from permission to run.
 For a document winner, review its `document-change-set.json`: creates name a
 group and document path; updates/deletes include source IDs and base hashes,
 plus source versions when available. Apply only on an explicit request and
@@ -193,7 +195,7 @@ state the exact:
 - dataset reference;
 - that this is agent optimization;
 - comparison models, when the developer asked for them; and
-- non-default benchmark, evaluation, candidate-testing, or budget settings.
+- non-default benchmark, evaluation, or budget settings.
 
 Launch only after explicit developer authorization. A request such as "launch
 this now" that already contains every required choice counts as authorization;
@@ -208,10 +210,6 @@ Prefer JSON output so the run identity is unambiguous:
 ```bash
 # Agent optimization of the production system
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> --json
-
-# Named-resource agent optimization with all persisted candidates evaluated on TEST
-beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
-  --test-all-candidates --json
 
 # Agent optimization comparing specific models
 beaker run trigger --agent <selected-agent> --dataset <dataset-ref> \
@@ -310,10 +308,8 @@ Cancellation is a state-changing operation:
 - Never default to a comparison-model run; launch agent optimization of the
   production system unless the developer explicitly asks to benchmark or
   compare specific models.
-- Never add `--optimization-model` or `--test-all-candidates` to a run the
-  developer did not ask for those flags on; trigger it plain. When a Beaker
-  agent was set up in another session, `beaker run list --agent <key> --json`
-  shows whether it has run before.
+- When a Beaker agent was set up in another session,
+  `beaker run list --agent <key> --json` shows whether it has run before.
 - Preserve `Integration.targets`: `repository(...)` optimizes source files and
   `documents(groups=...)` optimizes named content. Both support explicitly
   requested model comparison.

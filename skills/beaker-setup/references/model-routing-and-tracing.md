@@ -16,7 +16,8 @@ explicitly chooses their own client and credentials:
 
 Choose per call; a run can use more than one route. Do not copy local provider
 keys into hosted settings merely because they exist. Preserve existing hosted
-credential choices and explain when they take precedence over platform keys.
+credential choices using the route-specific rules below, and explain which
+credentials and billing each call will use.
 Hosted judges have separate scorer-accounting requirements below.
 
 This is a setup preference, not a retry chain. Surface authentication, budget,
@@ -40,17 +41,22 @@ The proxy handles these canonical provider hosts and inference endpoints:
 | `openrouter.ai` | Chat Completions |
 
 Calls without a real provider key use platform credentials through Beaker and
-are charged to the run. A provider with a real key in the sandbox environment
-keeps its direct route; a real key supplied by the client also uses direct
-provider billing. Direct calls have no platform fallback. Preserve existing
+are charged to the run; this proxy path does not look up organization keys.
+A provider with a real key in the sandbox environment keeps its direct route;
+a real key supplied by the client also uses direct provider billing.
+Direct calls have no platform fallback. Preserve existing
 customer keys and billing choices. Do not create keys solely to make supported
 proxy calls work.
 
 Keep `integrations.<id>.required_env` accurate when application code reads a
-canonical provider-key variable. With routing enabled, Beaker can satisfy a
-missing canonical key with a non-secret placeholder; it need not be stored as
-an agent secret. Other required credentials still need real values. Do not add
-placeholders, host overrides, or certificate configuration yourself.
+canonical provider-key variable. Before dispatch, Beaker fills declared canonical
+variables from readable organization provider keys when no agent value is set.
+Those real keys keep the direct route; they need not be duplicated as agent
+secrets. Undeclared organization keys are not injected, so merely saving an
+organization key does not change a keyless proxy call's platform billing.
+With routing enabled, Beaker can satisfy a still-missing canonical key with a
+non-secret placeholder. Other required credentials still need real values. Do
+not add placeholders, host overrides, or certificate configuration yourself.
 
 Confirm routing is enabled before relying on it. Platform routing covers
 catalogued models and supported request capabilities, not every provider API.
@@ -201,9 +207,16 @@ config_defaults:
 Only set this for an actual LLM judge and a developer-approved model; never
 infer it from `runtime.model`. In `score_case`, use
 `scoring_inference_target()` to obtain the dedicated hosted scorer gateway.
-This accounts for judge traffic separately from candidate execution. When
-it returns `None` locally, retain the application's own judge client and
-credentials. Keep the same judge model in local evaluation.
+This accounts for judge traffic separately from candidate execution. In a hosted
+run without `scorer_model`, it raises `RuntimeError("This run does not configure
+a hosted LLM scorer model.")`; it does not fall back to the local judge.
+Confirm the approved model is included in the actual launch configuration.
+Smoke never executes `score_case`, so it cannot catch this missing configuration.
+Deterministic scorers omit `scorer_model` and do not call this helper.
+
+The `None` fallback requires all three: no scorer model, no usable scorer gateway
+credentials, and no hosted run ID. In that local case, retain the application's
+own judge client and credentials. Keep the same judge model in local evaluation.
 
 A native judge call may also pass through the automatic proxy, but it is
 recorded as `provider_proxy`, not `scorer`. The proxy neither identifies judge
@@ -348,7 +361,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
-| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance, or a `verifiers.registered(env)` scope; **tool spans only** — model calls still need `trace.model_call(...)` |
+| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
 not replace the wiring guidance in this section. Install the framework extras
@@ -474,10 +487,12 @@ the arguments the model sent, the tool message content, and the exception when
 the tool raised (re-raised, so the model still sees the error message).
 Arguments a `StatefulToolEnv` injects itself (`add_tool(..., args_to_skip=[...])`,
 typically the hidden world state) are recorded by name only. Instrumenting the
-same environment twice is a no-op, so a cached environment shared across cases
-can be instrumented once; without a pinned `trace=` each call records under the
-capture active when it runs. Use `registered(env)` when the instrumentation must
-be undone after the block.
+same environment twice with the same trace setting is a no-op, so a cached
+environment shared across cases can be instrumented once. Without a pinned
+`trace=`, each call records under the active capture and records nothing outside
+a capture. Instrumentation lasts for the instance's lifetime; there is no undo
+API. Use a separate evaluation instance if the application needs an untouched
+environment afterward.
 
 This integration is the one exception to the ownership rule above: it records
 tools only. `verifiers` drives the model through its own client wrappers, so

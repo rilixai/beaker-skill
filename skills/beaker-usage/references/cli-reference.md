@@ -135,8 +135,8 @@ remote branch, preferably one returned by `beaker github branches`.
 
 Agent optimization of the production system over the configured editable
 surface. Prefer this launch; it is the default for every optimization request,
-and a Beaker agent's first run must use this plain form, filling in the
-placeholders but adding no `--optimization-model` or `--test-all-candidates`:
+and a Beaker agent's first run must use this form, filling in the
+placeholders but adding no `--optimization-model`:
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> --json
@@ -146,7 +146,9 @@ Repository Integrations use `repository(...)` and document Integrations use
 `documents(groups=...)`. Both support comparison models. Keep the production
 model behavior when `runtime.model` is absent. When a comparison is explicitly
 requested, inject the selected model through `inference_target(runtime)`.
-TRAIN drives search and TEST measures each model's seed and selected winner.
+TRAIN drives search. Without model comparison, TEST evaluates the selected
+winner. Comparisons evaluate the unchanged setup and each model's seed and
+selected winner on TEST.
 
 Agent optimization comparing explicitly selected models:
 
@@ -176,8 +178,8 @@ selects the YAML file.
 Prefer typed flags whenever one exists. Use `--config` only for launch keys
 that have no typed flag, when the developer explicitly asks for them:
 `spend_budget_usd`, `scorer_model`, `max_concurrency`, `prompts_to_update`,
-`top_k_test_eval`, `test_baseline`, and `extra` (opaque passthrough to the Integration setup via
-`SetupRuntime.config`). Supported non-model `optimization_config` settings can
+and `extra` (opaque passthrough to the Integration setup via `SetupRuntime.config`).
+Supported non-model `optimization_config` settings can
 also be supplied there. With `--optimization-model`, omit
 `optimization_config.optimization_models` from `--config` to avoid conflicting
 model selections; let the platform choose defaults for settings the developer
@@ -193,12 +195,15 @@ beaker run trigger --agent <selected-agent> --dataset <name@revision> \
 | Flag | Contract |
 |---|---|
 | `--optimization-model provider:model` | Repeat 1–8 times; values must come from `model list`. Omit to optimize the production system. Requires a configured Integration with model routing wired. |
-| `--test-all-candidates` | Evaluate every persisted candidate on `TEST` for supported document optimization runs; repository-surface agent optimization and comparison-model runs ignore the flag and always test only the winner |
 
 `--optimization-model` supplies `optimization_config.optimization_models`.
 Other supported `optimization_config` settings may be supplied through
 `--config`, but do not provide `optimization_models` there at the same time.
 The CLI has no `--execution-mode` flag.
+
+For Integration runs, `--test-all-candidates`, `top_k_test_eval`, and
+`test_baseline` do not change TEST evaluation. Do not pass these controls;
+acceptance by the launch API does not mean they are supported for Integrations.
 
 ## Run lifecycle
 
