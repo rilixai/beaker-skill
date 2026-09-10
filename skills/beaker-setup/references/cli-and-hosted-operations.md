@@ -315,29 +315,37 @@ rg -n 'os\.environ|os\.getenv' .beaker <application-source-dir>
 
 Classify each credential before configuring it:
 
-- When a hosted setup or evaluation path reads an environment variable directly,
+- When a hosted setup or evaluation path reads a non-provider environment variable directly,
   declare its name in `integrations.<id>.required_env` and store its hosted value in the
   selected agent's encrypted environment settings.
-- Calls routed through `inference_target(runtime)` or
-  `scoring_inference_target()` need no credential setup. Do not declare a
-  provider key for them, do not create an agent or organization provider key,
-  and do not block a launch on one being absent. With no agent or organization
-  key configured, the gateway selects the platform key, which covers OpenAI,
-  Anthropic, Google, and OpenRouter. Agent and organization keys are a billing
-  choice the customer makes in the UI.
-- Before declaring a provider key, check whether the gateway can serve that
-  call instead. Route what it can serve through `inference_target(runtime)` and
-  leave that key out of `integrations.<id>.required_env`; see
-  [model-routing-and-tracing.md](model-routing-and-tracing.md).
-- A call site the gateway cannot serve still needs its own key declared and
-  set, even when other calls in the same run are gateway-routed.
+- Prefer automatic hosted provider routing during initial integration when it
+  supports the setup, host, endpoint, and model. When enabled, it supplies platform
+  access without changing the client or requiring a real provider key. Keep
+  canonical key names in `integrations.<id>.required_env` when application code
+  reads them; the sandbox supplies placeholders for missing keys. Preserve
+  existing hosted keys and customer billing choices; do not copy local provider
+  keys into hosted settings by default.
+- If automatic routing cannot serve the setup, prefer a compatible OpenAI Chat
+  Completions gateway client before requesting customer credentials. The current
+  `inference_target(runtime)` helper requires a selected model; report that limit
+  if it prevents the fallback. Gateway calls use platform keys when no agent or
+  organization key is configured, so no customer key needs to be created solely
+  for them. Hosted judges use `scoring_inference_target()` for separate accounting.
+- Use customer clients and credentials when neither Beaker route can serve the
+  call, or when the developer explicitly requests them. Declare and configure
+  the required hosted values. Do not add placeholders yourself or assume an
+  arbitrary provider endpoint is supported. See
+  [model-routing-and-tracing.md](model-routing-and-tracing.md) for routing limits,
+  model selection, and judge accounting.
 
 Treat process environment variables and values in `.beaker/.env` as local
 only. Beaker does not copy them to hosted settings. Immediately before launch,
-run `beaker agent env list --agent <selected-agent>` and stop if a required
-name is absent. Structural smoke does not execute `run_case`, so it cannot
-validate these credentials. Set any missing value with the commands below, then
-list the names again before launch.
+run `beaker agent env list --agent <selected-agent>` and resolve missing required
+values. Account for organization provider credentials and confirmed proxy
+coverage; sandbox placeholders are not stored agent secrets. All other missing
+required values block launch. Structural smoke does not execute `run_case`, so
+it cannot validate these credentials or proxy support. Set missing secrets with
+the commands below, then list the names again before launch.
 
 Declare application variables needed by candidate evaluation as names under the
 selected YAML integration. Values never belong in YAML:
@@ -376,10 +384,10 @@ values. Never log or commit secret values.
 
 Agent environment variables configured through the UI or `beaker agent env
 set` are injected into hosted runs. `integrations.<id>.required_env` identifies which
-variables must be configured before a run can start. A missing or empty
-required value fails the run before candidate code starts. Set the value,
-verify its name with `beaker agent env list`, and start a new run; do not retry
-the failed run unchanged.
+variables the hosted path needs. A missing required value that neither hosted
+credentials nor provider routing covers fails the run before candidate code
+starts. Set the value, verify its name with `beaker agent env list`, and start
+a new run; do not retry the failed run unchanged.
 
 ## Hosted data and run ordering
 

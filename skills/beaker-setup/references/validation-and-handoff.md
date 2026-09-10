@@ -235,31 +235,38 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
   post-processing, and post-rollout model calls.
 - Ordinary execution retains application model/client defaults.
-- Tracing and model injection preserve the client type: no transparent proxy,
+- Tracing and model injection preserve the client type: no transparent Python proxy,
   `__getattr__` forwarder, or monkeypatched object stands in for a client the
   application or harness checks. The only exception is a framework-specific,
   type-preserving adapter that subclasses the public client base the framework
   validates and passes the application's resolver or type check before the
   hosted baseline. Where that is not possible, the plain client is kept and the
   tracing gap is reported.
-- When `runtime.model` is set, use the narrowest injection seam.
-- Calls `inference_target(runtime)` can serve are routed through the gateway,
-  with no provider key declared for them. Any call
-  site the gateway cannot serve is named at handoff, with the provider
-  credential it still needs.
+- When `runtime.model` is set, use the narrowest injection seam and verify the
+  actual requested model. Automatic proxy routing does not select it.
+- Initial routing prefers automatic platform access, then a compatible explicit
+  gateway when the setup cannot use automatic routing. Customer clients and
+  credentials are the last resort or an explicit developer choice. Unsupported
+  calls, SDK limits, and required customer credentials are named at handoff;
+  existing hosted billing choices are preserved. The optional model/client
+  override is wired when a narrow injection seam exists; comparison support is
+  checked separately from routing success.
 - Any LLM judge declares its fixed canonical model with launch
   `scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
-  field, and direct provider routing is limited to the local application/evaluation fallback.
+  field. A judge call recorded by the automatic proxy is not dedicated scorer
+  accounting; direct judge clients remain the local application/evaluation fallback.
 - Credential requirements were derived from every hosted-reachable setup,
   case-loading, document-initialization, application and scoring path, including
   SDK defaults and fallback branches, not from existing
   `integrations.<id>.required_env` entries alone.
 - `integrations.<id>.required_env` contains the variables those paths read directly,
-  including setup-only credentials. Every declared hosted value is present in encrypted agent
-  settings before launch. No provider key was declared, created, or waited on
-  for a call routed through Beaker. Local shell and `.beaker/.env` values were
-  not treated as hosted settings.
+  including setup-only credentials. Required secrets are available from hosted
+  settings, including organization provider keys where applicable. Missing
+  canonical provider keys can instead be covered by confirmed hosted proxy
+  routing for supported calls. No real provider key was created or waited on
+  solely for such routing or explicit gateway access. Local shell and
+  `.beaker/.env` values were not treated as hosted settings.
 - Every Beaker YAML or agent-setting correction was followed by a new run;
   existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local

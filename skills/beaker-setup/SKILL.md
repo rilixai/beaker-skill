@@ -338,11 +338,20 @@ application code only when no existing injection interface can be reused. If
 `runtime.model` is absent, retain the application's existing client and model
 defaults.
 
-For a selected model, prefer the Beaker gateway over the application's provider
-keys: point the application's existing client at `inference_target(runtime)`.
-The gateway serves every supported provider but takes only the OpenAI Chat
-Completions shape, so classify the call site by its SDK surface, not its
-provider. Calls it cannot serve keep the application's client and credentials.
+During initial integration, prefer automatic hosted provider routing with
+Beaker platform keys. If the setup cannot use it, use the explicit gateway when
+an OpenAI Chat Completions-compatible client and the SDK can serve the call.
+Use customer clients and credentials as the last resort, or when the developer
+explicitly requests them. Do not copy local provider keys into hosted settings
+by default; preserve existing hosted credential choices. The explicit gateway
+uses platform keys when no agent or organization key is configured.
+
+Identify and wire an optional model/client override during setup when a narrow
+injection seam exists, so later comparisons do not require a rewrite. The
+current `inference_target(runtime)` helper requires a selected `runtime.model`;
+do not invent one for an ordinary run. Automatic routing does not select a
+model: comparisons still need injection and verification. Preserve native
+request shapes and client types. Do not switch routes to bypass a call failure.
 
 Read [model-routing-and-tracing.md](references/model-routing-and-tracing.md) when the integration must support model selection, LLM-as-a-judge scoring, framework instrumentation, or trace evidence.
 
@@ -539,7 +548,7 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   invocation boundary, excluding those calls even when clients or wrappers are
   shared. Scorer traffic is accounted for separately through
   `scoring_inference_target()`.
-- Never hand the application or a benchmark harness a transparent proxy,
+- Never hand the application or a benchmark harness a transparent Python proxy,
   `__getattr__` forwarder, or monkeypatched stand-in for its model client.
   Trace at the call site or through a framework integration, and inject only a
   client type the application already accepts; client-type checks reject those

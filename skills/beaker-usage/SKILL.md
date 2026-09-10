@@ -161,9 +161,14 @@ The seed uses the application's configured model behavior. During optimization,
 Beaker may change model selection or model-call behavior within the declared
 editable surface when that improves the objective.
 When model comparison is requested, verify that the evaluation call uses
-`inference_target(runtime)` when `runtime.model` is present and preserves
-production defaults otherwise. The usage workflow must not rewrite the integration
-to repair routing; direct such work to setup.
+`runtime.model` through an existing injection seam: a compatible gateway branch
+uses `inference_target(runtime)`, while a native client uses its supported model
+override. Preserve production defaults otherwise. Initial setup prefers
+automatic platform routing, then a compatible gateway, then customer credentials
+as a last resort or explicit choice. Neither automatic routing nor the presence
+of a configured client proves comparison support; verify that the selected
+model reaches the actual request. The usage workflow must not rewrite the
+integration to repair routing; direct such work to setup.
 
 Discover allowed models with `beaker model list --available-only --json`.
 Repeat `--optimization-model provider:model` for 1–8 distinct selected models.
