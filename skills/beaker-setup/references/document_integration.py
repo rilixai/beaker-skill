@@ -3,11 +3,12 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from pydantic import BaseModel
+
 from beaker import (
     Case,
     CaseResult,
     CaseScore,
+    Check,
     DocumentRunSetup,
     DocumentRunSetupResult,
     Integration,
@@ -17,20 +18,21 @@ from beaker import (
     TargetDocument,
     documents,
 )
+from pydantic import BaseModel
 
 
 class Row(BaseModel):
     id: str
     input: str
-    expected: str
+    expected: dict[str, str]
 
 
-class Setup(DocumentRunSetup[Row, str]):
+class Setup(DocumentRunSetup[Row, dict[str, str]]):
     row_model = Row
 
     @asynccontextmanager
     async def prepare_run(self, *, runtime: SetupRuntime):
-        # Replace this with the real content store, preserving source IDs/versions.
+        # TODO(beaker): fetch real documents, preserving source IDs and versions.
         yield DocumentRunSetupResult(
             target_documents=(
                 TargetDocument(
@@ -49,22 +51,40 @@ class Setup(DocumentRunSetup[Row, str]):
 
     @asynccontextmanager
     async def open_candidate(self, *, targets_dir: Path, scratch_dir: Path):
-        # A real application may build an index under scratch_dir here.
-        yield (targets_dir / "wiki" / "guide.md").read_text()
+        # Read the current tree, including additions and excluding deletions.
+        # An application may instead build an index under scratch_dir here and
+        # close it when this context exits. Never mutate targets_dir.
+        yield {
+            path.relative_to(targets_dir).as_posix(): path.read_text(encoding="utf-8")
+            for path in sorted(targets_dir.rglob("*"))
+            if path.is_file()
+        }
 
 
 async def run_case(
-    *, case_input: JsonValue, runtime: RolloutRuntime[str]
+    *, case_input: JsonValue, runtime: RolloutRuntime[dict[str, str]]
 ) -> CaseResult:
-    # Pass case_input and this candidate context into the real application.
+    # TODO(beaker): pass case_input and this context into the real application.
     return CaseResult(output=runtime.candidate_runtime, output_kind="text")
 
 
 async def score_case(
     *, case: Case, result: CaseResult, case_files_dir: Path
 ) -> CaseScore:
+    # TODO(beaker): use the task's agreed metric; exact match is illustrative.
     exact = float(result.output == case.expected)
-    return CaseScore(objective=exact, field_scores={"exact": exact})
+    return CaseScore(
+        objective=exact,
+        field_scores={"exact": exact},
+        checks=(
+            Check(
+                name="Document content matches expected",
+                verdict="pass" if exact else "fail",
+                expected=case.expected,
+                predicted=result.output,
+            ),
+        ),
+    )
 
 
 integration = Integration(

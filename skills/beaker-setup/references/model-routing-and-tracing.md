@@ -122,18 +122,45 @@ This accounts for judge traffic separately from candidate execution. When
 it returns `None` locally, retain the application's own judge client and
 credentials. Keep the same judge model in local evaluation.
 
+For the example YAML above, a task whose existing local judge uses the OpenAI
+SDK can route its judge request as follows. Pass the task's established rubric
+and answer in `question`, and convert the returned judgment into `CaseScore`
+and per-criterion checks in async `score_case(*, case, result, case_files_dir)`.
+
 ```python
+from openai import AsyncOpenAI
 from beaker import scoring_inference_target
 
-async def call_judge(question):
+LOCAL_JUDGE_MODEL = "gpt-4.1-mini"  # Same judge as config_defaults.scorer_model.
+
+async def call_judge(question: str) -> str:
     target = scoring_inference_target()
     if target is None:
-        return await existing_local_judge(question)
-    client = build_judge_client(
-        base_url=target.base_url, api_key=target.api_key, model=target.model,
-    )
-    return await client.judge(question)
+        client = AsyncOpenAI()  # Existing local provider configuration.
+        model = LOCAL_JUDGE_MODEL
+    else:
+        client = AsyncOpenAI(base_url=target.base_url, api_key=target.api_key)
+        model = target.model
+    async with client:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": question}],
+        )
+        return response.choices[0].message.content or ""
 ```
+
+For a different local provider, preserve the application's existing async judge
+client and request shape in the local fallback; translate only provider-specific
+model syntax. Hosted calls still use the dedicated scorer gateway. Keep
+`score_case` non-blocking and close clients it owns on success or failure.
+The selected integration's judge must remain the same across local evaluation,
+the production-model baseline and every compared model.
+
+When feasible, exercise both routes through an existing evaluation workflow:
+with the hosted scorer target available, verify its URL, credentials and model
+are used; without it, verify the local path still uses the agreed judge. Do not
+print credentials or add consumer tests for this check. Structural smoke never
+calls the scorer, so a passing smoke check does not verify judge routing.
 
 Candidate tracing covers the application workflow, including nested model and
 tool calls. Do not instrument scorer or judge calls as candidate activity.

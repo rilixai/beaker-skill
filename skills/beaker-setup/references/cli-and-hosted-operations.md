@@ -212,9 +212,12 @@ Check each field that controls the hosted evaluator:
   in `integrations.<id>.pip_install` and system packages in `integrations.<id>.apt_install`. A dependency
   that exists only in the local environment fails the image build or the first
   import inside the evaluator.
-- Derive `integrations.<id>.required_env` from variables read by code that runs in the
-  candidate evaluator child process. The list is an allowlist: storing a value
-  in agent settings does not expose it unless its name is declared here.
+- Derive `integrations.<id>.required_env` from every hosted-reachable setup,
+  case-loading, candidate-initialization, application and scoring path. Declare
+  setup-only credentials too, such as a key used to fetch seed documents.
+  The list gates required hosted values and allows them into repository candidate
+  evaluation; storing a value in agent settings does not by itself allow it into
+  the candidate child process.
 
 Commit and push changes to these fields before launch so the hosted integration build
 reads them. Runs are immutable snapshots: changing YAML or agent settings does
@@ -229,6 +232,10 @@ Paths inside the selected integration table use hosted checkout coordinates:
   YAML lives;
 - `package_import_root` is relative to `source_dir`; and
 - `entrypoint` is imported from `package_import_root`.
+
+The files or directories in `repository((...))` are relative to `source_dir`
+too. For `source_dir: services/invoices`, `repository(("src/invoice_agent",))`
+selects `services/invoices/src/invoice_agent` in the checkout.
 
 For this nested layout:
 
@@ -287,8 +294,9 @@ a new run, and monitor it with `beaker run status <new-run-id> --watch`.
 
 ### Credential preflight
 
-Before a hosted launch, derive credential requirements from every application
-path that `Integration.run_case` can reach. Include SDK defaults and fallback branches
+Before a hosted launch, derive credential requirements from `prepare_run`,
+`load_cases`, document `open_candidate`, `run_case` and `score_case`, including
+the application paths they call. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
 only on names already present in `integrations.<id>.required_env`. Read the application
 source to collect the variable *names* it reads; this inspection never reads,
@@ -301,7 +309,7 @@ rg -n 'os\.environ|os\.getenv' .beaker <application-source-dir>
 
 Classify each credential before configuring it:
 
-- When candidate application code reads an environment variable directly,
+- When a hosted setup or evaluation path reads an environment variable directly,
   declare its name in `integrations.<id>.required_env` and store its hosted value in the
   selected agent's encrypted environment settings.
 - Calls routed through `inference_target(runtime)` or

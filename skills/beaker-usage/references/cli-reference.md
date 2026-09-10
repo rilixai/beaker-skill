@@ -175,9 +175,11 @@ Prefer typed flags whenever one exists. Use `--config` only for launch keys
 that have no typed flag, when the developer explicitly asks for them:
 `spend_budget_usd`, `prompts_to_update`, `top_k_test_eval`, `test_baseline`,
 and `extra` (opaque passthrough to the Integration setup via
-`SetupRuntime.config`). Never
-hand-author `optimization_config` inside `--config`: typed model flags
-reject it, and plain runs should let the platform choose.
+`SetupRuntime.config`). Supported non-model `optimization_config` settings can
+also be supplied there. With `--optimization-model`, omit
+`optimization_config.optimization_models` from `--config` to avoid conflicting
+model selections; let the platform choose defaults for settings the developer
+has not requested.
 
 ```bash
 beaker run trigger --agent <selected-agent> --dataset <name@revision> \

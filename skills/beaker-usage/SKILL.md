@@ -157,6 +157,9 @@ Both launch with `beaker run trigger` and support model comparison.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
+The seed uses the application's configured model behavior. During optimization,
+Beaker may change model selection or model-call behavior within the declared
+editable surface when that improves the objective.
 When model comparison is requested, verify that the evaluation call uses
 `inference_target(runtime)` when `runtime.model` is present and preserves
 production defaults otherwise. The usage workflow must not rewrite the integration

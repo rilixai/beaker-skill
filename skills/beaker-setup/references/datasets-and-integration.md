@@ -10,12 +10,12 @@ never edit or repurpose them for Beaker. For the selected task, identify:
   so it must carry what the agent was actually given (the task prompt, the
   question, the document reference), not only a lookup key the runner
   resolves internally;
-- expected/ground-truth shape. For rubric-, assertion-, or judge-scored tasks
-  the requirements themselves (the assertion list, the rubric criteria) are
-  that shape and belong in `expected`, wrapped in an object because
-  `expected` must be a JSON object (`expected: {"assertions": [...]}` or
-  `{"criteria": [...]}`, never a top-level array); do not upload
-  `expected: {}` when they exist at dataset-build time. When the requirements
+- expected/ground-truth shape. `Case.expected` accepts JSON values; the typed
+  row model defines the task's actual shape, including strings, arrays or objects.
+  For rubric-, assertion-, or judge-scored tasks, put the known requirements in
+  `expected`. An object such as `{"assertions": [...]}` or `{"criteria": [...]}`
+  makes the meaning explicit, but is a convention, not an SDK restriction. Do not
+  upload `expected: {}` when requirements exist at dataset-build time. When they
   only exist inside the runner (a simulator's own assertions), `expected: {}`
   is correct and the checks come from the JSON application result in `output`;
 - prediction fields;
@@ -26,7 +26,7 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - stable row identifiers and optional labels: `metadata` keys such as domain
   or practice area; `group_key` is only an optional dataset column.
 
-Declare the matching JSON Schema through the loader/integration so uploads can be validated. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
+Declare the matching typed `run_setup.row_model`; Beaker derives its JSON Schema to validate dataset rows. A `Case` is one evaluation example: input plus expected values. Do not infer labels, conventions, edge cases, split composition, or the quality metric to hill-climb from application code or prose.
 When several plausible scored fields are found, ask the developer which metric to optimize as soon as possible, but keep replacing `TODO(beaker)`, wiring `_run_case`, and preparing dataset conversion while waiting; insert the chosen field into the scorer when the answer arrives.
 
 If local data is unavailable, inspect hosted data with `beaker dataset list` and
@@ -126,23 +126,29 @@ Keep the integration, loader, scorer and evaluation helpers under `.beaker/`.
 Do not add tests or CI/CD to the consumer repository. The platform owns dataset
 I/O and lifecycle; the integration owns row-to-case conversion and application
 execution. See [repository_integration.py](repository_integration.py) and
-[document_integration.py](document_integration.py) for complete contract examples.
+[document_integration.py](document_integration.py) for executable contract scaffolds.
 These illustrate wiring only; use the customer's actual application and labeled
-rows rather than their demonstration echo and exact-match functions.
+rows rather than their demonstration echo and exact-match functions. Keep the
+`TODO(beaker)` markers until the corresponding hooks are implemented; unchanged
+examples must remain `SCAFFOLD` under `beaker run smoke --strict`.
 
 | Component | Source of truth |
 |---|---|
 | `Integration.targets` | Eligible repository paths or declared document groups |
 | `run_setup.row_model` | The actual labeled row schema, validated by Pydantic |
-| `prepare_run` | Shared clients and seed documents, held open for the attempt |
+| `prepare_run` | Case-loading/document-setup clients and seed documents, held open for the attempt |
 | `load_cases` | Async row-to-case conversion; JSON inputs and expected values |
 | `run_case(case_input, runtime)` | Real async application path |
 | `score_case(case, result, case_files_dir)` | Agreed objective, checks and field metrics |
 | `config_defaults.scorer_model` | Optional fixed canonical model for an LLM judge |
 | `integrations.<id>.required_env` | Names of variables used by setup and evaluation |
 
-Return the JSON application result in `CaseResult.output`, including any observed
-application state that the scorer needs. Telemetry belongs in `runtime.trace`.
+Return the JSON application result in `CaseResult.output`, including the observed
+application state that the scorer needs. Output is retained as the prediction in
+result artifacts and can appear in the sample view; it is not private scratch
+space for scoring. Keep it compact: select the needed fields instead of returning
+an entire framework state object, and avoid duplicating large model/tool payloads
+already captured in `runtime.trace`. Scores and concise diagnoses go in `CaseScore`.
 `CaseResult` accepts only `output` and optional `output_kind`; do not add a
 second evidence or telemetry payload. `score_case` reads `case.expected`,
 `result.output`, and staged input files through its `case_files_dir` argument.
@@ -155,10 +161,22 @@ Never enter the lifecycle context managers yourself. A retry gets a fresh
 setup instance. `runtime.config` contains the launch `extra` mapping, not the
 whole platform run configuration.
 
+For repository targets, setup and scoring run in the trusted controller while
+`run_case` imports each candidate's application source in a fresh evaluator
+process. A client stored on the setup instance can serve `load_cases`; it is not
+available in the candidate process. Pass JSON inputs and staged `CaseFile` values
+across this boundary, then read files through `runtime.case_files_dir` in the
+runner or `case_files_dir` in the scorer. Do not pass live clients, absolute
+setup-machine paths, or module globals as a substitute for staged input files.
+
 For documents, setup returns actual `TargetDocument` content in declared groups.
 Use stable source IDs and preserve source versions. `open_candidate` can build
 an index from `targets_dir` using `scratch_dir`; its result becomes
-`RolloutRuntime.candidate_runtime`. Candidate changes return as a `ChangeSet`.
+`RolloutRuntime.candidate_runtime`. Build it from the current candidate tree,
+including created documents and excluding deleted ones; do not reuse a seed-only
+index or assume every seed filename still exists. Keep temporary index files in
+`scratch_dir` and close candidate resources when `open_candidate` exits.
+Candidate changes return as a `ChangeSet`.
 A `ChangeSet` identifies the run, seed hash, candidate hash and ordered
 `changes`. Delivery preserves the customer's source identity:
 
@@ -184,10 +202,12 @@ itself; it renders what the integration declares. Two contract fields drive both
 
 - `CaseResult(output=..., output_kind=...)` describes the JSON application
   result. Use `record` for structured results, `value` for a short answer,
-  `text` for long text, or `none` when no application output is returned.
+  `text` for long text (a dictionary becomes one expandable card per string
+  leaf), or `none` with `output=None` when no application output is returned.
   Include observed application state in `output` when the scorer needs it;
   keep telemetry in `runtime.trace` and scores in `CaseScore`.
-- `CaseScore.checks` explains individual outcomes. The scorer compares
+- `CaseScore.checks` explains individual outcomes: emit one check per verified
+  field, criterion or assertion, passing ones included. The scorer compares
   `case.expected` with `result.output` and may inspect staged input files.
   `field_scores` is the small stable set aggregated at run level; check names
   are never aggregated.
@@ -232,6 +252,29 @@ itself; it renders what the integration declares. Two contract fields drive both
 
   `beaker run smoke` does not execute `run_case` or `score_case`, so it cannot
   confirm that checks are emitted; inspect a scored case from the first run.
+
+Keep `score_case` async even for deterministic scoring. Its objective is the
+value the optimizer maximizes; choose it from the task's established evaluation
+policy. `objective_score` can combine normalized field scores using explicit
+weights. For example, if the task already specifies 3:1 weighting:
+
+```python
+from beaker import CaseScore, Check, objective_score
+
+def weighted_score(*, correctness: float, completeness: float) -> CaseScore:
+    fields = {"correctness": correctness, "completeness": completeness}
+    return CaseScore(
+        objective=objective_score(
+            fields, field_weights={"correctness": 3.0, "completeness": 1.0}
+        ),
+        field_scores=fields,
+        checks=tuple(Check(name=name, verdict=value) for name, value in fields.items()),
+    )
+```
+
+Those weights are illustrative, not defaults. Use the agreed weights; do not
+silently average every diagnostic metric into the objective. Values in
+`CaseScore.objective` and `field_scores` must be finite and in `[0, 1]`.
 
 ```python
 from beaker import CaseResult, CaseScore, Check

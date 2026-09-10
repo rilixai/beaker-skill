@@ -251,11 +251,12 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   `config_defaults.scorer_model`, independent of `runtime.model`, and uses the hosted
   gateway via `scoring_inference_target()`; deterministic scorers omit the
   field, and direct provider routing is limited to the local application/evaluation fallback.
-- Credential requirements were derived from every hosted-reachable
-  `Integration.run_case` path, including SDK defaults and fallback branches, not from
-  existing `integrations.<id>.required_env` entries alone.
-- `integrations.<id>.required_env` contains only variables read directly by candidate
-  application code. Every declared hosted value is present in encrypted agent
+- Credential requirements were derived from every hosted-reachable setup,
+  case-loading, document-initialization, application and scoring path, including
+  SDK defaults and fallback branches, not from existing
+  `integrations.<id>.required_env` entries alone.
+- `integrations.<id>.required_env` contains the variables those paths read directly,
+  including setup-only credentials. Every declared hosted value is present in encrypted agent
   settings before launch. No provider key was declared, created, or waited on
   for a call routed through Beaker. Local shell and `.beaker/.env` values were
   not treated as hosted settings.

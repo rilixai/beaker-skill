@@ -288,15 +288,19 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   `Case(id=..., input=..., expected=...)` values. IDs must be unique across the
   attempt. Stage input files through `runtime.case_files_dir(case_id)` and
   declare them with `CaseFile`.
-- Put shared clients in an async-context-manager `prepare_run(*, runtime)`.
-  Beaker creates one setup instance per attempt and owns cleanup. Customer
-  options arrive through `SetupRuntime.config` from `config_defaults.extra`.
+- Open clients used for case loading or document setup in an async-context-manager
+  `prepare_run(*, runtime)`. Beaker owns cleanup. Repository candidates execute in
+  a fresh evaluator process; setup clients and in-memory state do not transfer
+  to `run_case`. Customer options arrive through `SetupRuntime.config` from
+  `config_defaults.extra`.
 - Implement `run_case(*, case_input, runtime)` by calling the real application.
   Return `CaseResult(output=..., output_kind=...)` with a JSON application
-  result. Use `runtime.trace` for model/tool telemetry.
+  result. Output is retained as the prediction, so keep observed state needed by
+  the scorer compact. Use `runtime.trace` for model/tool telemetry.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
-  metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`.
-  Ask the developer to choose objective weights when several metrics are plausible;
+  metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
+  passing and failing checks. Ask which metric to optimize and which weights to
+  use when the repository does not already establish them;
   continue independent wiring while waiting. Never invent labeled data or scores.
 
 Read [datasets-and-integration.md](references/datasets-and-integration.md)
@@ -306,9 +310,12 @@ for typed rows, setup, output/check guidance, and executable examples.
 
 Use `targets=repository()` with a `RepositoryRunSetup` subclass for ordinary
 repository optimization. Narrow eligible source with
-`repository(("src/invoice_agent", "config/prompts"))` when needed. Beaker
-protects `.beaker/`, hidden paths, dependencies, lockfiles, build configuration,
-and other excluded files. Keep scoring and evaluation policy under `.beaker/`.
+`repository(("src/invoice_agent", "config/prompts"))` when needed. These are
+normalized paths to files or directories relative to the selected integration's
+`source_dir`, not the YAML or import root. Beaker protects `.beaker/`, hidden
+paths, dependencies, lockfiles, build configuration, vendored and binary files,
+and files outside the declared scope. Keep scoring and evaluation policy under
+`.beaker/`; do not move it into editable application source to bypass protection.
 
 Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
 for an intentional document/resource workflow. Its `prepare_run()` yields
@@ -430,7 +437,8 @@ runs.
 
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
-required variables from the real `Integration.run_case` call path, then compare them
+required variables from setup, case loading, candidate initialization, application
+execution and scoring paths, then compare them
 with `integrations.<id>.required_env` and `beaker agent env list --agent <selected-agent>`.
 Provider calls routed through Beaker need no credential setup and never block a
 launch. Local shell variables and `.beaker/.env` values are not hosted
