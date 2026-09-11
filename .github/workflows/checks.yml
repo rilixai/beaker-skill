@@ -17,4 +17,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: python scripts/sync_version.py --check
-      - run: python -m unittest discover -s tests
+      - name: Check repository without SDK dependencies
+        run: python -m unittest discover -s tests

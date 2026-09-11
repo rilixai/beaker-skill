@@ -2,7 +2,7 @@
 
 Portable agent guidance for setting up and operating
 [Beaker](https://pypi.org/project/beaker-sdk/) optimization runs in a Python
-repository, with explicit support for existing logical-target specs.
+repository, with explicit support for existing logical-target integrations.
 
 The canonical Agent Skills are:
 
@@ -95,10 +95,26 @@ The repository checks fail if either marketplace manifest drifts from
 
 ## Development
 
-Run the repository checks with:
+Run the regular repository checks without installing the SDK:
 
 ```bash
+python3 scripts/sync_version.py --check
 python3 -m unittest discover -s tests
 ```
+
+CI runs these metadata, version, reference, and Python syntax checks.
+
+When SDK contracts or executable examples change, and before each release, run
+the separate SDK compatibility suite in a Python 3.12+ environment:
+
+```bash
+python3 -m pip install ../beaker-ai/packages/beaker
+python3 -m unittest discover -s sdk_tests -v
+```
+
+Use a local `beaker-ai` checkout containing the intended SDK changes and the
+version declared in `VERSION`. For an already published SDK, install
+`beaker-sdk==<VERSION>` instead. Compatibility tests fail if the SDK is missing
+or its version differs; they are not part of ordinary PR checks.
 
 The skill is MIT licensed. Review agent instructions before installation just as you would review executable tooling.

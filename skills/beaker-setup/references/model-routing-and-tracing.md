@@ -1,50 +1,137 @@
 # Model routing and tracing
 
-## Prefer the gateway over application provider keys
+## Choose routing during initial integration
 
-When the evaluation path selects a model, point the application's *existing*
-client at `inference_target(runtime)` instead of giving the run a provider key.
+Use this order for application calls during initial setup, unless the developer
+explicitly chooses their own client and credentials:
 
-Gateway-routed calls require no credential setup at all. The gateway picks the
-agent key, then the organization key, then the platform key, and the platform
-key covers OpenAI, Anthropic, Google, and OpenRouter. So declare no provider
-key in `spec.required_env` for these calls, never create an agent or
-organization provider key for the developer, and never treat a missing one as a
-launch blocker. Those keys are a billing choice the customer makes in the UI.
+1. **Automatic provider routing:** keep the existing client, provider URL, and
+   request shape. Prefer supported hosted proxy calls using Beaker platform keys.
+2. **Explicit gateway:** if the setup cannot use automatic routing and an
+   OpenAI Chat Completions-compatible client is available, inject a Beaker
+   gateway target through the existing evaluation interface when the SDK permits.
+   This also uses platform credentials when no customer key is configured.
+3. **Customer client and credentials:** use these when neither Beaker route can
+   serve the call, or when the developer explicitly requests them.
 
-That order is a selection, not a retry chain. The gateway picks the first
-configured key before the call and does not move on if the provider rejects it,
-so a configured but broken agent or organization key fails instead of reaching
-the platform key.
+Choose per call; a run can use more than one route. Do not copy local provider
+keys into hosted settings merely because they exist. Preserve existing hosted
+credential choices using the route-specific rules below, and explain which
+credentials and billing each call will use.
+Hosted judges have separate scorer-accounting requirements below.
 
-A direct provider call from application code has no platform fallback. It runs
-only on a key the developer configured and the spec declares. That is the cost
-of not routing through the gateway.
+This is a setup preference, not a retry chain. Surface authentication, budget,
+and provider failures; do not switch routes to bypass them.
 
-The gateway serves every provider Beaker supports and rewrites each request for
-that provider, so the model or provider is not the constraint: the request
-shape is. The gateway accepts the OpenAI Chat Completions shape. Sort the call
-site by the SDK it calls, not by its provider:
+## Automatic provider routing
 
-| Application call site | Beaker integration |
+When provider routing is enabled for the hosted run, Beaker's sandbox proxy can
+route the application's existing native clients without changing their base
+URLs or request shapes. It works for production-model and prompt-only runs too;
+it does not require `runtime.model`. Local execution outside the hosted sandbox
+keeps the application's own routing and credentials.
+
+The proxy handles these canonical provider hosts and inference endpoints:
+
+| Provider host | Supported inference shape |
 | --- | --- |
-| OpenAI SDK chat completions, OpenRouter with an effort word, or a LiteLLM-style wrapper | Repoint `base_url` and `api_key` at the target. Nothing else changes. |
-| A reasoning *budget* (`reasoning.max_tokens`, Anthropic `budget_tokens`, Gemini `thinkingBudget`) | Same repoint, and send the nearest effort word in place of the budget. The gateway takes effort words only. |
-| Another request shape (OpenAI Responses, Anthropic Messages, native Gemini) | The gateway does not serve these for candidate rollouts. Keep the application's client and credentials, declare them in `spec.required_env`, and say so at handoff. |
+| `api.openai.com` | Chat Completions and Responses |
+| `api.anthropic.com` | Messages |
+| `generativelanguage.googleapis.com` | GenerateContent and StreamGenerateContent (`v1`/`v1beta`; streaming uses `alt=sse`) |
+| `openrouter.ai` | Chat Completions |
 
-Do not rewrite a working call site into the OpenAI shape just to reach the
-gateway; that changes production code. Reuse the existing injection seam, and
-take the third row when the shape does not fit.
+Calls without a real provider key use platform credentials through Beaker and
+are charged to the run; this proxy path does not look up organization keys.
+A provider with a real key in the sandbox environment keeps its direct route;
+a real key supplied by the client also uses direct provider billing.
+Direct calls have no platform fallback. Preserve existing
+customer keys and billing choices. Do not create keys solely to make supported
+proxy calls work.
+
+Keep `integrations.<id>.required_env` accurate when application code reads a
+canonical provider-key variable. Before dispatch, Beaker fills declared canonical
+variables from readable organization provider keys when no agent value is set.
+Those real keys keep the direct route; they need not be duplicated as agent
+secrets. Undeclared organization keys are not injected, so merely saving an
+organization key does not change a keyless proxy call's platform billing.
+With routing enabled, Beaker can satisfy a still-missing canonical key with a
+non-secret placeholder. Other required credentials still need real values. Do
+not add placeholders, host overrides, or certificate configuration yourself.
+
+Confirm routing is enabled before relying on it. Platform routing covers
+catalogued models and supported request capabilities, not every provider API.
+Custom hosts, embeddings, Gemini's OpenAI-compatible path, and provider-hosted
+tools can fall outside that support. The proxy handles HTTP/1.1 requests and SSE,
+not arbitrary gRPC or WebSocket traffic. Assess the explicit gateway fallback
+below before requesting customer credentials. Name any remaining unsupported
+calls at handoff; do not silently change application behavior to fit a route.
+
+Native Anthropic and Gemini routes retain native thinking settings, including
+supported `budget_tokens` and `thinkingBudget` values. The Chat Completions
+route accepts reasoning effort words rather than token budgets such as
+`reasoning.max_tokens`. If an existing Chat Completions wrapper exposes a
+budget, map it to a supported effort word in the evaluation adapter. Do not
+apply that conversion to native requests merely because they are proxied.
+
+## Explicit gateway fallback
+
+When the setup cannot use automatic routing, prefer the gateway over requesting
+customer credentials if a compatible Chat Completions client and the public SDK
+can serve the call. For a selected model, `inference_target(runtime)` supplies
+the run's `base_url`, `api_key`, and `model`. OpenAI Chat Completions clients and
+compatible framework wrappers can use this path across supported providers.
+Preserve client types and application behavior; check the model's capabilities.
+
+The current helper requires both hosted credentials and `runtime.model`. If no
+model is selected, keep the application's model defaults; do not invent a
+comparison model or a private gateway URL to work around that requirement.
+When this prevents the gateway fallback, report the SDK limitation before
+falling back to customer credentials.
+
+The gateway selects an agent key first, then an organization key, then a
+platform key. With no customer key configured, this path needs no provider-key
+setup and uses Beaker platform credentials. A configured but broken customer
+key fails instead of falling through. Do not delete saved keys to force platform
+billing; preserve the customer's existing choices.
+
+The helper exposes Chat Completions, including SSE with `stream: true` and
+`stream_options.include_usage`. Native proxy support does not make this helper
+a Responses, Anthropic Messages, or Gemini endpoint. Do not rewrite a working
+native call into the OpenAI shape merely to reach the gateway.
+
+## Customer client and credentials
+
+Use the customer's client and credentials as the last resort for unsupported
+hosts, endpoints, models, or setup constraints, or honor an explicit request to
+use them. Keep the existing provider API and client type. Declare the variables
+the hosted application reads and configure evaluation-scoped values in hosted
+settings; local shell and `.beaker/.env` values remain local. State why this
+route is used and that its provider usage has no Beaker platform fallback.
 
 ## Model-selection boundary
 
 Treat `runtime.model` as an explicit request for Beaker-controlled model
 selection in the evaluation path. Its absence means use the application's
-existing production-like client, model defaults, and credentials.
+existing production-like client and model defaults. Hosted provider routing
+can still supply transport and credentials for those calls.
 `inference_target(runtime)` requires both a selected model and hosted run
-credentials, and raises otherwise, so ordinary application/evaluation runs and
-prompt-only optimization are not gateway-routed. Keep all Beaker imports for
-gateway construction and routing decisions inside `.beaker/`.
+credentials, and raises otherwise. Keep all Beaker imports for gateway
+construction and routing decisions inside `.beaker/`.
+
+The proxy forwards the model the application requests; it does not substitute
+`runtime.model` or constrain native requests to the run's comparison targets.
+Always wire the selected model through the application's existing injection
+seam. For a native client, use its existing model override only when it can
+represent the selected provider and model, and retain the native request shape.
+If that client cannot run the requested model, report the limitation instead of
+silently comparing repeated calls to the production model.
+
+During initial setup, identify the optional model/client override and wire it
+when a narrow injection seam exists. A compatible Chat Completions client can
+use `inference_target(runtime)` for later comparisons; a native client can use
+its supported model override. Keep the initial routing choice independent of
+comparison readiness. Preparing an override does not select a comparison model
+or authorize a comparison run.
 
 The one narrow exception is **tracing integration**: application model call
 sites may import `beaker.tracing` and configure supported instrumentation. This
@@ -55,8 +142,8 @@ gateway construction, or routing.
 
 Prefer these seams in order:
 
-1. Inject a client/model into an existing interface directly from the spec.
-2. Add a small adapter beside the spec under `.beaker/`.
+1. Inject a client/model into an existing interface directly from the integration.
+2. Add a small adapter beside the integration under `.beaker/`.
 3. Only if both fail, add optional keyword arguments to the nearest agent
    factory or eval function. Preserve existing defaults and do not import
    Beaker from application code, except for the tracing wiring described
@@ -66,12 +153,14 @@ Do not modify a central LLM wrapper, production entrypoint, global environment
 routing, or deployment configuration for Beaker. If the application cannot be
 evaluated without such changes, stop and explain the limitation instead.
 
-Example:
+Example gateway branch for a compatible client when the gateway fallback or
+an explicit comparison needs it; the default branch keeps the application's
+client and can use automatic routing:
 
 ```python
-from beaker import inference_target
+from beaker import CaseResult, inference_target
 
-async def _run_case(*, case, targets: None, runtime):
+async def run_case(*, case_input, runtime):
     if runtime.model:
         target = inference_target(runtime)
         model_or_client = build_framework_client(
@@ -80,11 +169,11 @@ async def _run_case(*, case, targets: None, runtime):
             model=target.model,
         )
         result = await run_agent_eval(
-            case.input,
+            case_input,
             model_or_client=model_or_client,
         )
     else:
-        result = await run_agent_eval(case.input)
+        result = await run_agent_eval(case_input)
     return CaseResult(output=result.output)
 ```
 
@@ -94,104 +183,103 @@ handed against known types, so a Beaker-specific object or a wrapper around the
 client is rejected before any case runs. Change the endpoint, not the client
 type or the call shape.
 
-The target speaks OpenAI Chat Completions, including SSE streaming with `stream: true`; `stream_options` supports `include_usage`. Any supported provider's models are reachable through that one shape, so do not add a provider-specific gateway path: do not infer OpenAI Responses or Anthropic Messages support and do not implement a Beaker-specific HTTP envelope.
+`inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. `RolloutRuntime.model` contains the selected canonical `provider:model`; the helper does not invent a model when it is absent.
 
-`inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. Prefer `runtime.canonical_model_id`; the helper may combine an explicit provider and model but does not guess an ambiguous provider.
+Remove a provider-key declaration only when no hosted path reads it, including
+the production-model baseline, setup and scoring. Automatic proxy routing does
+not make an application's environment-variable reads disappear. Never add
+global environment-driven routing for Beaker.
 
-Do not expose provider keys solely for Beaker-selected runs. Use the run-scoped
-Beaker gateway credentials, and remove such a name from `spec.required_env`
-once its calls are gateway-routed. Never add global environment-driven routing
-for Beaker.
-
-This example is for the default repository mode. An intentional
-`@spec(repository=None)` logical-target spec instead receives its declared
-targets and must apply them to the real call.
+For document integrations, also use the candidate documents or runtime object
+provided through `runtime.targets_dir` or `runtime.candidate_runtime`.
 
 ## LLM-as-a-judge scoring
 
-An LLM judge is optimizer-owned traffic, not part of the candidate rollout.
-Declare its model once on the agent's `Spec` with the optional
-`llm_scorer_model` field. Use a canonical `provider:model` value such as
-`openai:gpt-4.1-mini` or `anthropic:claude-sonnet-4-5`. Omit the field when the
-scorer is deterministic. If the repository or developer has not established
-which model an LLM judge should use, ask instead of choosing a default.
+Configure a fixed `scorer_model` independently from the compared model. Pass it
+per run with `--config '{"scorer_model":"openai:gpt-4.1-mini"}'`, or add a shared
+default when every integration in the YAML uses the same judge:
 
-The scorer model is evaluation policy for this agent. It stays fixed when
-Beaker evaluates different `runtime.model` values and when the application runs
-through its normal client/model path with no selected runtime model. Never copy
-or derive `llm_scorer_model` from `runtime.model`; different agents may declare
-different judge models.
+```yaml
+config_defaults:
+  scorer_model: openai:gpt-4.1-mini
+```
 
-For hosted runs, always construct its OpenAI-compatible client from
-`scoring_inference_target()`. This uses a scorer-scoped gateway token backed by
-the platform's existing provider credentials, so
-judge tokens and cost are included automatically in the run ledger and budget.
-Do not use the application's normal provider client when this target is
-available.
+Only set this for an actual LLM judge and a developer-approved model; never
+infer it from `runtime.model`. In `score_case`, use
+`scoring_inference_target()` to obtain the dedicated hosted scorer gateway.
+This accounts for judge traffic separately from candidate execution. In a hosted
+run without `scorer_model`, it raises `RuntimeError("This run does not configure
+a hosted LLM scorer model.")`; it does not fall back to the local judge.
+Confirm the approved model is included in the actual launch configuration.
+Smoke never executes `score_case`, so it cannot catch this missing configuration.
+Deterministic scorers omit `scorer_model` and do not call this helper.
 
-`Spec.llm_scorer_model` plus `scoring_inference_target()` is the accounting path
-for LLM-judge traffic; it does not authorize adding the judge to the candidate
-workflow trace. Keep rubric judges and scorer calls out of that trace even
-when they share a client, wrapper, or framework with the agent.
+The `None` fallback requires all three: no scorer model, no usable scorer gateway
+credentials, and no hosted run ID. In that local case, retain the application's
+own judge client and credentials. Keep the same judge model in local evaluation.
 
-The helper returns `None` during local application or evaluation runs because
-there is no hosted run gateway. Only in that case should the scorer retain its
-existing local provider client and credentials. The structural smoke check does
-not call the scorer.
+A native judge call may also pass through the automatic proxy, but it is
+recorded as `provider_proxy`, not `scorer`. The proxy neither identifies judge
+calls nor applies `scorer_model`. Keep the dedicated scorer credential and
+model wiring for hosted judge accounting. The scorer helper uses Chat
+Completions; if an existing judge cannot use that shape without changing its
+semantics, report the integration limitation rather than silently treating
+automatic proxy billing as equivalent scorer accounting.
+
+For the example YAML above, a task whose existing local judge uses the OpenAI
+SDK can route its judge request as follows. Pass the task's established rubric
+and answer in `question`, and convert the returned judgment into `CaseScore`
+and per-criterion checks in async `score_case(*, case, result, case_files_dir)`.
 
 ```python
 from openai import AsyncOpenAI
+from beaker import scoring_inference_target
 
-from beaker import CaseScore, Spec, scoring_inference_target
+LOCAL_JUDGE_MODEL = "gpt-4.1-mini"  # Same judge as the run's scorer_model.
 
-
-JUDGE_MODEL = "openai:gpt-4.1-mini"
-LOCAL_JUDGE_MODEL = "gpt-4.1-mini"
-
-
-def _judge_client() -> tuple[AsyncOpenAI, str]:
+async def call_judge(question: str) -> str:
     target = scoring_inference_target()
-    if target is not None:
-        return AsyncOpenAI(base_url=target.base_url, api_key=target.api_key), target.model
-    return AsyncOpenAI(), LOCAL_JUDGE_MODEL
-
-
-class LLMJudgeScorer:
-    async def score_case(self, *, case, result) -> CaseScore:
-        client, model = _judge_client()
-        judgment = await client.chat.completions.create(
+    if target is None:
+        client = AsyncOpenAI()  # Existing local provider configuration.
+        model = LOCAL_JUDGE_MODEL
+    else:
+        client = AsyncOpenAI(base_url=target.base_url, api_key=target.api_key)
+        model = target.model
+    async with client:
+        response = await client.chat.completions.create(
             model=model,
-            messages=build_judge_messages(case=case, result=result),
+            messages=[{"role": "user", "content": question}],
         )
-        return case_score_from_judgment(judgment)
-
-
-def build_spec() -> Spec:
-    return Spec(
-        # ...the repository-mode loader and run_case...
-        scorer=LLMJudgeScorer(),
-        llm_scorer_model=JUDGE_MODEL,
-    )
+        return response.choices[0].message.content or ""
 ```
 
-Adapt the returned `base_url`, `api_key`, and `model` to the project's existing
-async client when it is not OpenAI SDK-based. Keep `score_case` non-blocking.
-Keep the local fallback on the same judge model declared by the spec, translating
-only the provider-specific model syntax when the local SDK requires it.
+For a different local provider, preserve the application's existing async judge
+client and request shape in the local fallback; translate only provider-specific
+model syntax. Hosted calls still use the dedicated scorer gateway. Keep
+`score_case` non-blocking and close clients it owns on success or failure.
+The selected integration's judge must remain the same across local evaluation,
+the production-model baseline and every compared model.
 
-Exercise both routes through an existing application/evaluation or trace
-workflow when feasible: with runtime gateway variables present, verify the judge
-uses the runtime target; without them, verify the local provider path remains
-usable. Do not add or modify tests for this validation. `beaker run smoke` is
-structural and does not execute either route. Hosted setup does not need a
-provider API key solely for a judge that uses the runtime gateway.
+When feasible, exercise both routes through an existing evaluation workflow:
+with the hosted scorer target available, verify its URL, credentials and model
+are used; without it, verify the local path still uses the agreed judge. Do not
+print credentials or add consumer tests for this check. Structural smoke never
+calls the scorer, so a passing smoke check does not verify judge routing.
+
+Candidate tracing covers the application workflow, including nested model and
+tool calls. Do not instrument scorer or judge calls as candidate activity.
 
 ## Trace evidence
+
+Proxy usage and billing records do not replace a candidate trace. Keep framework
+or call-site instrumentation for model inputs/outputs, tool executions, stages,
+and parent/child relationships; a gateway usage record alone cannot validate
+that coverage.
 
 ### Trace only the candidate workflow
 
 Instrument the candidate workflow rooted at the main workflow agent inside
-`Spec.run_case`, including its sub-agents, tools, retrievers, and nested model
+`Integration.run_case`, including its sub-agents, tools, retrievers, and nested model
 calls. Never add Beaker tracing to scorers, rubric judges, evaluators,
 post-processing, or post-rollout model calls, even when they use the same
 client, wrapper, or framework.
@@ -203,12 +291,12 @@ tracing at the candidate-workflow invocation boundary so those calls are
 excluded. For example, a LiteLLM `registered(...)` scope wraps the complete
 candidate workflow, not the judge call.
 
-LLM-judge traffic must still declare `Spec.llm_scorer_model` and use
+LLM-judge traffic must still declare launch `scorer_model` and use
 `scoring_inference_target()` during hosted runs. That provides scorer accounting
 and budget enforcement; it does not authorize adding the judge to the candidate
 workflow trace.
 
-Use `runtime.trace` in the spec for concise application stages, artifacts, and
+Use `runtime.trace` in the integration for concise application stages, artifacts, and
 handoffs. At application model call sites, use
 `from beaker.tracing import current_trace`; `runtime.trace` is not available
 there. Preserve the application's existing instrumentation and avoid global
@@ -228,11 +316,14 @@ simulator handles or credentials out of `arguments`.
 Tracing must not change the type or identity of any object the application
 hands to a framework, agent factory, or benchmark harness. Add tracing only at
 the integration entrypoints in the table below, or with `trace.model_call(...)`
-around the call site. Do not put a transparent proxy, `__getattr__` forwarder,
+around the call site. Do not put a transparent Python proxy, `__getattr__` forwarder,
 or monkeypatched method in place of the client or model object. Client-type
 checks reject such wrappers, and every case then fails before it runs.
 Wrap the *call*, not the client, unless the framework requires a client wrapper
 and the type-preserving adapter described below is necessary.
+
+This restriction concerns Python client objects. Beaker's sandbox HTTP proxy
+operates below those objects and does not replace their types or identities.
 
 If tracing cannot be wired without changing that type, keep the original
 unwrapped client, run untraced, and report the tracing gap at handoff. The only
@@ -270,7 +361,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
-| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance, or a `verifiers.registered(env)` scope; **tool spans only** — model calls still need `trace.model_call(...)` |
+| Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
 not replace the wiring guidance in this section. Install the framework extras
@@ -319,7 +410,7 @@ result = graph.invoke(
 )
 ```
 
-In the spec, pass `runtime.trace` instead of `current_trace()`. `config(...)`
+In the integration, pass `runtime.trace` instead of `current_trace()`. `config(...)`
 preserves every other `RunnableConfig` key, including the app's own
 `callbacks`, so an existing OpenInference or LangSmith handler keeps exporting;
 the integration only adds a callback and patches nothing globally. With
@@ -396,10 +487,12 @@ the arguments the model sent, the tool message content, and the exception when
 the tool raised (re-raised, so the model still sees the error message).
 Arguments a `StatefulToolEnv` injects itself (`add_tool(..., args_to_skip=[...])`,
 typically the hidden world state) are recorded by name only. Instrumenting the
-same environment twice is a no-op, so a cached environment shared across cases
-can be instrumented once; without a pinned `trace=` each call records under the
-capture active when it runs. Use `registered(env)` when the instrumentation must
-be undone after the block.
+same environment twice with the same trace setting is a no-op, so a cached
+environment shared across cases can be instrumented once. Without a pinned
+`trace=`, each call records under the active capture and records nothing outside
+a capture. Instrumentation lasts for the instance's lifetime; there is no undo
+API. Use a separate evaluation instance if the application needs an untouched
+environment afterward.
 
 This integration is the one exception to the ownership rule above: it records
 tools only. `verifiers` drives the model through its own client wrappers, so
@@ -428,15 +521,15 @@ delegated request method only.
 Before a hosted baseline, create the wrapped client locally and pass it through
 the exact resolver or type check the application uses. Only execute the traced
 call after that preflight succeeds. This catches an incompatible wrapper before
-every hosted case becomes an unresolved rollout; do not assume a generic Beaker
-proxy can satisfy another framework's client contract.
+every hosted case becomes an unresolved rollout; do not assume a generic Python
+client proxy can satisfy another framework's client contract.
 
 First verify structural wiring with the real local dataset or the exact hosted
 snapshot selected for launch:
 
 ```bash
-beaker run smoke --strict --config '{"local_dataset_path":"<dataset-dir>"}'
-beaker run smoke --strict --agent <selected-agent> --dataset <name@revision>
+beaker run smoke --strict --integration-id <id> --config '{"local_dataset_path":"<dataset-dir>"}'
+beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset <name@revision>
 ```
 
 Smoke verifies structural wiring only; it neither opens a capture nor executes
@@ -453,11 +546,13 @@ beaker trace inspect .beaker/traces
 ```
 
 Validate tracing by exercising the candidate workflow rooted at the main
-workflow agent inside `Spec.run_case`, including its sub-agents, tools,
+workflow agent inside `Integration.run_case`, including its sub-agents, tools,
 retrievers, and nested model calls. A capture containing only judge or scorer
 calls does not satisfy runtime trace validation.
 
 Validate both the default-model branch and selected-model branch
-through the existing application/evaluation path when feasible. Fail setup
+through the existing application/evaluation path when feasible. Check that the
+selected model reaches the actual request; proxy success alone does not prove
+that model selection or tracing works. Fail setup
 clearly if `runtime.model` is present but the selected client cannot be
 injected. Do not add tests for this validation.
