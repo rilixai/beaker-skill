@@ -1,4 +1,4 @@
-"""Document contract example; load the customer's real documents in prepare_run."""
+"""Document contract example; replace the FAQ lookup with the real application."""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -24,14 +24,16 @@ from pydantic import BaseModel
 class Row(BaseModel):
     id: str
     input: str
-    expected: dict[str, str]
+    expected: str
 
 
 class Setup(DocumentRunSetup[Row, dict[str, str]]):
     row_model = Row
 
     @asynccontextmanager
-    async def prepare_run(self, *, runtime: SetupRuntime):
+    async def prepare_run(
+        self, *, runtime: SetupRuntime
+    ) -> AsyncIterator[DocumentRunSetupResult]:
         # TODO(beaker): fetch real documents, preserving source IDs and versions.
         yield DocumentRunSetupResult(
             target_documents=(
@@ -39,7 +41,7 @@ class Setup(DocumentRunSetup[Row, dict[str, str]]):
                     source_id="guide",
                     group="wiki",
                     name="guide.md",
-                    content="Example guide",
+                    content="Refund window: 30 days\nSupport hours: 09:00-17:00 UTC",
                 ),
             )
         )
@@ -50,7 +52,9 @@ class Setup(DocumentRunSetup[Row, dict[str, str]]):
         yield Case(id=row.id, input=row.input, expected=row.expected)
 
     @asynccontextmanager
-    async def open_candidate(self, *, targets_dir: Path, scratch_dir: Path):
+    async def open_candidate(
+        self, *, targets_dir: Path, scratch_dir: Path
+    ) -> AsyncIterator[dict[str, str]]:
         # Read the current tree, including additions and excluding deletions.
         # An application may instead build an index under scratch_dir here and
         # close it when this context exits. Never mutate targets_dir.
@@ -61,11 +65,26 @@ class Setup(DocumentRunSetup[Row, dict[str, str]]):
         }
 
 
+def answer_question(question: str, candidate_documents: dict[str, str]) -> str:
+    """Illustrative lookup in FAQ lines formatted as 'topic: answer'."""
+    for content in candidate_documents.values():
+        for line in content.splitlines():
+            topic, separator, answer = line.partition(":")
+            if separator and topic.strip().casefold() == question.strip().casefold():
+                return answer.strip()
+    return "Not found"
+
+
 async def run_case(
     *, case_input: JsonValue, runtime: RolloutRuntime[dict[str, str]]
 ) -> CaseResult:
-    # TODO(beaker): pass case_input and this context into the real application.
-    return CaseResult(output=runtime.candidate_runtime, output_kind="text")
+    # TODO(beaker): replace the FAQ lookup with the customer's real application.
+    if not isinstance(case_input, str):
+        raise TypeError("case_input must be a question string")
+    if runtime.candidate_runtime is None:
+        raise RuntimeError("Document candidate runtime was not prepared")
+    answer = answer_question(case_input, runtime.candidate_runtime)
+    return CaseResult(output=answer, output_kind="value")
 
 
 async def score_case(
@@ -78,7 +97,7 @@ async def score_case(
         field_scores={"exact": exact},
         checks=(
             Check(
-                name="Document content matches expected",
+                name="Answer matches expected",
                 verdict="pass" if exact else "fail",
                 expected=case.expected,
                 predicted=result.output,

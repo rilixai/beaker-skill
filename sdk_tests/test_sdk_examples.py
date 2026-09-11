@@ -38,15 +38,15 @@ class IntegrationExamples(unittest.TestCase):
                     resolved = ResolvedIntegration.load(
                         name=path.stem, entrypoint=f"{path.stem}:integration"
                     )
-                    expected = (
-                        {"wiki/guide.md": "Example guide"}
+                    case_input, expected = (
+                        ("Refund window", "30 days")
                         if isinstance(
                             module.integration.targets, beaker.DocumentTargets
                         )
-                        else "input"
+                        else ("input", "input")
                     )
                     row = resolved.row_adapter.validate_python(
-                        {"id": "case", "input": "input", "expected": expected}
+                        {"id": "case", "input": case_input, "expected": expected}
                     )
 
                     async def execute(root, resolved, row, module):
@@ -104,7 +104,7 @@ class IntegrationExamples(unittest.TestCase):
                             )
                             failed = await module.integration.score_case(
                                 case=case,
-                                result=beaker.CaseResult(output=None),
+                                result=beaker.CaseResult(output="Incorrect answer"),
                                 case_files_dir=runtime.case_files_dir,
                             )
                             self.assertEqual(failed.objective, 0.0)
@@ -135,22 +135,37 @@ class IntegrationExamples(unittest.TestCase):
                             source_id="guide",
                             group="wiki",
                             name="guide.md",
-                            content="Example guide",
+                            content="Refund window: 30 days",
                         ),
                     )
                 ),
                 module.integration.targets,
             )
             variants = (
-                {"wiki/guide.md": "Updated guide"},
-                {
-                    "wiki/guide.md": "Example guide",
-                    "wiki/nested/new.txt": "New document",
-                },
-                {"wiki/replacement.txt": "Replacement guide"},
-                {},
+                (
+                    {
+                        "wiki/guide.md": "Refund window: 60 days\nSupport hours: 09:00-17:00 UTC"
+                    },
+                    {
+                        "Refund window": "60 days",
+                        "Support hours": "09:00-17:00 UTC",
+                        "Cancellation window": "Not found",
+                    },
+                ),
+                (
+                    {
+                        "wiki/guide.md": "Refund window: 30 days",
+                        "wiki/nested/new.txt": "Cancellation window: 24 hours",
+                    },
+                    {"Refund window": "30 days", "Cancellation window": "24 hours"},
+                ),
+                (
+                    {"wiki/replacement.txt": "Refund window: 14 days"},
+                    {"Refund window": "14 days"},
+                ),
+                ({}, {"Refund window": "Not found"}),
             )
-            for documents in variants:
+            for documents, answers in variants:
                 with (
                     self.subTest(documents=documents),
                     tempfile.TemporaryDirectory() as temporary,
@@ -169,22 +184,26 @@ class IntegrationExamples(unittest.TestCase):
                         ).changes
                     )
 
-                    async def execute(targets, root, documents):
+                    async def execute(targets, root, documents, answers):
                         async with module.Setup().open_candidate(
                             targets_dir=targets, scratch_dir=root / "scratch"
                         ) as candidate:
-                            result = await module.integration.run_case(
-                                case_input="Read the candidate documents",
-                                runtime=RolloutRuntime(
-                                    case_files_dir=root / "cases",
-                                    trace=current_trace(),
-                                    targets_dir=targets,
-                                    candidate_runtime=candidate,
-                                ),
+                            self.assertEqual(candidate, documents)
+                            runtime = RolloutRuntime(
+                                case_files_dir=root / "cases",
+                                trace=current_trace(),
+                                targets_dir=targets,
+                                candidate_runtime=candidate,
                             )
-                            self.assertEqual(result.output, documents)
+                            for question, expected in answers.items():
+                                with self.subTest(question=question):
+                                    result = await module.integration.run_case(
+                                        case_input=question, runtime=runtime
+                                    )
+                                    self.assertEqual(result.output, expected)
+                                    self.assertEqual(result.output_kind, "value")
 
-                    asyncio.run(execute(targets, root, documents))
+                    asyncio.run(execute(targets, root, documents, answers))
         finally:
             sys.modules.pop(path.stem, None)
 
@@ -207,15 +226,15 @@ class IntegrationExamples(unittest.TestCase):
                     "    source_dir: .\n    package_import_root: .beaker\n"
                     "config_defaults:\n  local_dataset_path: dataset\n"
                 )
-                expected = (
-                    {"wiki/guide.md": "Example guide"}
+                case_input, expected = (
+                    ("Refund window", "30 days")
                     if path.stem == "document_integration"
-                    else "input"
+                    else ("input", "input")
                 )
                 for split in ("train", "test"):
                     (root / f"dataset/{split}.jsonl").write_text(
                         json.dumps(
-                            {"id": split, "input": "input", "expected": expected}
+                            {"id": split, "input": case_input, "expected": expected}
                         )
                         + "\n"
                     )

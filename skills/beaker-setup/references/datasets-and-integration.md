@@ -130,7 +130,7 @@ I/O and lifecycle; the integration owns row-to-case conversion and application
 execution. See [repository_integration.py](repository_integration.py) and
 [document_integration.py](document_integration.py) for executable contract scaffolds.
 These illustrate wiring only; use the customer's actual application and labeled
-rows rather than their demonstration echo and exact-match functions. Keep the
+rows rather than their demonstration applications and exact-match scorers. Keep the
 `TODO(beaker)` markers until the corresponding hooks are implemented; unchanged
 examples must remain `SCAFFOLD` under `beaker run smoke --strict`.
 
