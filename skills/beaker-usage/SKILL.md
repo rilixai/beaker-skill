@@ -3,8 +3,8 @@ name: beaker-usage
 description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker integration; use beaker-setup for setup work.
 license: MIT
 metadata:
-  version: "0.5.0"
-  beaker_sdk_version: "0.5.0"
+  version: "0.6.0"
+  beaker_sdk_version: "0.6.0"
 ---
 
 # Beaker usage
@@ -15,11 +15,11 @@ datasets, CI/CD automation, or Beaker config merely to launch or manage a run.
 
 ## Version check
 
-This skill (0.5.0) is written for beaker-sdk 0.5.0; skill and SDK share one
+This skill (0.6.0) is written for beaker-sdk 0.6.0; skill and SDK share one
 version number and release together. Run `beaker --version` first. If the CLI
-is older than 0.5.0 or does not recognize `--version`, upgrade `beaker-sdk`
+is older than 0.6.0 or does not recognize `--version`, upgrade `beaker-sdk`
 through the project's development-dependency workflow. If it is newer than
-0.5.0, run `npx skills update beaker-usage` and `npx skills update
+0.6.0, run `npx skills update beaker-usage` and `npx skills update
 beaker-setup`, then reload the skill before continuing.
 
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,

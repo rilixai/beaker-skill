@@ -226,7 +226,7 @@ itself; it renders what the integration declares. Two contract fields drive both
   values in both. Keep rows short: one line each for `name` and `description`.
   Ten rows that differ only in an id are
   ten indistinguishable rows; when no such state exists, leave the ids and
-  explain the scoring in the recipe's README instead.
+  explain the scoring in the Integration's README instead.
 
   | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
   |---|---|---|---|---|---|---|
