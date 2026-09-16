@@ -164,8 +164,12 @@ setup instance. `runtime.config` contains the launch `extra` mapping, not the
 whole platform run configuration.
 
 For repository targets, setup and scoring run in the trusted controller while
-`run_case` imports each candidate's application source in a fresh evaluator
-process. A client stored on the setup instance can serve `load_cases`; it is not
+`run_case` imports each candidate's application source in a separate evaluator
+process. Multiple cases and retries may share that process, so module globals,
+caches, and framework state can survive a call to `run_case`. Restore per-case
+state and close owned resources on success and failure; account for the configured
+concurrency when using process-global state. Do not assume a fresh process per case.
+A client stored on the setup instance can serve `load_cases`; it is not
 available in the candidate process. Pass JSON inputs and staged `CaseFile` values
 across this boundary, then read files through `runtime.case_files_dir` in the
 runner or `case_files_dir` in the scorer. Do not pass live clients, absolute
