@@ -284,16 +284,11 @@ Use the selected agent's page to view its runs and score trends.
 
 ## Reuse an integration the repository already ships
 
-When `.beaker/beaker.yaml` already points at an Integration with no
-`TODO(beaker)` left (for example a fork of a cookbook recipe), it is done work:
-
-- Do not `beaker init`, add an integration, or rewrite the module or YAML.
-- Select that config, then `beaker agent setup "<Agent Name>" --repo
-  <owner/name>` using the checkout's own remote (the fork). It overwrites the
-  committed upstream `agent_key`; that line is normally the only change.
-- Select the dataset, run `beaker run smoke --strict`, commit and push only
-  what `beaker onboarding status` asks for, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`
-  on that remote. Never open a pull request. Launch with `beaker run trigger`.
+If `.beaker/` already holds a working integration (no `TODO(beaker)` left, for
+example a fork of a cookbook recipe), reuse it: no `beaker init`, no rewrite, no
+pull request. Run `beaker agent setup` against that config with the checkout's
+own remote, select the dataset, `beaker run smoke --strict`, push only what
+`beaker onboarding status` asks for, then `beaker run trigger`.
 
 ## Implement the real integration
 
