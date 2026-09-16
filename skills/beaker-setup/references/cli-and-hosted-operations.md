@@ -320,15 +320,11 @@ Classify each credential before configuring it:
   selected agent's encrypted environment settings.
 - Prefer automatic hosted provider routing during initial integration when it
   supports the setup, host, endpoint, and model. When enabled, it supplies platform
-  access without changing the client or requiring a real provider key. Leave
-  canonical provider-key names (`OPENAI_API_KEY` and the like) out of
-  `integrations.<id>.required_env` for routed calls: the sandbox supplies a
-  placeholder for every canonical key the application reads, and keyless proxy
-  calls use platform credentials without looking up organization keys.
-  Declaring one makes Beaker fill it from an organization key when no agent
-  value is set, which switches that call to direct provider billing. Preserve
-  existing hosted keys and customer billing choices; do not copy local provider
-  keys into hosted settings by default.
+  access without changing the client or requiring a real provider key. OpenAI,
+  Anthropic, Google/Gemini and OpenRouter keys are optional; leave them out of
+  `integrations.<id>.required_env`. Preserve existing hosted keys and customer
+  billing choices; do not copy local provider keys into hosted settings by
+  default.
 - If automatic routing cannot serve the setup, prefer a compatible OpenAI Chat
   Completions gateway client before requesting customer credentials. The current
   `inference_target(runtime)` helper requires a selected model; report that limit
