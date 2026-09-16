@@ -249,7 +249,7 @@ they asked for.
    `source_dir: services/invoices` and `package_import_root: .beaker`.
    Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
    before launching any nested-project integration.
-5. Never overwrite an existing integration or populated config. Fill the existing integration instead.
+5. Never overwrite an existing integration or populated config. Fill the existing integration instead; when it is already complete, follow **Reuse an integration the repository already ships**.
 6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 
 By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
@@ -281,6 +281,38 @@ every YAML correction before starting a new run; an existing run does not pick
 up later config or agent-setting changes.
 
 Use the selected agent's page to view its runs and score trends.
+
+## Reuse an integration the repository already ships
+
+Some repositories, such as a fork of a Beaker cookbook recipe, already contain
+a finished integration: a `.beaker/beaker.yaml` whose `integrations.<id>`
+points at an Integration module with real `load_cases`, `run_case`, and
+`score_case` and no `TODO(beaker)` left. Treat that as done work, not as a
+starting template:
+
+- Do not run `beaker init`, add another integration, or rewrite the existing
+  module, scoring, tracing, or YAML paths. Read its README or module docstring
+  for the intended metric, dataset, and required credentials instead of
+  rediscovering them.
+- Select that config (`cd` into its project root, or pass `--config-file
+  <project>/.beaker/beaker.yaml` from the Git root) and run `beaker agent
+  setup "<Agent Name>" --repo <owner/name>` with the checkout's own GitHub
+  remote. In a fork, that is the fork, and the committed
+  `integrations.<id>.agent_key` belongs to the upstream organization: setup
+  replaces it with the developer's agent, and that YAML line is normally the
+  only change onboarding makes.
+- Upload or select the labeled dataset (recipes often ship a helper such as
+  `upload_splits.py` for this), confirm hosted environment values, and run
+  `beaker run smoke --strict` with the same selector.
+- Commit and push only when `beaker onboarding status` reports uncommitted
+  integration changes, such as the `agent_key` update, to
+  `beaker/<YYYYMMDD-HHMM>-<agent-name>` on the checkout's remote. Never open a
+  pull request, and never push to the upstream repository. Then launch with
+  `beaker run trigger` (pass `--ref` for that branch).
+
+If discovery is unsure whether the shipped integration is complete, run
+`beaker run smoke --strict` before deciding: a passing structural smoke check
+is the signal to reuse it.
 
 ## Implement the real integration
 
@@ -512,6 +544,9 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Follow the existing-agent decision from **Start safely**. Never create a
   generic repository-named agent or replace a matching agent's selected config.
+- Never re-create or rewrite an integration the repository already ships, and
+  never open a pull request for it; follow **Reuse an integration the
+  repository already ships**.
 - Never attempt to grant GitHub access on the developer's behalf, and never
   guess or pass `--installation-id`; surface the install URL and wait for the
   developer to confirm.
