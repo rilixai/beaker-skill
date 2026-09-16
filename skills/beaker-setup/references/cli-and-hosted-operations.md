@@ -320,14 +320,11 @@ Classify each credential before configuring it:
   selected agent's encrypted environment settings.
 - Prefer automatic hosted provider routing during initial integration when it
   supports the setup, host, endpoint, and model. When enabled, it supplies platform
-  access without changing the client or requiring a real provider key. Keep
-  canonical key names in `integrations.<id>.required_env` when application code
-  reads them. Declared variables can receive organization keys unless an agent
-  value is set; real keys keep direct provider billing. The sandbox supplies
-  placeholders for still-missing keys, and keyless proxy calls use platform
-  credentials without looking up organization keys. Preserve existing hosted
-  keys and customer billing choices; do not copy local provider keys into hosted
-  settings by default.
+  access without changing the client or requiring a real provider key. OpenAI,
+  Anthropic, Google/Gemini and OpenRouter keys are optional; leave them out of
+  `integrations.<id>.required_env`. Preserve existing hosted keys and customer
+  billing choices; do not copy local provider keys into hosted settings by
+  default.
 - If automatic routing cannot serve the setup, prefer a compatible OpenAI Chat
   Completions gateway client before requesting customer credentials. The current
   `inference_target(runtime)` helper requires a selected model; report that limit

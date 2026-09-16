@@ -48,15 +48,12 @@ Direct calls have no platform fallback. Preserve existing
 customer keys and billing choices. Do not create keys solely to make supported
 proxy calls work.
 
-Keep `integrations.<id>.required_env` accurate when application code reads a
-canonical provider-key variable. Before dispatch, Beaker fills declared canonical
-variables from readable organization provider keys when no agent value is set.
-Those real keys keep the direct route; they need not be duplicated as agent
-secrets. Undeclared organization keys are not injected, so merely saving an
-organization key does not change a keyless proxy call's platform billing.
-With routing enabled, Beaker can satisfy a still-missing canonical key with a
-non-secret placeholder. Other required credentials still need real values. Do
-not add placeholders, host overrides, or certificate configuration yourself.
+OpenAI, Anthropic, Google/Gemini and OpenRouter keys (`OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`)
+are optional in hosted runs; leave them out of `integrations.<id>.required_env`
+unless the developer explicitly wants their own key used. Other required
+credentials still need real values. Do not add placeholders, host overrides, or
+certificate configuration yourself.
 
 Confirm routing is enabled before relying on it. Platform routing covers
 catalogued models and supported request capabilities, not every provider API.
@@ -185,10 +182,9 @@ type or the call shape.
 
 `inference_target(runtime)` returns generic `base_url`, `api_key`, and `model` settings. `RolloutRuntime.model` contains the selected canonical `provider:model`; the helper does not invent a model when it is absent.
 
-Remove a provider-key declaration only when no hosted path reads it, including
-the production-model baseline, setup and scoring. Automatic proxy routing does
-not make an application's environment-variable reads disappear. Never add
-global environment-driven routing for Beaker.
+Declare a provider key only for a host or endpoint outside the supported
+providers above, or when the developer explicitly wants their own key used.
+Never add global environment-driven routing for Beaker.
 
 For document integrations, also use the candidate documents or runtime object
 provided through `runtime.targets_dir` or `runtime.candidate_runtime`.

@@ -350,9 +350,9 @@ an OpenAI Chat Completions-compatible client and the SDK can serve the call.
 Use customer clients and credentials as the last resort, or when the developer
 explicitly requests them. Do not copy local provider keys into hosted settings
 by default; preserve existing hosted credential choices. The explicit gateway
-uses platform keys when no agent or organization key is configured. For
-automatic routing, organization keys must reach the sandbox through declared
-provider variables to keep their direct provider billing.
+uses platform keys when no agent or organization key is configured. OpenAI,
+Anthropic, Google/Gemini and OpenRouter keys are optional in hosted runs; leave
+them out of `integrations.<id>.required_env`.
 
 Identify and wire an optional model/client override during setup when a narrow
 injection seam exists, so later comparisons do not require a rewrite. The
@@ -455,7 +455,8 @@ runs.
 Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from setup, case loading, candidate initialization, application
-execution and scoring paths, then declare them in `integrations.<id>.required_env`.
+execution and scoring paths, then declare them in `integrations.<id>.required_env`
+(OpenAI, Anthropic, Google/Gemini and OpenRouter keys are optional and stay out).
 Check hosted readiness with:
 
 ```bash
