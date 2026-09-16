@@ -284,11 +284,11 @@ Use the selected agent's page to view its runs and score trends.
 
 ## Reuse an integration the repository already ships
 
-If `.beaker/` already holds a working integration (no `TODO(beaker)` left, for
-example a fork of a cookbook recipe), reuse it: no `beaker init`, no rewrite, no
-pull request. Run `beaker agent setup` against that config with the checkout's
-own remote, select the dataset, `beaker run smoke --strict`, push only what
-`beaker onboarding status` asks for, then `beaker run trigger`.
+If `.beaker/` already holds a working integration (for example a fork of a
+cookbook recipe), reuse it unless the user asks otherwise: no `beaker init`, no
+rewrite, no pull request. Run `beaker agent setup` against that config with the
+checkout's own remote, select the dataset, `beaker run smoke --strict`, push only
+what `beaker onboarding status` asks for, then `beaker run trigger`.
 
 ## Implement the real integration
 
@@ -520,8 +520,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Follow the existing-agent decision from **Start safely**. Never create a
   generic repository-named agent or replace a matching agent's selected config.
-- Never re-create or rewrite an integration the repository already ships;
-  reuse it.
+- Never re-create or rewrite an integration the repository already ships
+  unless the user asks for it; reuse it.
 - Never attempt to grant GitHub access on the developer's behalf, and never
   guess or pass `--installation-id`; surface the install URL and wait for the
   developer to confirm.
