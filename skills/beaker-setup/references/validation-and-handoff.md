@@ -263,15 +263,14 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   case-loading, document-initialization, application and scoring path, including
   SDK defaults and fallback branches, not from existing
   `integrations.<id>.required_env` entries alone.
-- `integrations.<id>.required_env` contains the variables those paths read directly,
-  including setup-only credentials. Required secrets are available from hosted
-  settings. Readable organization provider keys fill declared canonical variables
-  when no agent value is set and keep direct provider billing. Missing canonical
-  keys can instead be covered by confirmed hosted proxy routing for supported
-  calls, using platform credentials without an organization-key lookup. No real
-  provider key was created or waited on solely for such routing or explicit
-  gateway access. Local shell and `.beaker/.env` values were not treated as hosted
-  settings.
+- `integrations.<id>.required_env` contains the non-provider variables those
+  paths read directly, including setup-only credentials, and omits canonical
+  provider keys for calls covered by confirmed hosted proxy routing (the sandbox
+  supplies placeholders and platform credentials for those; declaring them would
+  pull in an organization key and direct billing). Required secrets are
+  available from hosted settings. No real provider key was created or waited on
+  solely for such routing or explicit gateway access. Local shell and
+  `.beaker/.env` values were not treated as hosted settings.
 - Every Beaker YAML or agent-setting correction was followed by a new run;
   existing runs were not expected to pick up later changes.
 - When tracing applies, a best effort was made to wire it so that local
