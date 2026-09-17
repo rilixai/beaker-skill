@@ -286,9 +286,10 @@ Use the selected agent's page to view its runs and score trends.
 
 If `.beaker/` already holds a working integration (for example a fork of a
 cookbook recipe), reuse it unless the user asks otherwise: no `beaker init`, no
-rewrite, no pull request. Run `beaker agent setup` against that config with the
-checkout's own remote, select the dataset, `beaker run smoke --strict`, push only
-what `beaker onboarding status` asks for, then `beaker run trigger`.
+rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run
+`beaker agent setup` against it using this checkout's own GitHub repository
+(`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
+--strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
 
 ## Implement the real integration
 
