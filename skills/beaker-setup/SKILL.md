@@ -290,6 +290,11 @@ rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run
 `beaker agent setup` against it using this checkout's own GitHub repository
 (`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
 --strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
+`onboarding status` only accepts an agent whose repository is the one this
+checkout pushes to and whose `beaker_config_path` is the selected config; if the
+shipped `agent_key` names an agent bound elsewhere (for example the upstream
+cookbook), run `beaker agent setup "<New Agent Name>" --repo <owner/name>` so
+setup creates a fresh agent and records its key.
 
 ## Implement the real integration
 
@@ -445,8 +450,9 @@ global `--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If
 running a later command from the Git root instead, use the full
 repository-relative path, for example `--config-file
 services/invoices/.beaker/beaker.yaml`. Setup stores the discovered YAML on the
-agent as `beaker_config_path` relative to the Git root. Rerunning setup also
-synchronizes that path for an existing repository-associated agent. A hosted
+agent as `beaker_config_path` relative to the Git root. Setup refuses to
+re-point an existing repository-associated agent at a different config path;
+choose a new agent name for the new task instead. A hosted
 run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
 The YAML's `integrations.<id>.source_dir` independently identifies the Git-root-relative
