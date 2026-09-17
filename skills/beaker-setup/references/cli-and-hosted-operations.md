@@ -111,7 +111,7 @@ Use `beaker onboarding status --json` for automation:
   a different agent; creation requires `--repo <owner/name>`.
 - Selection precedence is explicit `--agent`/`--agent-key`, then `BEAKER_AGENT_KEY`, then `integrations.<id>.agent_key` in `.beaker/beaker.yaml`.
 - `beaker agent setup` records the printed agent key in `integrations.<id>.agent_key` in the selected `.beaker/beaker.yaml`; pass `--integration-id <id>` when the config has several integrations. A developer-supplied agent name is approval; do not ask again.
-- Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Rerunning setup synchronizes this value for an existing repository-associated agent; pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
+- Agents represent optimization targets, not repositories. Agent setup discovers the selected YAML and stores it on the agent as `beaker_config_path`, relative to the Git root. Setup refuses to re-point an existing repository-associated agent at a different config path (choose a new agent name instead); pass `--repo` when selecting an unassociated agent so setup can associate it and store the path.
 - Archived agents retain history and released prompt serving but reject new changes. Their keys cannot be reused; choose a different target name.
 
 Do not ask the developer to paste API keys when CLI login is available. `BEAKER_AGENT_KEY` is an agent selector, not a credential-bound API key.

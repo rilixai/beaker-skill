@@ -290,11 +290,12 @@ rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run
 `beaker agent setup` against it using this checkout's own GitHub repository
 (`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
 --strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
-`onboarding status` only accepts an agent whose repository is the one this
-checkout pushes to and whose `beaker_config_path` is the selected config; if the
-shipped `agent_key` names an agent bound elsewhere (for example the upstream
-cookbook), run `beaker agent setup "<New Agent Name>" --repo <owner/name>` so
-setup creates a fresh agent and records its key.
+`onboarding status` only accepts an agent whose repository is this checkout's
+`origin` (or its sole GitHub remote) and whose `beaker_config_path` is the
+selected config; if the shipped `agent_key` names an agent bound elsewhere (for
+example the upstream cookbook), run
+`beaker agent setup "<New Agent Name>" --repo <owner/name>` so setup creates a
+fresh agent and records its key.
 
 ## Implement the real integration
 
