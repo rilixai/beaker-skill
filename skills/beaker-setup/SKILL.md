@@ -249,7 +249,7 @@ they asked for.
    `source_dir: services/invoices` and `package_import_root: .beaker`.
    Read [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md)
    before launching any nested-project integration.
-5. Never overwrite an existing integration or populated config. Fill the existing integration instead.
+5. Never overwrite an existing integration or populated config. Fill the existing integration instead; when it is already complete, follow **Reuse an integration the repository already ships**.
 6. Install the dependency command printed by `beaker init`, using the project's development/tooling dependency group when supported. Do not make production startup depend on Beaker.
 
 By default, `beaker init` creates `.beaker/beaker.yaml` and, when needed,
@@ -281,6 +281,21 @@ every YAML correction before starting a new run; an existing run does not pick
 up later config or agent-setting changes.
 
 Use the selected agent's page to view its runs and score trends.
+
+## Reuse an integration the repository already ships
+
+If `.beaker/` already holds a working integration (for example a fork of a
+cookbook recipe), reuse it unless the user asks otherwise: no `beaker init`, no
+rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run
+`beaker agent setup` against it using this checkout's own GitHub repository
+(`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
+--strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
+`onboarding status` only accepts an agent whose repository is this checkout's
+`origin` (or its sole GitHub remote) and whose `beaker_config_path` is the
+selected config; if the shipped `agent_key` names an agent bound elsewhere (for
+example the upstream cookbook), run
+`beaker agent setup "<New Agent Name>" --repo <owner/name>` so setup creates a
+fresh agent and records its key.
 
 ## Implement the real integration
 
@@ -436,8 +451,9 @@ global `--config-file`/`BEAKER_CONFIG_FILE` selection used during init. If
 running a later command from the Git root instead, use the full
 repository-relative path, for example `--config-file
 services/invoices/.beaker/beaker.yaml`. Setup stores the discovered YAML on the
-agent as `beaker_config_path` relative to the Git root. Rerunning setup also
-synchronizes that path for an existing repository-associated agent. A hosted
+agent as `beaker_config_path` relative to the Git root. Setup refuses to
+re-point an existing repository-associated agent at a different config path;
+choose a new agent name for the new task instead. A hosted
 run can then find a config such as
 `services/invoices/.beaker/beaker.yaml` without another path entry.
 The YAML's `integrations.<id>.source_dir` independently identifies the Git-root-relative
@@ -512,6 +528,8 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 - Never invent labeled examples from code, schemas, prompts, README text, or plausible domain knowledge.
 - Follow the existing-agent decision from **Start safely**. Never create a
   generic repository-named agent or replace a matching agent's selected config.
+- Never re-create or rewrite an integration the repository already ships
+  unless the user asks for it; reuse it.
 - Never attempt to grant GitHub access on the developer's behalf, and never
   guess or pass `--installation-id`; surface the install URL and wait for the
   developer to confirm.
