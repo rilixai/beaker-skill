@@ -3,8 +3,8 @@ name: beaker-setup
 description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.6.0"
-  beaker_sdk_version: "0.6.0"
+  version: "0.6.1"
+  beaker_sdk_version: "0.6.1"
 ---
 
 # Beaker setup
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.6.0) is written for beaker-sdk 0.6.0. The skill and the SDK are
+This skill (0.6.1) is written for beaker-sdk 0.6.1. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.6.0' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.6.0, or does
+(or `uvx --from 'beaker-sdk>=0.6.1' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.6.1, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.6.0, this skill is
+or flags this skill relies on. If the CLI is newer than 0.6.1, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
