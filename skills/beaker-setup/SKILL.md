@@ -311,13 +311,19 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   declare them with `CaseFile`.
 - Open clients used for case loading or document setup in an async-context-manager
   `prepare_run(*, runtime)`. Beaker owns cleanup. Repository candidates execute in
-  a fresh evaluator process; setup clients and in-memory state do not transfer
-  to `run_case`. Customer options arrive through `SetupRuntime.config` from
+  a separate evaluator process; multiple cases and retries may share that process.
+  Setup clients and in-memory state do not transfer to `run_case`. Manage per-case
+  state and cleanup explicitly, including on failure, and account for configured
+  concurrency. Customer options arrive through `SetupRuntime.config` from
   launch `extra`, supplied per run or through optional `config_defaults.extra`.
 - Implement `run_case(*, case_input, runtime)` by calling the real application.
   Return `CaseResult(output=..., output_kind=...)` with a JSON application
   result. Output is retained as the prediction, so keep observed state needed by
   the scorer compact. Use `runtime.trace` for model/tool telemetry.
+  Preserve execution failures: if the application catches provider or infrastructure
+  errors, classify them before returning `CaseResult`, as described in
+  [datasets-and-integration.md](references/datasets-and-integration.md). A caught
+  error is not automatically a measured wrong answer.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   passing and failing checks. Ask which metric to optimize and which weights to
