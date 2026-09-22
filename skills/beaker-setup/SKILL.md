@@ -317,7 +317,11 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
 - Implement `run_case(*, case_input, runtime)` by calling the real application.
   Return `CaseResult(output=..., output_kind=...)` with a JSON application
   result. Output is retained as the prediction, so keep observed state needed by
-  the scorer compact. Use `runtime.trace` for model/tool telemetry.
+  the scorer compact. Use `runtime.trace` for model/tool telemetry. Treat
+  termination as part of the hook contract: once the application cannot produce
+  a complete result, let the exception propagate promptly instead of swallowing
+  it or leaving `run_case` waiting. Use `RetryableCaseError` only when another
+  attempt may succeed.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   passing and failing checks. Ask which metric to optimize and which weights to
