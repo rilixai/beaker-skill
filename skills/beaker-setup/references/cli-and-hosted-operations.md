@@ -242,10 +242,11 @@ reads them. Runs are immutable snapshots: changing YAML or agent settings does
 not repair an existing failed run, so start a new run after correcting either.
 A passing structural smoke check does not prove that the hosted image builds,
 that `run_case` executes, or that an environment value reaches the child
-process. The hosted build validates declared targets against the imported
-Integration; a mismatch fails the build. If `targets` is absent, playbook
-generation cannot start in the shared checkout image during the Integration
-build and instead waits for the ready Integration image.
+process. At optimization run startup, the imported Integration's targets are
+checked against the declaration before setup or evaluation; a mismatch fails
+the run. If `targets` is absent, playbook generation cannot start in the shared
+checkout image during the Integration build and instead waits for the ready
+Integration image.
 
 Paths inside the selected integration table use hosted checkout coordinates:
 

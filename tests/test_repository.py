@@ -176,7 +176,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("repository(paths=", preflight)
         self.assertIn("repository()", preflight)
         self.assertIn("documents(groups=", preflight)
-        self.assertIn("waits for the ready Integration image", preflight)
+        self.assertRegex(preflight, r"waits for the ready\s+Integration image")
 
     def test_examples_compile_without_sdk_dependencies(self):
         for path in (SKILL.parent / "references").glob("*_integration.py"):
