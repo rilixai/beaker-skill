@@ -50,12 +50,13 @@ Follow this order. The rest of this skill is constraints and recovery.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
 6. After initial discovery, ask all currently known unresolved decisions together, such as which metric to optimize, the labeled-data source, quick-start versus full dataset size, agent name, judge model, or required credentials. Do not wait for discovery to be exhaustive, and continue independent discovery and implementation while the developer responds. Batching is best effort: if later discovery reveals another required decision, ask it then rather than guessing or delaying current work.
 7. Replace every `TODO(beaker)` in the integration and wire the real model call.
-8. `beaker agent setup "<Agent Name>"` (add `--integration-id <id>` when the config has several integrations). Setup records the agent key in `integrations.<id>.agent_key`. A name the developer supplied is approval; do not ask again.
-9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
-10. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
-11. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
-12. The first hosted run uses `beaker run trigger` (Beaker agent, dataset, optional `--ref`, and required judge configuration when applicable). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
-13. Run `beaker onboarding status` after each completed step above, not after read-only probes.
+8. Set `integrations.<id>.targets` in the selected `beaker.yaml` to the exact `Integration.targets` surface, including existing integrations; read the YAML preflight in [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Do not guess paths or groups.
+9. `beaker agent setup "<Agent Name>"` (add `--integration-id <id>` when the config has several integrations). Setup records the agent key in `integrations.<id>.agent_key`. A name the developer supplied is approval; do not ask again.
+10. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
+11. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
+12. Commit and push once, after the selected config and dataset are final, to `beaker/<YYYYMMDD-HHMM>-<agent-name>`.
+13. The first hosted run uses `beaker run trigger` (Beaker agent, dataset, optional `--ref`, and required judge configuration when applicable). Do not pass `--optimization-model` unless the developer explicitly asked to compare specific models. As soon as it starts, tell the developer that repository setup is finished, name the run state, and make clear that any remaining wait is for Beaker's hosted run rather than more integration work.
+14. Run `beaker onboarding status` after each completed step above, not after read-only probes.
 
 ## Keep the onboarding loop explicit
 
@@ -286,8 +287,9 @@ Use the selected agent's page to view its runs and score trends.
 
 If `.beaker/` already holds a working integration (for example a fork of a
 cookbook recipe), reuse it unless the user asks otherwise: no `beaker init`, no
-rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run
-`beaker agent setup` against it using this checkout's own GitHub repository
+rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run the
+YAML preflight, and add missing `targets` matching the exported Integration.
+Then run `beaker agent setup` against it using this checkout's own GitHub repository
 (`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
 --strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
 `onboarding status` only accepts an agent whose repository is this checkout's
@@ -349,6 +351,10 @@ conditioned on seed content hashes and optional versions; do not auto-apply them
 
 Both target types support explicitly requested model comparison. Preserve the
 selected editable surface; never change it just to enable a run.
+Mirror that surface under the selected YAML integration's `targets` field,
+even when reusing an existing Integration. A static declaration lets playbook
+generation use the shared image and GitHub checkout while the Integration image
+builds; without it, generation waits for the image to import customer code.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults

@@ -193,6 +193,9 @@ integrations:
     entrypoint: "beaker_integration:integration"
     source_dir: "services/example"
     package_import_root: ".beaker"
+    targets:
+      kind: repository
+      paths: [src/agent]
     required_env:
       - DATABASE_API_KEY
 ```
@@ -212,6 +215,15 @@ Check each field that controls the hosted evaluator:
   the resulting directory exists in the pushed commit. Do not read it relative
   to wherever the local CLI happens to run. `beaker init` writes both fields explicitly. Preserve the selected project
   layout when editing either field.
+- Compare `integrations.<id>.targets` with the exported `Integration.targets` in
+  the selected entrypoint, for new and reused Integrations. Mirror
+  `repository(paths=("src/agent",))` as `{kind: repository, paths: [src/agent]}`,
+  `repository()` as `{kind: repository}` (omit `paths` for the full tree),
+  or `documents(groups=("wiki",))` as `{kind: documents, groups: [wiki]}`.
+  Use paths relative to `source_dir`, not the config file. Do not infer an
+  editable surface from a directory listing or narrow/change the Python
+  Integration to match a guessed declaration. If the two differ, correct the
+  YAML to match the intended Python surface before pushing.
 - Install the evaluator's dependencies from the pushed bundle. When
   `integrations.<id>.source_dir` contains a `pyproject.toml`, the hosted image installs that
   package and its dependency closure. Otherwise list every runtime dependency
@@ -230,7 +242,10 @@ reads them. Runs are immutable snapshots: changing YAML or agent settings does
 not repair an existing failed run, so start a new run after correcting either.
 A passing structural smoke check does not prove that the hosted image builds,
 that `run_case` executes, or that an environment value reaches the child
-process.
+process. The hosted build validates declared targets against the imported
+Integration; a mismatch fails the build. If `targets` is absent, playbook
+generation cannot start in the shared checkout image during the Integration
+build and instead waits for the ready Integration image.
 
 Paths inside the selected integration table use hosted checkout coordinates:
 
