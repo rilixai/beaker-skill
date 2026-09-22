@@ -3,8 +3,8 @@ name: beaker-setup
 description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.6.2"
-  beaker_sdk_version: "0.6.2"
+  version: "0.6.3"
+  beaker_sdk_version: "0.6.3"
 ---
 
 # Beaker setup
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.6.2) is written for beaker-sdk 0.6.2. The skill and the SDK are
+This skill (0.6.3) is written for beaker-sdk 0.6.3. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.6.2' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.6.2, or does
+(or `uvx --from 'beaker-sdk>=0.6.3' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.6.3, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.6.2, this skill is
+or flags this skill relies on. If the CLI is newer than 0.6.3, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
@@ -317,7 +317,11 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
 - Implement `run_case(*, case_input, runtime)` by calling the real application.
   Return `CaseResult(output=..., output_kind=...)` with a JSON application
   result. Output is retained as the prediction, so keep observed state needed by
-  the scorer compact. Use `runtime.trace` for model/tool telemetry.
+  the scorer compact. Use `runtime.trace` for model/tool telemetry. Treat
+  termination as part of the hook contract: once the application cannot produce
+  a complete result, let the exception propagate promptly instead of swallowing
+  it or leaving `run_case` waiting. Use `RetryableCaseError` only when another
+  attempt may succeed.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   passing and failing checks. Ask which metric to optimize and which weights to

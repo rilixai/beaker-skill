@@ -318,6 +318,11 @@ Distinguish execution failure from a bad answer:
 - Raise an exception for dependency or infrastructure failures that prevented execution. Raise `RetryableCaseError` when a retry may succeed.
 - Return `CaseResult(output=...)` when the application ran, even when output is empty or incorrect.
 - Do not convert every exception into an error-shaped output object.
+- Every `run_case` invocation must finish by returning a complete `CaseResult`
+  or raising an exception. Do not catch a fatal model, provider, tool, or
+  application failure and then leave the hook polling, awaiting background
+  work, or otherwise alive without progress. Cleanup belongs in `finally`, but
+  it must not suppress or indefinitely delay the original failure.
 - When a harness catches its own rollout errors and hands back a result anyway
   (an agent framework that stores the exception in its state and still
   returns the untouched world), classify that error in `run_case`, before
