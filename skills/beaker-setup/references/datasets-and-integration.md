@@ -164,8 +164,12 @@ setup instance. `runtime.config` contains the launch `extra` mapping, not the
 whole platform run configuration.
 
 For repository targets, setup and scoring run in the trusted controller while
-`run_case` imports each candidate's application source in a fresh evaluator
-process. A client stored on the setup instance can serve `load_cases`; it is not
+`run_case` imports each candidate's application source in a separate evaluator
+process. Multiple cases and retries may share that process, so module globals,
+caches, and framework state can survive a call to `run_case`. Restore per-case
+state and close owned resources on success and failure; account for the configured
+concurrency when using process-global state. Do not assume a fresh process per case.
+A client stored on the setup instance can serve `load_cases`; it is not
 available in the candidate process. Pass JSON inputs and staged `CaseFile` values
 across this boundary, then read files through `runtime.case_files_dir` in the
 runner or `case_files_dir` in the scorer. Do not pass live clients, absolute
@@ -318,6 +322,11 @@ Distinguish execution failure from a bad answer:
 - Raise an exception for dependency or infrastructure failures that prevented execution. Raise `RetryableCaseError` when a retry may succeed.
 - Return `CaseResult(output=...)` when the application ran, even when output is empty or incorrect.
 - Do not convert every exception into an error-shaped output object.
+- Every `run_case` invocation must finish by returning a complete `CaseResult`
+  or raising an exception. Do not catch a fatal model, provider, tool, or
+  application failure and then leave the hook polling, awaiting background
+  work, or otherwise alive without progress. Cleanup belongs in `finally`, but
+  it must not suppress or indefinitely delay the original failure.
 - When a harness catches its own rollout errors and hands back a result anyway
   (an agent framework that stores the exception in its state and still
   returns the untouched world), classify that error in `run_case`, before
