@@ -168,15 +168,17 @@ class RepositoryContractTests(unittest.TestCase):
             ):
                 self.assertIn(token, content, str(skill))
 
-    def test_setup_preflight_mirrors_integration_targets(self):
+    def test_setup_preflight_uses_python_integration_targets(self):
         skill = SKILL.read_text()
         preflight = (SKILL.parent / "references" / "cli-and-hosted-operations.md").read_text()
-        self.assertIn("including existing integrations", skill)
-        self.assertIn("integrations.<id>.targets", preflight)
+        self.assertIn("Integration.targets", skill)
+        self.assertIn("source of truth", preflight)
         self.assertIn("repository(paths=", preflight)
         self.assertIn("repository()", preflight)
         self.assertIn("documents(groups=", preflight)
-        self.assertRegex(preflight, r"waits for the ready\s+Integration image")
+        self.assertIn("previously verified targets", preflight)
+        self.assertIn("regenerates the playbook if they changed", preflight)
+        self.assertNotIn("integrations.<id>.targets", skill + preflight)
 
     def test_examples_compile_without_sdk_dependencies(self):
         for path in (SKILL.parent / "references").glob("*_integration.py"):

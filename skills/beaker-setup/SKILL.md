@@ -50,7 +50,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
 6. After initial discovery, ask all currently known unresolved decisions together, such as which metric to optimize, the labeled-data source, quick-start versus full dataset size, agent name, judge model, or required credentials. Do not wait for discovery to be exhaustive, and continue independent discovery and implementation while the developer responds. Batching is best effort: if later discovery reveals another required decision, ask it then rather than guessing or delaying current work.
 7. Replace every `TODO(beaker)` in the integration and wire the real model call.
-8. Set `integrations.<id>.targets` in the selected `beaker.yaml` to the exact `Integration.targets` surface, including existing integrations; read the YAML preflight in [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Do not guess paths or groups.
+8. Review the selected Python `Integration.targets` surface, including existing integrations; read the preflight in [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Do not guess paths or groups or duplicate targets in `beaker.yaml`.
 9. `beaker agent setup "<Agent Name>"` (add `--integration-id <id>` when the config has several integrations). Setup records the agent key in `integrations.<id>.agent_key`. A name the developer supplied is approval; do not ask again.
 10. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
 11. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
@@ -288,7 +288,7 @@ Use the selected agent's page to view its runs and score trends.
 If `.beaker/` already holds a working integration (for example a fork of a
 cookbook recipe), reuse it unless the user asks otherwise: no `beaker init`, no
 rewrite, no pull request. Select that existing `.beaker/beaker.yaml`, run the
-YAML preflight, and add missing `targets` matching the exported Integration.
+YAML preflight, and check the exported Integration's editable surface.
 Then run `beaker agent setup` against it using this checkout's own GitHub repository
 (`beaker agent setup --repo <owner/name>`), select the dataset, `beaker run smoke
 --strict`, push only what `beaker onboarding status` asks for, then `beaker run trigger`.
@@ -351,10 +351,12 @@ conditioned on seed content hashes and optional versions; do not auto-apply them
 
 Both target types support explicitly requested model comparison. Preserve the
 selected editable surface; never change it just to enable a run.
-Mirror that surface under the selected YAML integration's `targets` field,
-even when reusing an existing Integration. A static declaration lets playbook
-generation use the shared image and GitHub checkout while the Integration image
-builds; without it, generation waits for the image to import customer code.
+Keep `Integration.targets` as the only target declaration. Hosted runs save
+targets from the loaded Integration; on later builds, verified targets from an
+earlier build can start checkout-mode playbook generation while the new image
+builds. Run startup checks the current targets and regenerates the playbook if
+they changed. Without earlier verified targets, generation starts once the image
+is ready and can overlap baseline evaluation.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
