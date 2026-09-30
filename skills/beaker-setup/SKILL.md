@@ -347,6 +347,10 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
+Keep labeled data, eval fixtures, and golden outputs outside the editable
+`repository(...)` scope: store them under `.beaker/` or narrow the target paths.
+Treat smoke's "labels reachable in editable scope" reason as blocking.
+
 Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
 for an intentional document/resource workflow. Its `prepare_run()` yields
 `DocumentRunSetupResult(target_documents=...)` with the real seed documents.
