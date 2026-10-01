@@ -126,8 +126,9 @@ the authoritative check that the hosted snapshot can be downloaded and parsed.
 
 Keep the integration, loader, scorer and evaluation helpers under `.beaker/`.
 Labeled data, eval fixtures, and golden outputs must stay outside the editable
-`repository(...)` scope. Keep existing data under `.beaker/` or narrow the target
-paths; treat smoke's "labels reachable in editable scope" reason as blocking.
+`repository(...)` scope. Narrow the target paths to exclude them. Leave existing
+datasets and fixtures in place; do not copy or move them. Treat smoke's
+"labels reachable in editable scope" reason as blocking.
 Do not add tests or CI/CD to the consumer repository. The platform owns dataset
 I/O and lifecycle; the integration owns row-to-case conversion and application
 execution. See [repository_integration.py](repository_integration.py) and
