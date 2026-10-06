@@ -22,7 +22,8 @@ never edit or repurpose them for Beaker. For the selected task, identify:
 - scoring rules and weights, confirmed by the developer when the
   repository does not already establish them, or when it's unclear which
   metric to use;
-- train and test examples (train is the optimization pool; test is held out);
+- train and test examples (train is the optimization pool; test is held out;
+  see [Build the train/test split](#build-the-traintest-split));
 - stable row identifiers and optional labels: `metadata` keys such as domain
   or practice area; `group_key` is only an optional dataset column.
 
@@ -35,6 +36,30 @@ If local data is unavailable, inspect hosted data with `beaker dataset list` and
 `--dataset-id <artifact-id>`. If neither source has usable labels, direct the
 developer to upload or provide real examples and stop before finalizing the
 integration, running smoke validation, or uploading synthetic data.
+
+## Build the train/test split
+
+When the developer already has an established held-out set, keep it as `test`
+instead of re-splitting. Otherwise:
+
+- Split with a seeded random shuffle. Stratify by category, tag, or difficulty
+  metadata when it exists, so both splits carry the same mix.
+- Split by group key: keep rows that share a customer, document, conversation,
+  or template, and near-duplicate inputs, in the same split, so nothing leaks
+  from train into test.
+- Never choose or move cases based on a baseline score, a model's output, or
+  which cases look hard or easy. Never put the failing cases in train and the
+  passing ones in test, or the reverse.
+- Record the split method, stratification and group keys, and seed in
+  `manifest.json` or the conversion script under `.beaker/`, so the split is
+  reproducible.
+- Make test large enough to measure a change: prefer at least 30-50 rows when
+  the data allows. When it does not, tell the developer that small score
+  differences on test are noise.
+
+After the baseline, train and test means should agree within noise. A large gap
+means the split is not representative: revisit stratification and grouping
+rather than moving individual cases.
 
 ## Select one dataset source
 
@@ -71,6 +96,7 @@ selected `integration_id` and `agent_key`:
 
 ```python
 import json
+import random
 import subprocess
 import tempfile
 from pathlib import Path
@@ -78,6 +104,8 @@ from pathlib import Path
 
 with tempfile.TemporaryDirectory(prefix="beaker-dataset-") as temp_dir:
     dataset_dir = Path(temp_dir)
+    shuffled = random.Random(13).sample(labeled_rows, k=len(labeled_rows))
+    test_rows, train_rows = shuffled[: len(shuffled) // 5], shuffled[len(shuffled) // 5 :]
     splits = {"train": train_rows, "test": test_rows}
 
     for split_name, rows in splits.items():
