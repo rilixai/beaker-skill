@@ -3,8 +3,8 @@ name: beaker-setup
 description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.6.4"
-  beaker_sdk_version: "0.6.4"
+  version: "0.6.5"
+  beaker_sdk_version: "0.6.5"
 ---
 
 # Beaker setup
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.6.4) is written for beaker-sdk 0.6.4. The skill and the SDK are
+This skill (0.6.5) is written for beaker-sdk 0.6.5. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.6.4' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.6.4, or does
+(or `uvx --from 'beaker-sdk>=0.6.5' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.6.5, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.6.4, this skill is
+or flags this skill relies on. If the CLI is newer than 0.6.5, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
@@ -169,8 +169,10 @@ Before changing application code, explain why the integration and helpers under
 
 Beaker onboarding adds no test code and no continuous-integration wiring, and
 does not run the repository's test suite. The integration is validated by
-`beaker run smoke --strict` and by hosted runs, so there is nothing for a test
-suite or a pipeline job to add.
+`beaker run smoke --strict` and by hosted runs. For isolation hazards, also use
+the bounded temporary parallel execution check described in
+[validation-and-handoff.md](references/validation-and-handoff.md); it adds no
+repository tests or CI/CD automation.
 
 Do not create or modify:
 
@@ -335,6 +337,44 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
 
 Read [datasets-and-integration.md](references/datasets-and-integration.md)
 for typed rows, setup, output/check guidance, and executable examples.
+
+## Make cases safe to run concurrently
+
+Beaker may execute multiple cases and retries in the same evaluator process.
+Before wiring `run_case`, inspect the application's initialization, execution,
+and cleanup—including relevant dependencies—for shared mutable state. Common
+hazards include global settings, frozen clocks, database caches, embedded
+interpreters, fixed output paths, and cleanup such as `close_all()` that affects
+other cases.
+
+Use the application's existing async entrypoint when calls can overlap safely.
+If the application requires process-global state, execute each case in a fresh
+subprocess through an async wrapper under `.beaker/`. Threads do not isolate
+globals. Removing global cleanup alone is insufficient when initialization or
+dependencies also modify shared state.
+
+The subprocess must import the candidate checkout's code, receive JSON inputs
+and staged case files, preserve the selected model routing, and return the
+existing `CaseResult` format. Give cases independent writable outputs; share
+only assets that are safe to share. Preserve model/tool traces and usage
+attribution using supported SDK interfaces. Propagate execution errors with
+their diagnosis and retry classification. On cancellation, terminate and await
+the worker and its descendants. Keep expected answers and scoring policy outside
+candidate execution.
+
+Let Beaker control case admission. Do not add a second scheduler, serialize
+entire cases with a global lock, or set `max_concurrency: 1` merely to hide unsafe
+shared state. A justified resource or external-system limit may require lower
+concurrency; document the reason and explain the resulting throughput. Separate
+processes do not isolate shared remote accounts or databases.
+
+Keep the fix in the integration and reuse existing application interfaces. If
+required routing or tracing cannot cross the process boundary through supported
+interfaces, report the specific gap rather than silently dropping it or
+inventing SDK APIs. For integrations with these hazards, perform the bounded
+parallel execution check in
+[validation-and-handoff.md](references/validation-and-handoff.md) before the
+final integration push.
 
 ## Select the editable surface
 

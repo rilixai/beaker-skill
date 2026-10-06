@@ -167,6 +167,18 @@ candidate context. Smoke closes setup resources and never calls `run_case`
 or `score_case`. Setup hooks can perform external I/O; smoke does not report
 application quality or start a hosted optimization run.
 
+**Parallel execution check.** Structural smoke does not execute `run_case`
+and cannot establish concurrency safety. For integrations with shared-state or
+isolation hazards, use a bounded temporary harness outside the repository to
+run two real cases concurrently, including two executions of the same case.
+Confirm actual overlap, independent outputs, correctly attributed traces and
+usage, and cleanup on failure and cancellation. Perform this check before the
+final integration push. This check is permitted without adding repository tests
+or CI. Use real labeled inputs; deterministic execution may verify isolation
+but does not establish model quality. If credentials or authorization prevent
+execution, identify what remains unverified in the handoff. Do not claim
+parallel readiness based only on smoke or a concurrency-one run.
+
 Interpret common failures:
 
 - `FAIL integration`: use the printed exception type and traceback to fix the module
