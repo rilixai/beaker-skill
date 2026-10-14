@@ -155,8 +155,9 @@ desired commit; do not launch with the tag or SHA.
 
 Inspect the selected `Integration.targets` without changing it. Repository
 Integrations use `repository(...)` and a `RepositoryRunSetup` class; document
-Integrations use `documents(groups=...)` and a `DocumentRunSetup` class.
-Both launch with `beaker run trigger` and support model comparison.
+Integrations use `documents(groups=...)` and a `DocumentRunSetup` class; an
+Integration that edits both declares `targets=(repository(...), documents(...))`
+with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support model comparison.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.

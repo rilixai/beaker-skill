@@ -38,11 +38,10 @@ class IntegrationExamples(unittest.TestCase):
                     resolved = ResolvedIntegration.load(
                         name=path.stem, entrypoint=f"{path.stem}:integration"
                     )
+                    document_targets = module.integration.document_targets
                     case_input, expected = (
                         ("Refund window", "30 days")
-                        if isinstance(
-                            module.integration.targets, beaker.DocumentTargets
-                        )
+                        if document_targets is not None
                         else ("input", "input")
                     )
                     row = resolved.row_adapter.validate_python(
@@ -66,11 +65,23 @@ class IntegrationExamples(unittest.TestCase):
                                 case_files_dir=attempt.files.view(case.id),
                                 trace=current_trace(),
                             )
-                            if isinstance(
-                                module.integration.targets, beaker.DocumentTargets
-                            ):
+                            if document_targets is not None and path.stem == "combined_integration":
                                 snapshot = DocumentSnapshot.build(
-                                    attempt.setup_result, module.integration.targets
+                                    attempt.setup_results["documents"], document_targets
+                                )
+                                targets = root / "targets"
+                                snapshot.materialize(targets)
+                                runtime = beaker.RolloutRuntime(
+                                    case_files_dir=runtime.case_files_dir,
+                                    trace=runtime.trace,
+                                    targets_dir=targets,
+                                )
+                                result = await module.integration.run_case(
+                                    case_input=case.input, runtime=runtime
+                                )
+                            elif document_targets is not None:
+                                snapshot = DocumentSnapshot.build(
+                                    attempt.setup_result, document_targets
                                 )
                                 targets = root / "targets"
                                 snapshot.materialize(targets)
@@ -139,7 +150,7 @@ class IntegrationExamples(unittest.TestCase):
                         ),
                     )
                 ),
-                module.integration.targets,
+                module.integration.document_targets,
             )
             variants = (
                 (
@@ -228,7 +239,7 @@ class IntegrationExamples(unittest.TestCase):
                 )
                 case_input, expected = (
                     ("Refund window", "30 days")
-                    if path.stem == "document_integration"
+                    if path.stem in ("document_integration", "combined_integration")
                     else ("input", "input")
                 )
                 for split in ("train", "test"):

@@ -396,8 +396,22 @@ an index or other runtime object; `run_case` receives it through
 `runtime.targets_dir`. Results are create/update/delete `ChangeSet` operations
 conditioned on seed content hashes and optional versions; do not auto-apply them.
 
-Both target types support explicitly requested model comparison. Preserve the
-selected editable surface; never change it just to enable a run.
+Use `targets=(repository(...), documents(groups=("wiki",)))` with a
+`CombinedRunSetup` subclass only when one candidate must be able to change
+application code and documents together, for example code that reads a prompt or
+knowledge file that is fetched at run time rather than stored in the repository.
+Declare each kind at most once; a lone `repository()` or `documents(...)` is still
+the right choice when only one surface needs to change. `prepare_run()` yields a
+dict with one result per target, keyed by kind:
+`{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`.
+There is no `open_candidate()` or `runtime.candidate_runtime` here; `run_case` reads
+the candidate's documents from `runtime.targets_dir`, one directory per group.
+The winner is a repository candidate and also a document `ChangeSet`, which the
+developer applies separately. Do not use `beaker-repository` as a document group name.
+
+Every target type supports explicitly requested model comparison except that a
+combined winner's document `ChangeSet` is not yet produced by model comparison runs.
+Preserve the selected editable surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
