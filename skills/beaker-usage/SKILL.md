@@ -157,7 +157,10 @@ Inspect the selected `Integration.targets` without changing it. Repository
 Integrations use `repository(...)` and a `RepositoryRunSetup` class; document
 Integrations use `documents(groups=...)` and a `DocumentRunSetup` class; an
 Integration that edits both declares `targets=(repository(...), documents(...))`
-with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support model comparison.
+with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support
+model comparison, except that a combined Integration's comparison winner has no
+document ChangeSet: its document edits are only in the downloadable candidate
+ZIP. Prefer a single-model run when the developer needs the ChangeSet.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
