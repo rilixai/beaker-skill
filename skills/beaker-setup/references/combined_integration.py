@@ -60,7 +60,7 @@ class Setup(CombinedRunSetup[Row]):
 
 def answer_question(question: str, targets_dir: Path) -> str:
     """Illustrative lookup in FAQ lines formatted as 'topic: answer'."""
-    for path in sorted(targets_dir.rglob("*")):
+    for path in sorted((targets_dir / "wiki").rglob("*")):
         if not path.is_file():
             continue
         for line in path.read_text(encoding="utf-8").splitlines():
