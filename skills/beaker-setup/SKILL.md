@@ -332,7 +332,10 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   one explicit Check per evaluated field, assertion, or criterion, passing
-  outcomes included. Preserve native verdicts, useful diagnostics, and the
+  outcomes included. For a comparison, populate both `expected` and `predicted`;
+  for a condition, state the requirement and verdict without those fields.
+  Map the user's metrics separately in `field_scores` and the optimization
+  score in `objective`. Preserve native verdicts, useful diagnostics, and the
   established objective and weights; do not rely on frontend fallback rows.
   Ask which metric to optimize and which weights to use when the repository
   does not already establish them;

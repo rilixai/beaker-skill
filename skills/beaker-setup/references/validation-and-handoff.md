@@ -227,9 +227,14 @@ or launch an extra run just to satisfy this review.
   not be presented as providing per-criterion evidence.
 - Verify readable requirements, both values on passing and failing value
   comparisons, native diagnostics when available, and correct informational
-  exclusions. Conditions need no artificial expected/predicted pair. Check
+  exclusions. Condition Checks state the requirement and verdict with
+  `expected`/`predicted` unset; comparison Checks populate both. Check
   partial scores when the native evaluator produces them; do not reinterpret
   threshold-based pass/fail as a graded verdict.
+- Confirm how native outcomes map to individual Checks, the user's named
+  `field_scores`, and `objective`. Several Checks may explain one metric;
+  preserve the evaluator's aggregation and weights instead of deriving a new
+  score from the number of passing Checks.
 - Confirm output exposes the answer or useful observed result and that the
   full dataset reference remains available to the scorer. If archived/UI
   evidence is available, inspect it too, accounting for `checks_total` and
