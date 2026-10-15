@@ -212,6 +212,34 @@ smoke does not support `--trace`.
 
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
+## Verify scored Check evidence
+
+Review the scorer's mapping from every native evaluated field, assertion, or
+criterion to an explicit Check. Include passing, failing, partial, and excluded
+outcomes as applicable; preserve the native objective and weights. Inspect
+representative real results through an existing authorized scoring path or the
+first requested hosted run. Do not create repository tests, fabricate outcomes,
+or launch an extra run just to satisfy this review.
+
+- Compare the complete returned `CaseScore.checks` with native evaluator
+  outcomes. A partial explicit list hides omitted requirements because the
+  frontend does not merge in `field_scores`. An aggregate-only evaluator must
+  not be presented as providing per-criterion evidence.
+- Verify readable requirements, both values on passing and failing value
+  comparisons, native diagnostics when available, and correct informational
+  exclusions. Conditions need no artificial expected/predicted pair. Check
+  partial scores when the native evaluator produces them; do not reinterpret
+  threshold-based pass/fail as a graded verdict.
+- Confirm output exposes the answer or useful observed result and that the
+  full dataset reference remains available to the scorer. If archived/UI
+  evidence is available, inspect it too, accounting for `checks_total` and
+  `truncated` rather than assuming the visible list is complete.
+- Record which cases and outcome types were inspected. When scored examples,
+  credentials, or particular outcome types are unavailable, name the remaining
+  verification gap in the handoff. Smoke proves structural validity only;
+  report runtime evidence verification separately without delaying the setup
+  handoff or requesting a run solely to clear this item.
+
 ## Completion checklist
 
 - Beaker-owned config, integrations, helper code, credentials, and traces are under
@@ -236,6 +264,10 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   environment.
 - The selected task is explicit.
 - Input, ground truth, prediction, and scoring contracts come from real data.
+- The scorer explicitly maps native evaluated requirements to Checks, including
+  passing outcomes, with useful available diagnostics and unchanged scoring
+  policy. Representative scored evidence was inspected when available; pending
+  verification is identified separately from structural smoke success.
 - `repository(...)` contains the intended application source and `run_case`
   imports and executes that candidate source.
 - Case inputs, expected values and application results are JSON values.
@@ -307,6 +339,8 @@ Summarize in plain English:
 - model-routing behavior;
 - structural validation command and result, plus any separately captured
   runtime evidence;
+- Check mapping and scored-evidence verification: inspected cases/outcome
+  types, any aggregate-only evaluator limitation, and remaining gaps;
 - exact hosted upload/run commands that remain.
 
 When a hosted run is triggered, immediately tell the developer that repository

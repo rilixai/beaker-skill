@@ -200,6 +200,13 @@ winner as a repository patch or silently write it back during onboarding.
 
 ### Declare the output kind and emit per-case checks
 
+Before implementing the adapter, identify the native evaluator's individual
+fields, assertions, or rubric criteria and where their verdicts, reference
+values, observed values, and diagnostics come from. Map those outcomes in the
+trusted `score_case`; the frontend must not reconstruct the evaluator's rules.
+Keep the native objective, weights, exclusions, and partial-credit semantics.
+An aggregate score alone does not establish per-criterion outcomes.
+
 `CaseScore.checks` is what the optimizer's proposer reads to diagnose why a
 case failed. Without checks (or scorer-authored `field_diffs`) it sees only
 scalar scores and its proposals degrade to generic advice. Beaker's
@@ -211,12 +218,23 @@ itself; it renders what the integration declares. Two contract fields drive both
   `text` for long text (a dictionary becomes one expandable card per string
   leaf), or `none` with `output=None` when no application output is returned.
   Include observed application state in `output` when the scorer needs it;
-  keep telemetry in `runtime.trace` and scores in `CaseScore`.
+  show the answer or observed result once there, rather than copying a full
+  application diff into every Check. For side-effect tasks, include useful
+  observed changes and retain the state the scorer needs; a display summary
+  must not discard scoring inputs. Keep telemetry in `runtime.trace` and
+  scores in `CaseScore`.
 - `CaseScore.checks` explains individual outcomes: emit one check per verified
   field, criterion or assertion, passing ones included. The scorer compares
   `case.expected` with `result.output` and may inspect staged input files.
   `field_scores` is the small stable set aggregated at run level; check names
-  are never aggregated.
+  are never aggregated. Emit the complete list: a nonempty explicit Check list
+  replaces the frontend fallback in full; it is not supplemented with missing
+  rows from `field_scores`.
+
+  `Case.expected` remains the complete dataset reference for the scorer; output
+  is the observation, and Checks are the individual evaluations. Do not remove
+  reference data because it overlaps with Checks or the sample's Expected
+  section. Keep each Check understandable without opening that section.
 
   `name`/`description` say what the check is; `expected`/`predicted`/`message`
   say what the prediction did. Never put the check's definition (a criterion
@@ -225,19 +243,27 @@ itself; it renders what the integration declares. Two contract fields drive both
   opaque identifiers (record ids, row numbers, file hashes) and the scorer
   already holds state that names them (the initial or observed end state, a
   document manifest), put those names in `name` instead of the ids; a
-  deterministic boolean assertion has no `expected`/`predicted` pair, so its
-  `name` and `description` carry the whole meaning; do not repeat the same
-  values in both. Keep rows short: one line each for `name` and `description`.
+  boolean assertion need not have an `expected`/`predicted` pair, so its
+  `name` and `description` must identify the requirement; do not repeat the same
+  values in both. Keep names short and descriptions concise without losing
+  the precise requirement.
   Ten rows that differ only in an id are
   ten indistinguishable rows; when no such state exists, leave the ids and
   explain the scoring in the Integration's README instead.
 
   | Scorer verifies | `name` | `description` | `verdict` | `expected` / `predicted` | `message` | `group` |
   |---|---|---|---|---|---|---|
-  | A field of a record | field name | omit | `"pass"`/`"fail"` | both values | why they differ, if known | omit |
-  | A rubric criterion judged by an LLM | criterion title | the criterion text the judge was given | `"pass"`/`"fail"` | omit | the judge's per-criterion comment (have the judge return one; a bare per-criterion pass/fail is the minimum) | deliverable or document name |
-  | An assertion on end state | assertion type and its parameters, ids replaced by names (`member_exists · Jane Doe · Q1 Webinar`) | omit when `name` already carries every parameter; otherwise one line naming what the assertion verifies | `"pass"`/`"fail"` | omit; a boolean assertion has none, and the value it compares against is already in `name` | assertion failure detail, or why it is excluded | app or system name |
+  | A field of a record | field name | omit | native `"pass"`/`"fail"` or graded float | both values, including when they match | why they differ, if known | omit |
+  | A rubric criterion judged by an LLM | criterion title | the exact criterion text the judge was given | native `"pass"`/`"fail"` or graded float | omit unless a meaningful value comparison is supplied | native per-criterion judge explanation, when available | deliverable or document name |
+  | An assertion on end state | assertion type and its parameters, ids replaced by names (`member_exists · Jane Doe · Q1 Webinar`) | omit when `name` already carries every parameter; otherwise state the precise requirement | `"pass"`/`"fail"` | no forced pair; include precise comparable values only when naturally supplied | native assertion failure detail, or why it is excluded | app or system name |
   | A graded metric (F1, recall, partial credit) | metric name | omit | float in `[0, 1]` | omit | how the score was obtained | omit |
+
+  Preserve the full rubric or requirement even when it needs more than one
+  line; brevity must not lose grading conditions. Never invent individual
+  verdicts from an aggregate. For a condition, do not force a value pair;
+  include a precise observed value in `predicted` only when naturally available
+  and useful. Its requirement belongs in `name` and `description`, and its
+  global observed result belongs in output.
 
   Set `informational=True` on checks that are computed but do not count toward
   the objective (zero-weight metrics, assertions excluded from scoring); they
@@ -245,19 +271,25 @@ itself; it renders what the integration declares. Two contract fields drive both
   `message` (excluded by the task author, or already true before the agent
   acted), since the two mean different things to a reader.
 
-  Make `message` carry the diagnosis a reader cannot get from the verdict
-  alone. When the scorer also holds the initial state, evaluate each
-  requirement against it too: a failed requirement that held initially is a
-  regression ("held in the initial state; broken by the run"), not a
-  never-satisfied one, and the optimizer treats those differently.
+  Copy useful native assertion errors, judge explanations, or evaluator
+  diagnostics into `message`; printing them to logs does not populate Check
+  details. Do not replace available diagnostics with a generic failure
+  sentence, or invent a cause from a failed verdict. Leave `message` unset
+  when no useful diagnostic exists. If the evaluator provides initial-state
+  comparison evidence, preserve its distinction between a regression and a
+  never-satisfied requirement without changing the scoring policy.
 
   Limits: the hosted view keeps at most 100 checks per case and trims to 10
   when the case's evidence response exceeds 256 KB, and `expected`/`predicted`
-  are shown as JSON text, not a structured diff. Do not emit one check per row
-  of a large table; check the aggregate and put the detail in `message`.
+  are shown as JSON text, not a structured diff. Keep evidence concise, but do
+  not drop native evaluated requirements to fit the drawer or create checks
+  for every raw data row when the evaluator only grades an aggregate. A
+  truncated display is not proof that the scorer omitted Checks.
 
   `beaker run smoke` does not execute `run_case` or `score_case`, so it cannot
-  confirm that checks are emitted; inspect a scored case from the first run.
+  confirm that checks are emitted. Follow the
+  [scored-evidence verification guidance](validation-and-handoff.md#verify-scored-check-evidence)
+  when real scored results are available.
 
 Keep `score_case` async even for deterministic scoring. Its objective is the
 value the optimizer maximizes; choose it from the task's established evaluation

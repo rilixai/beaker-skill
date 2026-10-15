@@ -49,7 +49,7 @@ Follow this order. The rest of this skill is constraints and recovery.
 4. Check the generated `integrations.<id>.source_dir` right away: it must be the project's Git-root-relative directory, for example `services/invoices`, and `"."` only when the project is the Git root. Fix it immediately if it disagrees.
 5. Install the `beaker-sdk` dependency command `beaker init` printed, in the project's development/tooling dependency group.
 6. After initial discovery, ask all currently known unresolved decisions together, such as which metric to optimize, the labeled-data source, quick-start versus full dataset size, agent name, judge model, or required credentials. Do not wait for discovery to be exhaustive, and continue independent discovery and implementation while the developer responds. Batching is best effort: if later discovery reveals another required decision, ask it then rather than guessing or delaying current work.
-7. Replace every `TODO(beaker)` in the integration and wire the real model call.
+7. Replace every `TODO(beaker)` in the integration and wire the real model call. Map the native evaluator's fields, assertions, or criteria to explicit `CaseScore.checks`, including passing outcomes; read the mapping guidance in [datasets-and-integration.md](references/datasets-and-integration.md).
 8. `beaker agent setup "<Agent Name>"` (add `--integration-id <id>` when the config has several integrations). Setup records the agent key in `integrations.<id>.agent_key`. A name the developer supplied is approval; do not ask again.
 9. Relay newly discovered GitHub, labeled-data, and credential actions as soon as `beaker onboarding status` reports them; ask the developer to begin those actions immediately, then continue independent agent-owned work.
 10. Upload or select the labeled dataset, retain its immutable `name@revision` or artifact id, pass that same selector explicitly to smoke and launch, confirm required hosted environment values, and validate with `beaker run smoke --strict`. Do not commit an organization-specific dataset selector to YAML by default; a YAML dataset default is optional.
@@ -331,12 +331,20 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   error is not automatically a measured wrong answer.
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
-  passing and failing checks. Ask which metric to optimize and which weights to
-  use when the repository does not already establish them;
+  one explicit Check per evaluated field, assertion, or criterion, passing
+  outcomes included. Preserve native verdicts, useful diagnostics, and the
+  established objective and weights; do not rely on frontend fallback rows.
+  Ask which metric to optimize and which weights to use when the repository
+  does not already establish them;
   continue independent wiring while waiting. Never invent labeled data or scores.
 
 Read [datasets-and-integration.md](references/datasets-and-integration.md)
 for typed rows, setup, output/check guidance, and executable examples.
+Review the complete Check mapping in the scorer, then verify representative
+scored results when available using
+[validation-and-handoff.md](references/validation-and-handoff.md#verify-scored-check-evidence).
+Smoke never executes the scorer; report evidence verification as pending until
+real scored results have been inspected, without delaying the setup handoff.
 
 ## Make cases safe to run concurrently
 
