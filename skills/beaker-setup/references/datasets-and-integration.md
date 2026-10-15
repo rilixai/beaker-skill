@@ -231,10 +231,9 @@ itself; it renders what the integration declares. Two contract fields drive both
   replaces the frontend fallback in full; it is not supplemented with missing
   rows from `field_scores`.
 
-  `Case.expected` remains the complete dataset reference for the scorer; output
-  is the observation, and Checks are the individual evaluations. Do not remove
-  reference data because it overlaps with Checks or the sample's Expected
-  section. Keep each Check understandable without opening that section.
+  `Case.expected` supplies the dataset reference used by the scorer; output
+  records the observed result, and Checks expose individual evaluations.
+  Keep each Check understandable on its own.
 
   `name`/`description` say what the check is; `expected`/`predicted`/`message`
   say what the prediction did. Never put the check's definition (a criterion
