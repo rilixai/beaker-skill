@@ -387,31 +387,26 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
-Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
-for an intentional document/resource workflow. Its `prepare_run()` yields
-`DocumentRunSetupResult(target_documents=...)` with the real seed documents.
-Use `open_candidate(*, targets_dir, scratch_dir)` when the application needs
-an index or other runtime object; `run_case` receives it through
-`runtime.candidate_runtime`. The candidate document tree is at
-`runtime.targets_dir`. Results are create/update/delete `ChangeSet` operations
-conditioned on seed content hashes and optional versions; do not auto-apply them.
-
 Use `targets=(repository(...), documents(groups=("wiki",)))` with a
 `CombinedRunSetup` subclass only when one candidate must be able to change
 application code and documents together, for example code that reads a prompt or
 knowledge file that is fetched at run time rather than stored in the repository.
-Declare each kind at most once; a lone `repository()` or `documents(...)` is still
-the right choice when only one surface needs to change. `prepare_run()` yields a
-dict with one result per target, keyed by kind:
-`{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`.
-There is no `open_candidate()` or `runtime.candidate_runtime` here; `run_case` reads
-the candidate's documents from `runtime.targets_dir`, one directory per group.
-The winner is a repository candidate and also a document `ChangeSet`, which the
-developer applies separately. Do not use `beaker-repository` as a document group name.
+`repository()` is always required: Beaker does not support document-only
+Integrations, so a document workflow still declares the repository beside its
+documents. Declare each kind at most once; a lone `repository()` is the right
+choice when only code needs to change. `prepare_run()` yields a dict with one
+result per target, keyed by kind:
+`{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
+with the real seed documents. `run_case` reads the candidate's documents from
+`runtime.targets_dir`, one directory per group. The winner is a repository
+candidate and also a document `ChangeSet` of create/update/delete operations
+conditioned on seed content hashes and optional versions, which the developer
+applies separately; do not auto-apply it. Do not use `beaker-repository` as a
+document group name.
 
-Every target type supports explicitly requested model comparison except that a
-combined winner's document `ChangeSet` is not yet produced by model comparison runs.
-Preserve the selected editable surface; never change it just to enable a run.
+Every integration supports explicitly requested model comparison, including the
+document `ChangeSet` of a combined winner. Preserve the selected editable
+surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
@@ -564,7 +559,7 @@ beaker run smoke --strict --integration-id <id> --agent <selected-agent> --datas
 beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed and enters/closes `open_candidate()` once. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
+- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
 - Local-path smoke reads local rows; customer setup hooks may still perform external I/O. Remote-dataset smoke authenticates to Beaker,
   resolves the selected snapshot, and downloads it through presigned URLs
   before validating every row. It does not launch a hosted run.

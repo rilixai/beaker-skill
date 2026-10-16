@@ -73,7 +73,7 @@ def answer_question(question: str, targets_dir: Path) -> str:
 async def run_case(*, case_input: JsonValue, runtime: RolloutRuntime) -> CaseResult:
     # TODO(beaker): call the candidate application's real entrypoint from the
     # candidate checkout. This candidate's documents are under runtime.targets_dir
-    # (one directory per group); there is no candidate_runtime for combined targets.
+    # (one directory per group).
     if not isinstance(case_input, str):
         raise TypeError("case_input must be a question string")
     if runtime.targets_dir is None:

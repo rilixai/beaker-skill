@@ -153,14 +153,12 @@ desired commit; do not launch with the tag or SHA.
 
 ## Agent optimization and the editable surface
 
-Inspect the selected `Integration.targets` without changing it. Repository
-Integrations use `repository(...)` and a `RepositoryRunSetup` class; document
-Integrations use `documents(groups=...)` and a `DocumentRunSetup` class; an
-Integration that edits both declares `targets=(repository(...), documents(...))`
-with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support
-model comparison, except that a combined Integration's comparison winner has no
-document ChangeSet: its document edits are only in the downloadable candidate
-ZIP. Prefer a single-model run when the developer needs the ChangeSet.
+Inspect the selected `Integration.targets` without changing it. Every Integration
+declares `repository(...)`: a repository-only Integration uses a `RepositoryRunSetup`
+class, and one that also edits documents declares
+`targets=(repository(...), documents(...))` with a `CombinedRunSetup` class. Document-only
+Integrations are not supported. All launch with `beaker run trigger` and support
+model comparison, including the document ChangeSet of a combined winner.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
@@ -318,8 +316,8 @@ Cancellation is a state-changing operation:
 - When a Beaker agent was set up in another session,
   `beaker run list --agent <key> --json` shows whether it has run before.
 - Preserve `Integration.targets`: `repository(...)` optimizes source files and
-  `documents(groups=...)` optimizes named content. Both support explicitly
-  requested model comparison.
+  `documents(groups=...)`, beside it, optimizes named content. Both support
+  explicitly requested model comparison.
 - Never treat unpushed local changes as part of a hosted run.
 - Never ask the developer for permission to commit or push the integration
   unless they told you not to take autonomous actions, and never push it to

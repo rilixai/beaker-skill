@@ -66,7 +66,7 @@ class IntegrationExamples(unittest.TestCase):
                                 case_files_dir=attempt.files.view(case.id),
                                 trace=current_trace(),
                             )
-                            if document_targets is not None and path.stem == "combined_integration":
+                            if document_targets is not None:
                                 snapshot = DocumentSnapshot.build(
                                     attempt.setup_results["documents"], document_targets
                                 )
@@ -80,24 +80,6 @@ class IntegrationExamples(unittest.TestCase):
                                 result = await module.integration.run_case(
                                     case_input=case.input, runtime=runtime
                                 )
-                            elif document_targets is not None:
-                                snapshot = DocumentSnapshot.build(
-                                    attempt.document_setup_result, document_targets
-                                )
-                                targets = root / "targets"
-                                snapshot.materialize(targets)
-                                async with attempt.setup.open_candidate(
-                                    targets_dir=targets, scratch_dir=root / "scratch"
-                                ) as candidate:
-                                    runtime = beaker.RolloutRuntime(
-                                        case_files_dir=runtime.case_files_dir,
-                                        trace=runtime.trace,
-                                        targets_dir=targets,
-                                        candidate_runtime=candidate,
-                                    )
-                                    result = await module.integration.run_case(
-                                        case_input=case.input, runtime=runtime
-                                    )
                             else:
                                 result = await module.integration.run_case(
                                     case_input=case.input, runtime=runtime
@@ -135,7 +117,7 @@ class IntegrationExamples(unittest.TestCase):
         from beaker.sdk.integration import document_target
         from beaker.tracing import current_trace
 
-        path = EXAMPLES / "document_integration.py"
+        path = EXAMPLES / "combined_integration.py"
         spec = importlib.util.spec_from_file_location(path.stem, path)
         module = importlib.util.module_from_spec(spec)
         sys.modules[path.stem] = module
@@ -197,26 +179,21 @@ class IntegrationExamples(unittest.TestCase):
                         ).changes
                     )
 
-                    async def execute(targets, root, documents, answers):
-                        async with module.Setup().open_candidate(
-                            targets_dir=targets, scratch_dir=root / "scratch"
-                        ) as candidate:
-                            self.assertEqual(candidate, documents)
-                            runtime = RolloutRuntime(
-                                case_files_dir=root / "cases",
-                                trace=current_trace(),
-                                targets_dir=targets,
-                                candidate_runtime=candidate,
-                            )
-                            for question, expected in answers.items():
-                                with self.subTest(question=question):
-                                    result = await module.integration.run_case(
-                                        case_input=question, runtime=runtime
-                                    )
-                                    self.assertEqual(result.output, expected)
-                                    self.assertEqual(result.output_kind, "value")
+                    async def execute(targets, root, answers):
+                        runtime = RolloutRuntime(
+                            case_files_dir=root / "cases",
+                            trace=current_trace(),
+                            targets_dir=targets,
+                        )
+                        for question, expected in answers.items():
+                            with self.subTest(question=question):
+                                result = await module.integration.run_case(
+                                    case_input=question, runtime=runtime
+                                )
+                                self.assertEqual(result.output, expected)
+                                self.assertEqual(result.output_kind, "value")
 
-                    asyncio.run(execute(targets, root, documents, answers))
+                    asyncio.run(execute(targets, root, answers))
         finally:
             sys.modules.pop(path.stem, None)
 
@@ -241,7 +218,7 @@ class IntegrationExamples(unittest.TestCase):
                 )
                 case_input, expected = (
                     ("Refund window", "30 days")
-                    if path.stem in ("document_integration", "combined_integration")
+                    if path.stem == "combined_integration"
                     else ("input", "input")
                 )
                 for split in ("train", "test"):

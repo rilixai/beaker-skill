@@ -127,8 +127,7 @@ the authoritative check that the hosted snapshot can be downloaded and parsed.
 Keep the integration, loader, scorer and evaluation helpers under `.beaker/`.
 Do not add tests or CI/CD to the consumer repository. The platform owns dataset
 I/O and lifecycle; the integration owns row-to-case conversion and application
-execution. See [repository_integration.py](repository_integration.py),
-[document_integration.py](document_integration.py) and
+execution. See [repository_integration.py](repository_integration.py) and
 [combined_integration.py](combined_integration.py) for executable contract scaffolds.
 These illustrate wiring only; use the customer's actual application and labeled
 rows rather than their demonstration applications and exact-match scorers. Keep the
@@ -177,13 +176,12 @@ runner or `case_files_dir` in the scorer. Do not pass live clients, absolute
 setup-machine paths, or module globals as a substitute for staged input files.
 
 For documents, setup returns actual `TargetDocument` content in declared groups.
-Use stable source IDs and preserve source versions. `open_candidate` can build
-an index from `targets_dir` using `scratch_dir`; its result becomes
-`RolloutRuntime.candidate_runtime`. Build it from the current candidate tree,
-including created documents and excluding deleted ones; do not reuse a seed-only
-index or assume every seed filename still exists. Keep temporary index files in
-`scratch_dir` and close candidate resources when `open_candidate` exits.
-Candidate changes return as a `ChangeSet`.
+Use stable source IDs and preserve source versions. `run_case` reads the current
+candidate tree from `runtime.targets_dir`, including created documents and
+excluding deleted ones; do not reuse a seed-only index or assume every seed
+filename still exists. Build any index inside `run_case` (or cache it per
+candidate directory) rather than in setup, because the candidate runs in its own
+process. Candidate changes return as a `ChangeSet`.
 A `ChangeSet` identifies the run, seed hash, candidate hash and ordered
 `changes`. Delivery preserves the customer's source identity:
 
@@ -349,8 +347,8 @@ Distinguish execution failure from a bad answer:
 For repository targets, `run_case` must import and call the candidate's ordinary
 application modules. Do not capture production functions at setup time or route
 execution to an external deployment that cannot include the candidate edits.
-For document targets, consume `runtime.targets_dir` or `runtime.candidate_runtime`
-in the real application call. Seed documents must reach that call.
+For document targets, consume `runtime.targets_dir` in the real application call.
+Seed documents must reach that call.
 
 Smoke validates setup, rows, cases, input files and document materialization.
 It never invokes `run_case` or `score_case`; setup may contact external services.
