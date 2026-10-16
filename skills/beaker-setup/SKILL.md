@@ -399,14 +399,14 @@ a `RepositoryRunSetup` is the right choice when only code needs to change.
 `{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
 for both, with the real seed documents. `run_case` reads the candidate's documents
 from `runtime.targets_dir`, one directory per group; there is no `open_candidate()`,
-so build any index inside `run_case`. The winner is reported as a document
-`ChangeSet` of create/update/delete operations conditioned on seed content hashes
+so build any index inside `run_case`. The winner is reported as a
+`DocumentChangeSet` of create/update/delete operations conditioned on seed content hashes
 and optional versions (and, when code was editable too, a repository candidate),
 which the developer applies separately; do not auto-apply it. Do not use
 `beaker-repository` as a document group name.
 
 Every integration supports explicitly requested model comparison, including the
-document `ChangeSet` of a winner. Preserve the selected editable
+`DocumentChangeSet` of a winner. Preserve the selected editable
 surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 

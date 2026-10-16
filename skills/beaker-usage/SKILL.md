@@ -157,7 +157,7 @@ Inspect the selected `Integration.targets` without changing it. A repository-onl
 Integration uses `repository(...)` and a `RepositoryRunSetup` class; one that edits
 documents declares `documents(...)`, alone or as `targets=(repository(...), documents(...))`,
 with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support
-model comparison, including the document ChangeSet of a winner.
+model comparison, including the DocumentChangeSet of a winner.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
