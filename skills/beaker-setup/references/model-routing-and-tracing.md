@@ -186,8 +186,8 @@ Declare a provider key only for a host or endpoint outside the supported
 providers above, or when the developer explicitly wants their own key used.
 Never add global environment-driven routing for Beaker.
 
-For document integrations, also use the candidate documents or runtime object
-provided through `runtime.targets_dir` or `runtime.candidate_runtime`.
+For integrations that declare documents, also use the candidate documents
+provided through `runtime.targets_dir`.
 
 ## LLM-as-a-judge scoring
 

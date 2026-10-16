@@ -387,17 +387,32 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
-Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
-for an intentional document/resource workflow. Its `prepare_run()` yields
-`DocumentRunSetupResult(target_documents=...)` with the real seed documents.
-Use `open_candidate(*, targets_dir, scratch_dir)` when the application needs
-an index or other runtime object; `run_case` receives it through
-`runtime.candidate_runtime`. The candidate document tree is at
-`runtime.targets_dir`. Results are create/update/delete `ChangeSet` operations
-conditioned on seed content hashes and optional versions; do not auto-apply them.
+Use `targets=documents(groups=("wiki",))` with a `CombinedRunSetup` subclass when
+only documents (a wiki, prompts or knowledge files fetched at run time) should
+change and the application code is fixed. Use
+`targets=(repository(...), documents(groups=("wiki",)))` with the same
+`CombinedRunSetup` only when one candidate must be able to change application code
+and documents together. Declare at most one `repository()`; a lone `repository()` with
+a `RepositoryRunSetup` is the right choice when only code needs to change. Declare one
+`documents()` target per document store that is applied separately, for example
+`targets=(documents(groups=("wiki-a",)), documents(groups=("wiki-b",)))` for wikis in
+two S3 buckets; group names must be unique across all document targets.
+`prepare_run()` yields a dict with one result per declared target kind:
+`{"documents": DocumentRunSetupResult(target_documents=...)}` for documents alone, or
+`{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
+for both, with the real seed documents. That one documents result holds the seeds of
+every document target; each document's `group` says which target it belongs to.
+`run_case` reads the candidate's documents from `runtime.targets_dir`, one directory
+per group; there is no `open_candidate()`, so build any index inside `run_case`.
+Each document target's winner is reported as its own `DocumentChangeSet` (naming its
+`groups`) of create/update/delete operations conditioned on seed content hashes and
+optional versions (and, when code was editable too, a repository candidate), which
+the developer applies separately; do not auto-apply it. Do not use
+`beaker-repository` as a document group name.
 
-Both target types support explicitly requested model comparison. Preserve the
-selected editable surface; never change it just to enable a run.
+Every integration supports explicitly requested model comparison, including the
+`DocumentChangeSet` of a winner. Preserve the selected editable
+surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
@@ -550,7 +565,7 @@ beaker run smoke --strict --integration-id <id> --agent <selected-agent> --datas
 beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed and enters/closes `open_candidate()` once. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
+- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
 - Local-path smoke reads local rows; customer setup hooks may still perform external I/O. Remote-dataset smoke authenticates to Beaker,
   resolves the selected snapshot, and downloads it through presigned URLs
   before validating every row. It does not launch a hosted run.

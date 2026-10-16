@@ -153,10 +153,11 @@ desired commit; do not launch with the tag or SHA.
 
 ## Agent optimization and the editable surface
 
-Inspect the selected `Integration.targets` without changing it. Repository
-Integrations use `repository(...)` and a `RepositoryRunSetup` class; document
-Integrations use `documents(groups=...)` and a `DocumentRunSetup` class.
-Both launch with `beaker run trigger` and support model comparison.
+Inspect the selected `Integration.targets` without changing it. A repository-only
+Integration uses `repository(...)` and a `RepositoryRunSetup` class; one that edits
+documents declares `documents(...)`, alone or as `targets=(repository(...), documents(...))`,
+with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support
+model comparison, including the DocumentChangeSet of a winner.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
@@ -314,7 +315,8 @@ Cancellation is a state-changing operation:
 - When a Beaker agent was set up in another session,
   `beaker run list --agent <key> --json` shows whether it has run before.
 - Preserve `Integration.targets`: `repository(...)` optimizes source files and
-  `documents(groups=...)` optimizes named content. Both support explicitly
+  each `documents(groups=...)` target optimizes one document store's named
+  content, delivered as its own DocumentChangeSet. Both support explicitly
   requested model comparison.
 - Never treat unpushed local changes as part of a hosted run.
 - Never ask the developer for permission to commit or push the integration

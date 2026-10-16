@@ -241,8 +241,8 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
 - Case inputs, expected values and application results are JSON values.
   Scorer-required application state is part of `CaseResult.output`; model/tool
   telemetry is captured through `runtime.trace`.
-- A document Integration returns real seed documents and consumes the candidate
-  through `runtime.targets_dir` or `runtime.candidate_runtime`.
+- An Integration that declares documents returns real seed documents and consumes
+  the candidate's documents through `runtime.targets_dir`.
 - Runtime trace evidence comes from the candidate workflow rooted at the main
   workflow agent inside `Integration.run_case`, including its sub-agents, tools,
   retrievers, and nested model calls, and excludes scorer, judge, evaluator,
