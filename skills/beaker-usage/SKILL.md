@@ -315,8 +315,9 @@ Cancellation is a state-changing operation:
 - When a Beaker agent was set up in another session,
   `beaker run list --agent <key> --json` shows whether it has run before.
 - Preserve `Integration.targets`: `repository(...)` optimizes source files and
-  `documents(groups=...)`, beside it, optimizes named content. Both support
-  explicitly requested model comparison.
+  each `documents(groups=...)` target optimizes one document store's named
+  content, delivered as its own DocumentChangeSet. Both support explicitly
+  requested model comparison.
 - Never treat unpushed local changes as part of a hosted run.
 - Never ask the developer for permission to commit or push the integration
   unless they told you not to take autonomous actions, and never push it to

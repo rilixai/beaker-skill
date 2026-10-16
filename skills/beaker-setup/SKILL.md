@@ -392,17 +392,22 @@ only documents (a wiki, prompts or knowledge files fetched at run time) should
 change and the application code is fixed. Use
 `targets=(repository(...), documents(groups=("wiki",)))` with the same
 `CombinedRunSetup` only when one candidate must be able to change application code
-and documents together. Declare each kind at most once; a lone `repository()` with
-a `RepositoryRunSetup` is the right choice when only code needs to change.
-`prepare_run()` yields a dict with one result per declared target, keyed by kind:
+and documents together. Declare at most one `repository()`; a lone `repository()` with
+a `RepositoryRunSetup` is the right choice when only code needs to change. Declare one
+`documents()` target per document store that is applied separately, for example
+`targets=(documents(groups=("wiki-a",)), documents(groups=("wiki-b",)))` for wikis in
+two S3 buckets; group names must be unique across all document targets.
+`prepare_run()` yields a dict with one result per declared target kind:
 `{"documents": DocumentRunSetupResult(target_documents=...)}` for documents alone, or
 `{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
-for both, with the real seed documents. `run_case` reads the candidate's documents
-from `runtime.targets_dir`, one directory per group; there is no `open_candidate()`,
-so build any index inside `run_case`. The winner is reported as a
-`DocumentChangeSet` of create/update/delete operations conditioned on seed content hashes
-and optional versions (and, when code was editable too, a repository candidate),
-which the developer applies separately; do not auto-apply it. Do not use
+for both, with the real seed documents. That one documents result holds the seeds of
+every document target; each document's `group` says which target it belongs to.
+`run_case` reads the candidate's documents from `runtime.targets_dir`, one directory
+per group; there is no `open_candidate()`, so build any index inside `run_case`.
+Each document target's winner is reported as its own `DocumentChangeSet` (naming its
+`groups`) of create/update/delete operations conditioned on seed content hashes and
+optional versions (and, when code was editable too, a repository candidate), which
+the developer applies separately; do not auto-apply it. Do not use
 `beaker-repository` as a document group name.
 
 Every integration supports explicitly requested model comparison, including the
