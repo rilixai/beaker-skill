@@ -23,6 +23,7 @@ class IntegrationExamples(unittest.TestCase):
             ResolvedIntegration,
             open_integration_attempt,
         )
+        from beaker.sdk.integration import document_target
         from beaker.tracing import current_trace
 
         for path in EXAMPLES.glob("*_integration.py"):
@@ -38,7 +39,7 @@ class IntegrationExamples(unittest.TestCase):
                     resolved = ResolvedIntegration.load(
                         name=path.stem, entrypoint=f"{path.stem}:integration"
                     )
-                    document_targets = module.integration.document_targets
+                    document_targets = document_target(module.integration.targets)
                     case_input, expected = (
                         ("Refund window", "30 days")
                         if document_targets is not None
@@ -81,7 +82,7 @@ class IntegrationExamples(unittest.TestCase):
                                 )
                             elif document_targets is not None:
                                 snapshot = DocumentSnapshot.build(
-                                    attempt.setup_result, document_targets
+                                    attempt.document_setup_result, document_targets
                                 )
                                 targets = root / "targets"
                                 snapshot.materialize(targets)
@@ -131,6 +132,7 @@ class IntegrationExamples(unittest.TestCase):
     def test_document_edits_reach_the_application(self):
         from beaker import DocumentRunSetupResult, RolloutRuntime, TargetDocument
         from beaker.sdk._integration_lifecycle import DocumentSnapshot
+        from beaker.sdk.integration import document_target
         from beaker.tracing import current_trace
 
         path = EXAMPLES / "document_integration.py"
@@ -150,7 +152,7 @@ class IntegrationExamples(unittest.TestCase):
                         ),
                     )
                 ),
-                module.integration.document_targets,
+                document_target(module.integration.targets),
             )
             variants = (
                 (
