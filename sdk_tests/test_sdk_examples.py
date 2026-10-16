@@ -218,7 +218,7 @@ class IntegrationExamples(unittest.TestCase):
                 )
                 case_input, expected = (
                     ("Refund window", "30 days")
-                    if path.stem == "combined_integration"
+                    if path.stem in ("document_integration", "combined_integration")
                     else ("input", "input")
                 )
                 for split in ("train", "test"):

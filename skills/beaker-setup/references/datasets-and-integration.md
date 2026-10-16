@@ -127,7 +127,8 @@ the authoritative check that the hosted snapshot can be downloaded and parsed.
 Keep the integration, loader, scorer and evaluation helpers under `.beaker/`.
 Do not add tests or CI/CD to the consumer repository. The platform owns dataset
 I/O and lifecycle; the integration owns row-to-case conversion and application
-execution. See [repository_integration.py](repository_integration.py) and
+execution. See [repository_integration.py](repository_integration.py),
+[document_integration.py](document_integration.py) and
 [combined_integration.py](combined_integration.py) for executable contract scaffolds.
 These illustrate wiring only; use the customer's actual application and labeled
 rows rather than their demonstration applications and exact-match scorers. Keep the

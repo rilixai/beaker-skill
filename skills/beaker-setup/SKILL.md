@@ -387,25 +387,26 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
-Use `targets=(repository(...), documents(groups=("wiki",)))` with a
-`CombinedRunSetup` subclass only when one candidate must be able to change
-application code and documents together, for example code that reads a prompt or
-knowledge file that is fetched at run time rather than stored in the repository.
-`repository()` is always required: Beaker does not support document-only
-Integrations, so a document workflow still declares the repository beside its
-documents. Declare each kind at most once; a lone `repository()` is the right
-choice when only code needs to change. `prepare_run()` yields a dict with one
-result per target, keyed by kind:
+Use `targets=documents(groups=("wiki",))` with a `CombinedRunSetup` subclass when
+only documents (a wiki, prompts or knowledge files fetched at run time) should
+change and the application code is fixed. Use
+`targets=(repository(...), documents(groups=("wiki",)))` with the same
+`CombinedRunSetup` only when one candidate must be able to change application code
+and documents together. Declare each kind at most once; a lone `repository()` with
+a `RepositoryRunSetup` is the right choice when only code needs to change.
+`prepare_run()` yields a dict with one result per declared target, keyed by kind:
+`{"documents": DocumentRunSetupResult(target_documents=...)}` for documents alone, or
 `{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
-with the real seed documents. `run_case` reads the candidate's documents from
-`runtime.targets_dir`, one directory per group. The winner is a repository
-candidate and also a document `ChangeSet` of create/update/delete operations
-conditioned on seed content hashes and optional versions, which the developer
-applies separately; do not auto-apply it. Do not use `beaker-repository` as a
-document group name.
+for both, with the real seed documents. `run_case` reads the candidate's documents
+from `runtime.targets_dir`, one directory per group; there is no `open_candidate()`,
+so build any index inside `run_case`. The winner is reported as a document
+`ChangeSet` of create/update/delete operations conditioned on seed content hashes
+and optional versions (and, when code was editable too, a repository candidate),
+which the developer applies separately; do not auto-apply it. Do not use
+`beaker-repository` as a document group name.
 
 Every integration supports explicitly requested model comparison, including the
-document `ChangeSet` of a combined winner. Preserve the selected editable
+document `ChangeSet` of a winner. Preserve the selected editable
 surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
