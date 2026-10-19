@@ -403,7 +403,14 @@ two S3 buckets; group names must be unique across all document targets.
 for both, with the real seed documents. That one documents result holds the seeds of
 every document target; each document's `group` says which target it belongs to.
 `run_case` reads the candidate's documents from `runtime.targets_dir`, one directory
-per group; there is no `open_candidate()`, so build any index inside `run_case`.
+per group. To build something every case of a candidate shares, such as an index of
+its documents, pass `Integration(open_candidate=...)`: an `asynccontextmanager`
+taking `(*, targets_dir, scratch_dir)` that Beaker enters once per rollout process
+before any case and exits after the last; `run_case` reads what it yields as
+`runtime.candidate`. Every candidate, documents-only included, runs in its own
+process: it sees a copy of the checkout without hidden or dependency folders, only
+declared environment variables, a per-case timeout, and an 8 MiB limit on each
+case's result (`context` is dropped first when it does not fit).
 Each document target's winner is reported as its own `DocumentChangeSet` (naming its
 `groups`) of create/update/delete operations conditioned on seed content hashes and
 optional versions (and, when code was editable too, a repository candidate), which

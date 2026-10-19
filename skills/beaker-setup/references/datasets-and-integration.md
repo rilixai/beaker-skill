@@ -180,9 +180,11 @@ For documents, setup returns actual `TargetDocument` content in declared groups.
 Use stable source IDs and preserve source versions. `run_case` reads the current
 candidate tree from `runtime.targets_dir`, including created documents and
 excluding deleted ones; do not reuse a seed-only index or assume every seed
-filename still exists. Build any index inside `run_case` (or cache it per
-candidate directory) rather than in setup, because the candidate runs in its own
-process. Candidate changes return as a `DocumentChangeSet`.
+filename still exists. Build any index in `Integration(open_candidate=...)`
+rather than in setup, because the candidate runs in its own process: Beaker
+enters it once per rollout process, `run_case` reads what it yields as
+`runtime.candidate`, and Beaker exits it after the last case. Candidate changes
+return as a `DocumentChangeSet`.
 A `DocumentChangeSet` identifies the run, seed hash, candidate hash and ordered
 `changes`. Delivery preserves the customer's source identity:
 

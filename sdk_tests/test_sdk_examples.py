@@ -13,6 +13,28 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "skills/beaker-setup/references"
 
 
+async def _run_with_candidate(integration, case_input, runtime, targets):
+    """Run one case as a rollout does, opening the candidate first when the example has open_candidate."""
+    import beaker
+
+    if integration.open_candidate is None:
+        runtime = beaker.RolloutRuntime(
+            case_files_dir=runtime.case_files_dir, trace=runtime.trace, targets_dir=targets
+        )
+        return await integration.run_case(case_input=case_input, runtime=runtime)
+    with tempfile.TemporaryDirectory() as scratch:
+        async with integration.open_candidate(
+            targets_dir=targets, scratch_dir=Path(scratch)
+        ) as candidate:
+            runtime = beaker.RolloutRuntime(
+                case_files_dir=runtime.case_files_dir,
+                trace=runtime.trace,
+                targets_dir=targets,
+                candidate=candidate,
+            )
+            return await integration.run_case(case_input=case_input, runtime=runtime)
+
+
 class IntegrationExamples(unittest.TestCase):
     def test_examples_use_public_types_and_complete_lifecycle(self):
         import beaker
@@ -23,7 +45,7 @@ class IntegrationExamples(unittest.TestCase):
             ResolvedIntegration,
             open_integration_attempt,
         )
-        from beaker.sdk.integration import document_target
+        from beaker.sdk.integration import document_targets
         from beaker.tracing import current_trace
 
         for path in EXAMPLES.glob("*_integration.py"):
@@ -39,10 +61,10 @@ class IntegrationExamples(unittest.TestCase):
                     resolved = ResolvedIntegration.load(
                         name=path.stem, entrypoint=f"{path.stem}:integration"
                     )
-                    document_targets = document_target(module.integration.targets)
+                    declared = next(iter(document_targets(module.integration.targets)), None)
                     case_input, expected = (
                         ("Refund window", "30 days")
-                        if document_targets is not None
+                        if declared is not None
                         else ("input", "input")
                     )
                     row = resolved.row_adapter.validate_python(
@@ -66,19 +88,14 @@ class IntegrationExamples(unittest.TestCase):
                                 case_files_dir=attempt.files.view(case.id),
                                 trace=current_trace(),
                             )
-                            if document_targets is not None:
+                            if declared is not None:
                                 snapshot = DocumentSnapshot.build(
-                                    attempt.setup_results["documents"], document_targets
+                                    attempt.setup_results["documents"], declared
                                 )
                                 targets = root / "targets"
                                 snapshot.materialize(targets)
-                                runtime = beaker.RolloutRuntime(
-                                    case_files_dir=runtime.case_files_dir,
-                                    trace=runtime.trace,
-                                    targets_dir=targets,
-                                )
-                                result = await module.integration.run_case(
-                                    case_input=case.input, runtime=runtime
+                                result = await _run_with_candidate(
+                                    module.integration, case.input, runtime, targets
                                 )
                             else:
                                 result = await module.integration.run_case(
@@ -114,7 +131,7 @@ class IntegrationExamples(unittest.TestCase):
     def test_document_edits_reach_the_application(self):
         from beaker import DocumentRunSetupResult, RolloutRuntime, TargetDocument
         from beaker.sdk._integration_lifecycle import DocumentSnapshot
-        from beaker.sdk.integration import document_target
+        from beaker.sdk.integration import document_targets
         from beaker.tracing import current_trace
 
         path = EXAMPLES / "combined_integration.py"
@@ -134,7 +151,7 @@ class IntegrationExamples(unittest.TestCase):
                         ),
                     )
                 ),
-                document_target(module.integration.targets),
+                next(iter(document_targets(module.integration.targets))),
             )
             variants = (
                 (

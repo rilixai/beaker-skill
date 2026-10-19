@@ -55,27 +55,43 @@ class Setup(CombinedRunSetup[Row]):
         yield Case(id=row.id, input=row.input, expected=row.expected)
 
 
-def answer_question(question: str, targets_dir: Path) -> str:
-    """Illustrative lookup in FAQ lines formatted as 'topic: answer'."""
+def build_faq_index(targets_dir: Path) -> dict[str, str]:
+    """Illustrative index of FAQ lines formatted as 'topic: answer'."""
+    index: dict[str, str] = {}
     for path in sorted((targets_dir / "wiki").rglob("*")):
         if not path.is_file():
             continue
         for line in path.read_text(encoding="utf-8").splitlines():
             topic, separator, answer = line.partition(":")
-            if separator and topic.strip().casefold() == question.strip().casefold():
-                return answer.strip()
-    return "Not found"
+            if separator:
+                index[topic.strip().casefold()] = answer.strip()
+    return index
 
 
-async def run_case(*, case_input: JsonValue, runtime: RolloutRuntime) -> CaseResult:
+@asynccontextmanager
+async def open_candidate(
+    *, targets_dir: Path | None, scratch_dir: Path
+) -> AsyncIterator[dict[str, str]]:
+    # TODO(beaker): build whatever the application needs from this candidate's
+    # documents once (an index, a loaded client). Every case of the rollout
+    # shares it as runtime.candidate; release it after the yield.
+    del scratch_dir
+    if targets_dir is None:
+        raise RuntimeError("Document targets require targets_dir")
+    yield build_faq_index(targets_dir)
+
+
+async def run_case(
+    *, case_input: JsonValue, runtime: RolloutRuntime[dict[str, str]]
+) -> CaseResult:
     # TODO(beaker): call the candidate application's real entrypoint from the
-    # candidate checkout. This candidate's documents are under runtime.targets_dir
-    # (one directory per group).
+    # candidate checkout, using what open_candidate built from this candidate's
+    # documents (runtime.targets_dir holds the files, one directory per group).
     if not isinstance(case_input, str):
         raise TypeError("case_input must be a question string")
-    if runtime.targets_dir is None:
-        raise RuntimeError("Document targets require runtime.targets_dir")
-    answer = answer_question(case_input, runtime.targets_dir)
+    if runtime.candidate is None:
+        raise RuntimeError("open_candidate did not run for this candidate")
+    answer = runtime.candidate.get(case_input.strip().casefold(), "Not found")
     return CaseResult(output=answer, output_kind="value")
 
 
@@ -103,4 +119,5 @@ integration = Integration(
     run_setup=Setup,
     run_case=run_case,
     score_case=score_case,
+    open_candidate=open_candidate,
 )
