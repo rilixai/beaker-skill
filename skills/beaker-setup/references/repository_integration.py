@@ -10,7 +10,7 @@ from beaker import (
     Check,
     Integration,
     JsonValue,
-    RepositoryRunSetup,
+    RunSetup,
     RolloutRuntime,
     SetupRuntime,
     repository,
@@ -24,7 +24,7 @@ class Row(BaseModel):
     expected: str
 
 
-class Setup(RepositoryRunSetup[Row]):
+class Setup(RunSetup[Row]):
     row_model = Row
 
     async def load_cases(

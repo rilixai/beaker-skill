@@ -154,9 +154,9 @@ desired commit; do not launch with the tag or SHA.
 ## Agent optimization and the editable surface
 
 Inspect the selected `Integration.targets` without changing it. A repository-only
-Integration uses `repository(...)` and a `RepositoryRunSetup` class; one that edits
-documents declares `documents(...)`, alone or as `targets=(repository(...), documents(...))`,
-with a `CombinedRunSetup` class. All launch with `beaker run trigger` and support
+Integration uses `repository(...)`; one that edits documents declares `documents(...)`,
+alone or as `targets=(repository(...), documents(...))`. Every Integration has one
+`RunSetup` class whose `prepare_run()` yields a result per declared target kind. All launch with `beaker run trigger` and support
 model comparison, including the DocumentChangeSet of a winner.
 
 The normal first run optimizes the production system. Do not add

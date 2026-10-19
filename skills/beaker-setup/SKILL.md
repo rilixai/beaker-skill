@@ -378,8 +378,9 @@ final integration push.
 
 ## Select the editable surface
 
-Use `targets=repository()` with a `RepositoryRunSetup` subclass for ordinary
-repository optimization. Narrow eligible source with
+Use `targets=repository()` with a `RunSetup` subclass for ordinary
+repository optimization; its default `prepare_run()` already yields
+`{"repository": RepositoryRunSetupResult()}`. Narrow eligible source with
 `repository(("src/invoice_agent", "config/prompts"))` when needed. These are
 normalized paths to files or directories relative to the selected integration's
 `source_dir`, not the YAML or import root. Beaker protects `.beaker/`, hidden
@@ -387,14 +388,14 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
-Use `targets=documents(groups=("wiki",))` with a `CombinedRunSetup` subclass when
-only documents (a wiki, prompts or knowledge files fetched at run time) should
-change and the application code is fixed. Use
-`targets=(repository(...), documents(groups=("wiki",)))` with the same
-`CombinedRunSetup` only when one candidate must be able to change application code
-and documents together. Declare at most one `repository()`; a lone `repository()` with
-a `RepositoryRunSetup` is the right choice when only code needs to change. Declare one
-`documents()` target per document store that is applied separately, for example
+Use `targets=documents(groups=("wiki",))` with a `RunSetup` subclass that
+overrides `prepare_run()` when only documents (a wiki, prompts or knowledge files
+fetched at run time) should change and the application code is fixed. Use
+`targets=(repository(...), documents(groups=("wiki",)))` the same way only when
+one candidate must be able to change application code and documents together.
+Declare at most one `repository()`; a lone `repository()` is the right choice when
+only code needs to change. Declare one `documents()` target per document store that
+is applied separately, for example
 `targets=(documents(groups=("wiki-a",)), documents(groups=("wiki-b",)))` for wikis in
 two S3 buckets; group names must be unique across all document targets.
 `prepare_run()` yields a dict with one result per declared target kind:

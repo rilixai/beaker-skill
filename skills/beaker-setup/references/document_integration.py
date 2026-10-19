@@ -9,7 +9,7 @@ from beaker import (
     CaseResult,
     CaseScore,
     Check,
-    CombinedRunSetup,
+    RunSetup,
     DocumentRunSetupResult,
     Integration,
     JsonValue,
@@ -27,7 +27,7 @@ class Row(BaseModel):
     expected: str
 
 
-class Setup(CombinedRunSetup[Row]):
+class Setup(RunSetup[Row]):
     row_model = Row
 
     @asynccontextmanager
