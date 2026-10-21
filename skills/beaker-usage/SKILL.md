@@ -1,10 +1,10 @@
 ---
 name: beaker-usage
-description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker integration; use beaker-setup for setup work.
+description: Operate an already-configured Beaker integration. Use when the developer asks to launch agent optimization over a repository or named-resource editable surface, provide experiment instructions, choose a GitHub branch or dataset, pass optional comparison models, verify hosted required environment variables, list or inspect runs, monitor status, download results, or cancel a run. Do not use to scaffold, convert, or repair the Beaker integration; use beaker-setup for setup work.
 license: MIT
 metadata:
-  version: "0.6.5"
-  beaker_sdk_version: "0.6.5"
+  version: "0.6.6"
+  beaker_sdk_version: "0.6.6"
 ---
 
 # Beaker usage
@@ -15,11 +15,11 @@ datasets, CI/CD automation, or Beaker config merely to launch or manage a run.
 
 ## Version check
 
-This skill (0.6.5) is written for beaker-sdk 0.6.5; skill and SDK share one
+This skill (0.6.6) is written for beaker-sdk 0.6.6; skill and SDK share one
 version number and release together. Run `beaker --version` first. If the CLI
-is older than 0.6.5 or does not recognize `--version`, upgrade `beaker-sdk`
+is older than 0.6.6 or does not recognize `--version`, upgrade `beaker-sdk`
 through the project's development-dependency workflow. If it is newer than
-0.6.5, run `npx skills update beaker-usage` and `npx skills update
+0.6.6, run `npx skills update beaker-usage` and `npx skills update
 beaker-setup`, then reload the skill before continuing.
 
 Read [cli-reference.md](references/cli-reference.md) when constructing a launch,
@@ -189,6 +189,25 @@ group and document path; updates/deletes include source IDs and base hashes,
 plus source versions when available. Apply only on an explicit request and
 only while the current source matches those preconditions.
 
+## Experiment instructions
+
+When the developer supplies an area to investigate or an idea to test, pass
+their experiment instructions as written with `--instructions` or
+`--instructions-file`. Do not replace them with your own hypothesis or silently
+narrow their scope. If no instructions were supplied, omit both flags. Do not
+reuse an earlier run's instructions unless the developer asks.
+
+Before using these flags, check `beaker run trigger --help` for support. If
+they are missing, report that the installed CLI does not support experiment
+instructions; do not silently launch without them. See
+[cli-reference.md](references/cli-reference.md#experiment-instructions) for
+file input, limits, SDK parameters, and retry behavior.
+
+Current implementation: instructions are saved with the run and shown in the
+app, but the optimizer does not yet use them. Explain this limitation before
+launching a run that relies on them. Do not claim that saving the instructions
+makes the run follow them.
+
 ## Authorize and launch
 
 A hosted run can spend money and execute repository code. Before triggering,
@@ -198,7 +217,8 @@ state the exact:
 - remote GitHub branch;
 - dataset reference;
 - that this is agent optimization;
-- comparison models, when the developer asked for them; and
+- comparison models, when the developer asked for them;
+- experiment instructions, when supplied; and
 - non-default benchmark, evaluation, or budget settings.
 
 Launch only after explicit developer authorization. A request such as "launch

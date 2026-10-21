@@ -170,6 +170,53 @@ SHAs are not valid hosted sources; the server returns `422` with
 `<owner/repository>@<ref> is not a GitHub branch.` Ask for a remote branch that
 points to the intended commit instead.
 
+## Experiment instructions
+
+Pass the developer's instructions as a per-run input:
+
+```bash
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> \
+  --instructions "Focus on refund decisions. Try a verification step." --json
+```
+
+For multiline text or text that is awkward to quote in a shell, prefer a UTF-8
+file and pass its path:
+
+```bash
+beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> \
+  --instructions-file ./experiment-instructions.txt --json
+```
+
+Use an existing developer-specified file, or write the supplied text to a
+temporary file without shell expansion. Do not commit a temporary instruction
+file just to launch a run. Use only one of the two flags; both also work with
+bare `beaker run`.
+
+Instructions are limited to 8,000 characters. Oversized text is rejected,
+not truncated. If the request exceeds the limit, ask the developer to shorten
+it rather than silently summarize it. Leading and trailing whitespace are
+removed; internal whitespace and line breaks are preserved. Empty or
+whitespace-only text means no instructions.
+
+The CLI sends `experiment_instructions` as a top-level API request field,
+which the backend saves as `config.experiment_instructions`. Do not place it
+inside `--config`, `config_defaults`, `extra`, or `trigger_metadata`. It is not
+an agent-level default and is not automatically copied into a new experiment.
+
+The Python SDK accepts `experiment_instructions="..."` on both
+`BeakerClient.create_optimization_run()` and
+`BeakerClient.create_optimization_run_from_config()`. When using the SDK,
+keep it separate from the `config` argument.
+
+For a retry after an unanswered submission, preserve both the instructions
+and the `--idempotency-key`. Changed instructions require a new submission
+key; the backend rejects reusing a key for a different request.
+
+Check `beaker run trigger --help` before relying on these flags. The current
+implementation collects, saves, and displays instructions; it does not yet
+change the optimizer's investigation. Tell the developer before launching a
+run whose purpose depends on following those instructions.
+
 ## Launch config overrides with `--config`
 
 `beaker run trigger --config '<json>'` takes a JSON object of launch-config
