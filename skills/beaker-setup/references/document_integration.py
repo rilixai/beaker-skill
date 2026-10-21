@@ -1,4 +1,4 @@
-"""Document contract example; replace the FAQ lookup with the real application."""
+"""Document contract example: Beaker edits FAQ documents; the application code stays fixed."""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -9,7 +9,7 @@ from beaker import (
     CaseResult,
     CaseScore,
     Check,
-    DocumentRunSetup,
+    RunSetup,
     DocumentRunSetupResult,
     Integration,
     JsonValue,
@@ -27,63 +27,71 @@ class Row(BaseModel):
     expected: str
 
 
-class Setup(DocumentRunSetup[Row, dict[str, str]]):
+class Setup(RunSetup[Row]):
     row_model = Row
 
     @asynccontextmanager
     async def prepare_run(
         self, *, runtime: SetupRuntime
-    ) -> AsyncIterator[DocumentRunSetupResult]:
+    ) -> AsyncIterator[dict[str, DocumentRunSetupResult]]:
+        # One result per declared target, keyed by target kind.
         # TODO(beaker): fetch real documents, preserving source IDs and versions.
-        yield DocumentRunSetupResult(
-            target_documents=(
-                TargetDocument(
-                    source_id="guide",
-                    group="wiki",
-                    name="guide.md",
-                    content="Refund window: 30 days\nSupport hours: 09:00-17:00 UTC",
-                ),
-            )
-        )
+        yield {
+            "documents": DocumentRunSetupResult(
+                target_documents=(
+                    TargetDocument(
+                        source_id="guide",
+                        group="wiki",
+                        name="guide.md",
+                        content="Refund window: 30 days\nSupport hours: 09:00-17:00 UTC",
+                    ),
+                )
+            ),
+        }
 
     async def load_cases(
         self, row: Row, *, runtime: SetupRuntime
     ) -> AsyncIterator[Case]:
         yield Case(id=row.id, input=row.input, expected=row.expected)
 
-    @asynccontextmanager
-    async def open_candidate(
-        self, *, targets_dir: Path, scratch_dir: Path
-    ) -> AsyncIterator[dict[str, str]]:
-        # Read the current tree, including additions and excluding deletions.
-        # An application may instead build an index under scratch_dir here and
-        # close it when this context exits. Never mutate targets_dir.
-        yield {
-            path.relative_to(targets_dir).as_posix(): path.read_text(encoding="utf-8")
-            for path in sorted(targets_dir.rglob("*"))
-            if path.is_file()
-        }
 
-
-def answer_question(question: str, candidate_documents: dict[str, str]) -> str:
-    """Illustrative lookup in FAQ lines formatted as 'topic: answer'."""
-    for content in candidate_documents.values():
-        for line in content.splitlines():
+def build_faq_index(targets_dir: Path) -> dict[str, str]:
+    """Illustrative index of FAQ lines formatted as 'topic: answer'."""
+    index: dict[str, str] = {}
+    for path in sorted((targets_dir / "wiki").rglob("*")):
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
             topic, separator, answer = line.partition(":")
-            if separator and topic.strip().casefold() == question.strip().casefold():
-                return answer.strip()
-    return "Not found"
+            if separator:
+                index[topic.strip().casefold()] = answer.strip()
+    return index
+
+
+@asynccontextmanager
+async def open_candidate(
+    *, targets_dir: Path | None, scratch_dir: Path
+) -> AsyncIterator[dict[str, str]]:
+    # TODO(beaker): build whatever the application needs from this candidate's
+    # documents once (an index, a loaded client). Every case of the rollout
+    # shares it as runtime.candidate; release it after the yield.
+    del scratch_dir
+    if targets_dir is None:
+        raise RuntimeError("Document targets require targets_dir")
+    yield build_faq_index(targets_dir)
 
 
 async def run_case(
     *, case_input: JsonValue, runtime: RolloutRuntime[dict[str, str]]
 ) -> CaseResult:
-    # TODO(beaker): replace the FAQ lookup with the customer's real application.
+    # TODO(beaker): call the candidate application's real entrypoint from the
+    # candidate checkout, using what open_candidate built from this candidate's
+    # documents (runtime.targets_dir holds the files, one directory per group).
     if not isinstance(case_input, str):
         raise TypeError("case_input must be a question string")
-    if runtime.candidate_runtime is None:
-        raise RuntimeError("Document candidate runtime was not prepared")
-    answer = answer_question(case_input, runtime.candidate_runtime)
+    if runtime.candidate is None:
+        raise RuntimeError("open_candidate did not run for this candidate")
+    answer = runtime.candidate.get(case_input.strip().casefold(), "Not found")
     return CaseResult(output=answer, output_kind="value")
 
 
@@ -111,4 +119,5 @@ integration = Integration(
     run_setup=Setup,
     run_case=run_case,
     score_case=score_case,
+    open_candidate=open_candidate,
 )

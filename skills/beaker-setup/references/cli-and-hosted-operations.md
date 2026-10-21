@@ -301,7 +301,7 @@ a new run, and monitor it with `beaker run status <new-run-id> --watch`.
 ### Credential preflight
 
 Before a hosted launch, derive credential requirements from `prepare_run`,
-`load_cases`, document `open_candidate`, `run_case` and `score_case`, including
+`load_cases`, `run_case` and `score_case`, including
 the application paths they call. Include SDK defaults and fallback branches
 that can run when a selected model or provider route is absent. Do not rely
 only on names already present in `integrations.<id>.required_env`. Read the application

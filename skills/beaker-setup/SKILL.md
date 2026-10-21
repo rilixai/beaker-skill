@@ -378,8 +378,9 @@ final integration push.
 
 ## Select the editable surface
 
-Use `targets=repository()` with a `RepositoryRunSetup` subclass for ordinary
-repository optimization. Narrow eligible source with
+Use `targets=repository()` with a `RunSetup` subclass for ordinary
+repository optimization; its default `prepare_run()` already yields
+`{"repository": RepositoryRunSetupResult()}`. Narrow eligible source with
 `repository(("src/invoice_agent", "config/prompts"))` when needed. These are
 normalized paths to files or directories relative to the selected integration's
 `source_dir`, not the YAML or import root. Beaker protects `.beaker/`, hidden
@@ -387,17 +388,39 @@ paths, dependencies, lockfiles, build configuration, vendored and binary files,
 and files outside the declared scope. Keep scoring and evaluation policy under
 `.beaker/`; do not move it into editable application source to bypass protection.
 
-Use `targets=documents(groups=("wiki",))` with a `DocumentRunSetup` subclass
-for an intentional document/resource workflow. Its `prepare_run()` yields
-`DocumentRunSetupResult(target_documents=...)` with the real seed documents.
-Use `open_candidate(*, targets_dir, scratch_dir)` when the application needs
-an index or other runtime object; `run_case` receives it through
-`runtime.candidate_runtime`. The candidate document tree is at
-`runtime.targets_dir`. Results are create/update/delete `ChangeSet` operations
-conditioned on seed content hashes and optional versions; do not auto-apply them.
+Use `targets=documents(groups=("wiki",))` with a `RunSetup` subclass that
+overrides `prepare_run()` when only documents (a wiki, prompts or knowledge files
+fetched at run time) should change and the application code is fixed. Use
+`targets=(repository(...), documents(groups=("wiki",)))` the same way only when
+one candidate must be able to change application code and documents together.
+Declare at most one `repository()`; a lone `repository()` is the right choice when
+only code needs to change. Declare one `documents()` target per document store that
+is applied separately, for example
+`targets=(documents(groups=("wiki-a",)), documents(groups=("wiki-b",)))` for wikis in
+two S3 buckets; group names must be unique across all document targets.
+`prepare_run()` yields a dict with one result per declared target kind:
+`{"documents": DocumentRunSetupResult(target_documents=...)}` for documents alone, or
+`{"repository": RepositoryRunSetupResult(), "documents": DocumentRunSetupResult(target_documents=...)}`
+for both, with the real seed documents. That one documents result holds the seeds of
+every document target; each document's `group` says which target it belongs to.
+`run_case` reads the candidate's documents from `runtime.targets_dir`, one directory
+per group. To build something every case of a candidate shares, such as an index of
+its documents, pass `Integration(open_candidate=...)`: an `asynccontextmanager`
+taking `(*, targets_dir, scratch_dir)` that Beaker enters once per rollout process
+before any case and exits after the last; `run_case` reads what it yields as
+`runtime.candidate`. Every candidate, documents-only included, runs in its own
+process: it sees a copy of the checkout without hidden or dependency folders, only
+declared environment variables, a per-case timeout, and an 8 MiB limit on each
+case's result (`context` is dropped first when it does not fit).
+Each document target's winner is reported as its own `DocumentChangeSet` (naming its
+`groups`) of create/update/delete operations conditioned on seed content hashes and
+optional versions (and, when code was editable too, a repository candidate), which
+the developer applies separately; do not auto-apply it. Do not use
+`beaker-repository` as a document group name.
 
-Both target types support explicitly requested model comparison. Preserve the
-selected editable surface; never change it just to enable a run.
+Every integration supports explicitly requested model comparison, including the
+`DocumentChangeSet` of a winner. Preserve the selected editable
+surface; never change it just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
@@ -550,7 +573,7 @@ beaker run smoke --strict --integration-id <id> --agent <selected-agent> --datas
 beaker run smoke --strict --integration-id <id> --agent <selected-agent> --dataset-id <artifact-id>
 ```
 
-- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed and enters/closes `open_candidate()` once. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
+- Smoke validates typed rows before entering `prepare_run()`, loads cases and checks their files, and validates target documents. For document targets it materializes the seed. All setup resources are closed. It never calls `run_case()` or `score_case()`; setup hooks can perform external I/O.
 - Local-path smoke reads local rows; customer setup hooks may still perform external I/O. Remote-dataset smoke authenticates to Beaker,
   resolves the selected snapshot, and downloads it through presigned URLs
   before validating every row. It does not launch a hosted run.

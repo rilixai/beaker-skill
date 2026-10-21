@@ -142,8 +142,8 @@ placeholders but adding no `--optimization-model`:
 beaker run trigger --integration-id <id> --agent <selected-agent> --dataset <name@revision> --json
 ```
 
-Repository Integrations use `repository(...)` and document Integrations use
-`documents(groups=...)`. Both support comparison models. Keep the production
+An Integration declares `repository(...)`, `documents(groups=...)`, or both. All support
+comparison models. Keep the production
 model behavior when `runtime.model` is absent. When a comparison is explicitly
 requested, verify that the selected model reaches the application through its
 existing injection seam. Compatible Chat Completions clients can use
