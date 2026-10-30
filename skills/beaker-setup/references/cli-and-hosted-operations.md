@@ -321,7 +321,7 @@ Classify each credential before configuring it:
 - Prefer automatic hosted provider routing during initial integration when it
   supports the setup, host, endpoint, and model. When enabled, it supplies platform
   access without changing the client or requiring a real provider key. OpenAI,
-  Anthropic, Google/Gemini and OpenRouter keys are optional; leave them out of
+  Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys are optional; leave them out of
   `integrations.<id>.required_env`. Preserve existing hosted keys and customer
   billing choices; do not copy local provider keys into hosted settings by
   default.
@@ -487,3 +487,13 @@ wait is for Beaker's hosted results, not more integration work. Use `beaker run
 status <full-run-id>` for a one-shot check; exit code 3 means the run is still
 active. Add `--watch` only when polling is intended, and report meaningful
 state changes while waiting. Use `beaker run pull <full-run-id>` for results.
+
+### TypeSafe routing availability
+
+For Jev calls, confirm server-reported TypeSafe routing before omitting
+`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
+The initial platform route covers text Choice, Score and Noul requests and
+model listing. Images, Box, multipart, long context, and custom hosts need the
+customer's direct configuration. A real customer key retains direct billing.
+Jev cannot use the Chat Completions model-selection or scorer helpers. Report
+native judge traffic as `provider_proxy`, not dedicated `scorer` usage.

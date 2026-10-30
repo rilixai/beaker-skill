@@ -39,6 +39,7 @@ The proxy handles these canonical provider hosts and inference endpoints:
 | `api.anthropic.com` | Messages |
 | `generativelanguage.googleapis.com` | GenerateContent and StreamGenerateContent (`v1`/`v1beta`; streaming uses `alt=sse`) |
 | `openrouter.ai` | Chat Completions |
+| `api.typesafe.ai` | System One text decisions (`POST /v1/systemone`) when TypeSafe routing is enabled |
 
 Calls without a real provider key use platform credentials through Beaker and
 are charged to the run; this proxy path does not look up organization keys.
@@ -48,8 +49,9 @@ Direct calls have no platform fallback. Preserve existing
 customer keys and billing choices. Do not create keys solely to make supported
 proxy calls work.
 
-OpenAI, Anthropic, Google/Gemini and OpenRouter keys (`OPENAI_API_KEY`,
-`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`)
+OpenAI, Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys (`OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`,
+`TYPESAFE_API_KEY`)
 are optional in hosted runs; leave them out of `integrations.<id>.required_env`
 unless the developer explicitly wants their own key used. Other required
 credentials still need real values. Do not add placeholders, host overrides, or
@@ -69,6 +71,36 @@ route accepts reasoning effort words rather than token budgets such as
 `reasoning.max_tokens`. If an existing Chat Completions wrapper exposes a
 budget, map it to a supported effort word in the evaluation adapter. Do not
 apply that conversion to native requests merely because they are proxied.
+
+## TypeSafe / Jev
+
+Confirm that the server reports TypeSafe provider routing before relying on it.
+TypeSafe has a separate rollout switch and needs a configured platform credential.
+Keep the application's TypeSafe client, canonical URL, model, state, questions,
+and answer handling. Both synchronous and asynchronous clients can use the proxy;
+the proxy decodes the SDK's default zstd compression. Do not disable TLS checks.
+
+Supported calls are text Choice, Score and Noul questions at `POST /v1/systemone`,
+plus the native `GET /v1/models` response. Image/Box, multipart, long-context,
+and custom-host calls require the customer's existing direct configuration.
+Declare `TYPESAFE_API_KEY` when the developer chooses customer billing or the
+call cannot use platform routing. Otherwise leave it out of `required_env`.
+Never copy a local key to hosted settings just because it exists.
+
+A real key keeps direct TypeSafe billing. A supported call without a real key
+uses Beaker credits. An invalid key or budget error is a failure; do not switch
+routes to bypass it. Local execution keeps the application's own credentials.
+
+Jev is a decision model. It cannot use the Chat Completions helpers
+`inference_target()` or `scoring_inference_target()`. Do not put it in a
+chat-based comparison, optimizer, or `scorer_model` configuration. A native Jev
+judge can pass through the proxy, but its accounting is `provider_proxy`, not
+`scorer`. Report this distinction at handoff. Do not claim dedicated scorer
+accounting or automatic TypeSafe tracing instrumentation.
+
+The executable [TypeSafe example](typesafe_client.py) retains native
+requests. Use the application's existing dependency version and integration
+interface. It is an example call adapter, not a complete Integration factory.
 
 ## Explicit gateway fallback
 

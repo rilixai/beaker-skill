@@ -278,3 +278,13 @@ sound like unfinished setup.
   integration unless the developer asks to diagnose or repair it.
 - **Cancellation rejects a terminal run:** report the authoritative terminal
   state; do not retry cancellation in a loop.
+
+### TypeSafe routing availability
+
+For Jev calls, confirm server-reported TypeSafe routing before omitting
+`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
+The initial platform route covers text Choice, Score and Noul requests and
+model listing. Images, Box, multipart, long context, and custom hosts need the
+customer's direct configuration. A real customer key retains direct billing.
+Jev cannot use the Chat Completions model-selection or scorer helpers. Report
+native judge traffic as `provider_proxy`, not dedicated `scorer` usage.

@@ -3,8 +3,8 @@ name: beaker-setup
 description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.6.5"
-  beaker_sdk_version: "0.6.5"
+  version: "0.6.7"
+  beaker_sdk_version: "0.6.7"
 ---
 
 # Beaker setup
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.6.5) is written for beaker-sdk 0.6.5. The skill and the SDK are
+This skill (0.6.7) is written for beaker-sdk 0.6.7. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.6.5' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.6.5, or does
+(or `uvx --from 'beaker-sdk>=0.6.7' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.6.7, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.6.5, this skill is
+or flags this skill relies on. If the CLI is newer than 0.6.7, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
@@ -454,7 +454,7 @@ Use customer clients and credentials as the last resort, or when the developer
 explicitly requests them. Do not copy local provider keys into hosted settings
 by default; preserve existing hosted credential choices. The explicit gateway
 uses platform keys when no agent or organization key is configured. OpenAI,
-Anthropic, Google/Gemini and OpenRouter keys are optional in hosted runs; leave
+Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys are optional in hosted runs; leave
 them out of `integrations.<id>.required_env`.
 
 Identify and wire an optional model/client override during setup when a narrow
@@ -560,7 +560,7 @@ Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from setup, case loading, candidate initialization, application
 execution and scoring paths, then declare them in `integrations.<id>.required_env`
-(OpenAI, Anthropic, Google/Gemini and OpenRouter keys are optional and stay out).
+(OpenAI, Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys are optional and stay out).
 Check hosted readiness with:
 
 ```bash
@@ -706,3 +706,13 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
   remote branch override. Never pass a tag or commit SHA; the hosted source
   must be a GitHub branch.
 - Target Python repositories with `pyproject.toml`.
+
+### TypeSafe routing availability
+
+For Jev calls, confirm server-reported TypeSafe routing before omitting
+`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
+The initial platform route covers text Choice, Score and Noul requests and
+model listing. Images, Box, multipart, long context, and custom hosts need the
+customer's direct configuration. A real customer key retains direct billing.
+Jev cannot use the Chat Completions model-selection or scorer helpers. Report
+native judge traffic as `provider_proxy`, not dedicated `scorer` usage.
