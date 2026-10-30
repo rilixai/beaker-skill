@@ -109,6 +109,8 @@ git add -- "<selected-config>" "<integration-and-helper-files>" \
   "<dependency-and-lock-files>" "<intentional-tracing-files>"
 git diff --cached --name-only
 git commit -m "Add Beaker integration"
+git archive --format=tar.gz HEAD | wc -c          # must stay under 104857600
+git ls-tree -r -l HEAD | sort -k4 -n | tail -20   # largest tracked files
 git push -u origin HEAD
 ```
 
@@ -119,6 +121,20 @@ Do not stage the selected source directory as a whole. Never stage an
 unrelated untracked dataset or source file merely to make onboarding pass.
 Review the staged path list before committing and ensure every intentional new
 integration file is present.
+
+Beaker builds download the GitHub archive of the whole repository at the pushed
+commit, not only the staged integration files, and reject it above 100 MB
+compressed (also 512 MB uncompressed and 64 MB per file). The `git archive` and
+`git ls-tree` lines above measure what the build will download; run them after
+committing and before pushing. When it is over or close to the limit, push
+only what the agent needs: on the `beaker/...` branch, `git rm -r` the large
+tracked paths that the integration target, its imports, its dependency install, and the selected
+config never read (datasets already uploaded to Beaker, media, model weights,
+notebooks, build outputs), commit that separately, measure again, then push.
+Never drop a file the agent reads at runtime, and never use `--cached`: the
+left-behind untracked copies block switching back to the default branch. The
+removal stays on the integration branch; checking out the default branch
+restores those files. Report the dropped paths to the developer.
 
 When the checkout is already on a `beaker/<YYYYMMDD-HHMM>-<agent-name>` branch
 for the selected agent whose timestamp is less than an hour old, reuse it
