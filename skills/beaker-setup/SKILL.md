@@ -109,6 +109,8 @@ git add -- "<selected-config>" "<integration-and-helper-files>" \
   "<dependency-and-lock-files>" "<intentional-tracing-files>"
 git diff --cached --name-only
 git commit -m "Add Beaker integration"
+git archive --format=tar.gz HEAD | wc -c          # must stay under 104857600
+git ls-tree -r -l HEAD | sort -k4 -n | tail -20   # largest tracked files
 git push -u origin HEAD
 ```
 
@@ -122,17 +124,11 @@ integration file is present.
 
 Beaker builds download the GitHub archive of the whole repository at the pushed
 commit, not only the staged integration files, and reject it above 100 MB
-compressed (also 512 MB uncompressed and 64 MB per file). After committing and
-before pushing, measure what the build will download:
-
-```bash
-git archive --format=tar.gz HEAD | wc -c          # must stay under 104857600
-git ls-tree -r -l HEAD | sort -k4 -n | tail -20   # largest tracked files
-```
-
-When it is over or close to the limit, push only what the agent needs: on the
-`beaker/...` branch, `git rm -r` the large tracked paths that the
-integration target, its imports, its dependency install, and the selected
+compressed (also 512 MB uncompressed and 64 MB per file). The `git archive` and
+`git ls-tree` lines above measure what the build will download; run them after
+committing and before pushing. When it is over or close to the limit, push
+only what the agent needs: on the `beaker/...` branch, `git rm -r` the large
+tracked paths that the integration target, its imports, its dependency install, and the selected
 config never read (datasets already uploaded to Beaker, media, model weights,
 notebooks, build outputs), commit that separately, measure again, then push.
 Never drop a file the agent reads at runtime, and never use `--cached`: the
