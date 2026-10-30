@@ -175,3 +175,11 @@ class RepositoryContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TypeSafeRoutingTests(unittest.TestCase):
+    def test_native_routing_contract(self) -> None:
+        text = (ROOT / "skills/beaker-setup/references/model-routing-and-tracing.md").read_text()
+        for required in ("api.typesafe.ai", "/v1/systemone", "TYPESAFE_API_KEY", "zstd", "scoring_inference_target()", "provider_proxy", "long-context"):
+            self.assertIn(required, text)
+        self.assertTrue((ROOT / "skills/beaker-setup/references/typesafe_client.py").is_file())
