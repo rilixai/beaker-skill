@@ -72,11 +72,10 @@ route accepts reasoning effort words rather than token budgets such as
 budget, map it to a supported effort word in the evaluation adapter. Do not
 apply that conversion to native requests merely because they are proxied.
 
-For native TypeSafe image and long-context calls, preserve the application's
-opt-in headers: `TypeSafe-Danger-Zone-Images: true` and
-`TypeSafe-Danger-Zone-Long-Context: true`. Model discovery (`GET /v1/models`)
-is not proxied. Jev's native decision requests use automatic routing; the
-Chat Completions helpers cannot represent them.
+For TypeSafe calls that use images, preserve `TypeSafe-Danger-Zone-Images: true`.
+For calls that use long context, preserve `TypeSafe-Danger-Zone-Long-Context: true`.
+Model discovery (`GET /v1/models`) is not proxied. The Chat Completions helpers
+cannot represent Jev's native decision requests.
 
 ## Explicit gateway fallback
 
