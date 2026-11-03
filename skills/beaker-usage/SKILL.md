@@ -156,8 +156,10 @@ desired commit; do not launch with the tag or SHA.
 Inspect the selected `Integration.targets` without changing it. A repository-only
 Integration uses `repository(...)`; one that edits documents declares `documents(...)`,
 alone or as `targets=(repository(...), documents(...))`. Every Integration has one
-`RunSetup` class whose `prepare_run()` yields a result per declared target kind. All launch with `beaker run trigger` and support
-model comparison, including the DocumentChangeSet of a winner.
+`RunSetup` class whose `prepare_run()` yields a result per declared target kind.
+All launch with `beaker run trigger`. Both target kinds support model comparison
+when the application's client can run the selected models. Document winners
+retain their DocumentChangeSet.
 
 The normal first run optimizes the production system. Do not add
 `--optimization-model` unless the developer explicitly asks to compare models.
@@ -178,6 +180,8 @@ Discover allowed models with `beaker model list --available-only --json`.
 Repeat `--optimization-model provider:model` for 1–8 distinct selected models.
 Keep the same Integration, source branch and immutable dataset for every model.
 Do not change the editable surface to make a comparison possible.
+For Jev applications, see [native TypeSafe calls](references/cli-reference.md#native-typesafe-calls)
+for the distinction between application calls and launch/scorer model selection.
 
 TRAIN drives optimization. Without model comparison, TEST measures the selected
 winner. Comparisons measure the unchanged setup and each model's seed and
@@ -347,10 +351,3 @@ report the full run ID and authoritative state. For pulled results, report the
 destination and a concise result summary.
 When talking to the developer, refer to runs as "run" or "experiment" (for example, `beaker run`).
 Call the named target the Beaker agent and the run type agent optimization.
-
-### TypeSafe routing availability
-
-For Jev calls, confirm server-reported TypeSafe routing before omitting
-`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-Read [TypeSafe routing availability](references/cli-reference.md#typesafe-routing-availability)
-for supported requests, billing, and model-selection limits.

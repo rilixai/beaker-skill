@@ -49,7 +49,7 @@ Direct calls have no platform fallback. Preserve existing
 customer keys and billing choices. Do not create keys solely to make supported
 proxy calls work.
 
-OpenAI, Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys (`OPENAI_API_KEY`,
+OpenAI, Anthropic, Google/Gemini, OpenRouter and TypeSafe keys (`OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`,
 `TYPESAFE_API_KEY`)
 are optional in hosted runs; leave them out of `integrations.<id>.required_env`
@@ -74,9 +74,6 @@ apply that conversion to native requests merely because they are proxied.
 
 ## TypeSafe / Jev
 
-Confirm that the server reports TypeSafe provider routing before relying on it.
-TypeSafe uses the shared provider-routing gate, organization allowlist, and
-platform credential checks; it has no separate rollout switch.
 Keep the application's TypeSafe client, canonical URL, model, state, questions,
 and answer handling. Both synchronous and asynchronous clients can use the proxy;
 the proxy decodes the SDK's default zstd compression. Do not disable TLS checks.
@@ -91,13 +88,6 @@ they do not require a customer key.
 Model discovery (`GET /v1/models`) and custom hosts are not routed through the
 platform. Native SDK predictions do not require model discovery. Preserve any
 application calls that need it and use the customer's direct configuration.
-Declare `TYPESAFE_API_KEY` when the developer chooses customer billing or the
-call cannot use platform routing. Otherwise leave it out of `required_env`.
-Never copy a local key to hosted settings just because it exists.
-
-A real key keeps direct TypeSafe billing. A supported call without a real key
-uses Beaker credits. An invalid key or budget error is a failure; do not switch
-routes to bypass it. Local execution keeps the application's own credentials.
 
 Jev is a decision model. It cannot use the Chat Completions helpers
 `inference_target()` or `scoring_inference_target()`. Do not put it in a

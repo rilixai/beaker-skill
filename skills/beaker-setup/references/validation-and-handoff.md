@@ -277,7 +277,7 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   `integrations.<id>.required_env` entries alone.
 - `integrations.<id>.required_env` contains the variables those paths read
   directly, including setup-only credentials, minus the optional OpenAI,
-  Anthropic, Google/Gemini, OpenRouter and supported TypeSafe keys. Required secrets are available
+  Anthropic, Google/Gemini, OpenRouter and TypeSafe keys. Required secrets are available
   from hosted settings. No real provider key was created or waited on solely
   for hosted routing or explicit gateway access. Local shell and `.beaker/.env`
   values were not treated as hosted settings.
@@ -314,10 +314,3 @@ setup is finished, include the full run UUID, UI link, and current state, and
 make clear that any remaining wait is for Beaker's hosted run rather than more
 integration work. If monitoring continues, report meaningful state changes
 without implying that setup is still in progress.
-
-### TypeSafe routing availability
-
-For Jev calls, confirm server-reported TypeSafe routing before omitting
-`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-Read [TypeSafe / Jev routing](model-routing-and-tracing.md#typesafe--jev)
-for supported requests, billing, and model-selection limits.

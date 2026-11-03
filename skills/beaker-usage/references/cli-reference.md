@@ -7,6 +7,7 @@
 - [Discovery](#discovery)
 - [Launch commands](#launch-commands)
 - [Comparison-model flags](#comparison-model-flags)
+- [Native TypeSafe calls](#native-typesafe-calls)
 - [Run lifecycle](#run-lifecycle)
 - [Status exit codes](#status-exit-codes)
 - [Common failures](#common-failures)
@@ -210,6 +211,20 @@ For Integration runs, `--test-all-candidates`, `top_k_test_eval`, and
 `test_baseline` do not change TEST evaluation. Do not pass these controls;
 acceptance by the launch API does not mean they are supported for Integrations.
 
+## Native TypeSafe calls
+
+Preserve the native System One client and request shape.
+The platform route covers native `POST /v1/systemone` calls with Choice, Score,
+Noul, and Box questions, including JSON image assets, SDK multipart images, and
+long context. Preserve the application's image and long-context opt-in headers.
+These calls can use Beaker credits without a customer key. A real customer key
+retains direct billing. Model discovery (`GET /v1/models`) and custom hosts
+require the customer's direct configuration.
+
+Jev is available for native application calls, not as a chat-based launch or
+scorer model. Report native judge traffic as `provider_proxy`, not dedicated
+`scorer` usage.
+
 ## Run lifecycle
 
 ```bash
@@ -278,18 +293,3 @@ sound like unfinished setup.
   integration unless the developer asks to diagnose or repair it.
 - **Cancellation rejects a terminal run:** report the authoritative terminal
   state; do not retry cancellation in a loop.
-
-### TypeSafe routing availability
-
-For Jev calls, confirm server-reported TypeSafe routing before omitting
-`TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-The platform route covers native `POST /v1/systemone` calls with Choice, Score,
-Noul, and Box questions, including JSON image assets, SDK multipart images, and
-long context. Preserve the application's image and long-context opt-in headers.
-These calls can use Beaker credits without a customer key. A real customer key
-retains direct billing. Model discovery (`GET /v1/models`) and custom hosts
-require the customer's direct configuration.
-
-Jev is available for native application calls, not as a chat-based launch or
-scorer model. Report native judge traffic as `provider_proxy`, not dedicated
-`scorer` usage.
