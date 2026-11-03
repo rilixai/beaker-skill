@@ -7,7 +7,6 @@
 - [Discovery](#discovery)
 - [Launch commands](#launch-commands)
 - [Comparison-model flags](#comparison-model-flags)
-- [Native TypeSafe calls](#native-typesafe-calls)
 - [Run lifecycle](#run-lifecycle)
 - [Status exit codes](#status-exit-codes)
 - [Common failures](#common-failures)
@@ -210,19 +209,6 @@ The CLI has no `--execution-mode` flag.
 For Integration runs, `--test-all-candidates`, `top_k_test_eval`, and
 `test_baseline` do not change TEST evaluation. Do not pass these controls;
 acceptance by the launch API does not mean they are supported for Integrations.
-
-## Native TypeSafe calls
-
-Preserve the native System One client and request shape.
-The platform route covers native `POST /v1/systemone` calls with Choice, Score,
-Noul, and Box questions, including JSON image assets, SDK multipart images, and
-long context. Preserve the application's image and long-context opt-in headers.
-Model discovery (`GET /v1/models`) and custom hosts require the customer's
-direct configuration.
-
-Jev is available for native application calls, not as a chat-based launch or
-scorer model. If the integration uses Jev as a native judge, explain that its
-proxy calls are accounted as `provider_proxy`, not dedicated `scorer` usage.
 
 ## Run lifecycle
 

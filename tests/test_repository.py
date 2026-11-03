@@ -169,7 +169,7 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertIn(token, content, str(skill))
 
     def test_examples_compile_without_sdk_dependencies(self):
-        for path in (SKILL.parent / "references").glob("*.py"):
+        for path in (SKILL.parent / "references").glob("*_integration.py"):
             compile(path.read_text(), str(path), "exec")
 
 

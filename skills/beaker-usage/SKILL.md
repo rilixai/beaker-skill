@@ -180,8 +180,6 @@ Discover allowed models with `beaker model list --available-only --json`.
 Repeat `--optimization-model provider:model` for 1–8 distinct selected models.
 Keep the same Integration, source branch and immutable dataset for every model.
 Do not change the editable surface to make a comparison possible.
-For Jev applications, see [native TypeSafe calls](references/cli-reference.md#native-typesafe-calls)
-for the distinction between application calls and launch/scorer model selection.
 
 TRAIN drives optimization. Without model comparison, TEST measures the selected
 winner. Comparisons measure the unchanged setup and each model's seed and

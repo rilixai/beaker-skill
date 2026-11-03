@@ -39,7 +39,7 @@ The proxy handles these canonical provider hosts and inference endpoints:
 | `api.anthropic.com` | Messages |
 | `generativelanguage.googleapis.com` | GenerateContent and StreamGenerateContent (`v1`/`v1beta`; streaming uses `alt=sse`) |
 | `openrouter.ai` | Chat Completions |
-| `api.typesafe.ai` | System One decisions, including images and long context (`POST /v1/systemone`) |
+| `api.typesafe.ai` | System One (`POST /v1/systemone`; Choice, Score, Noul, Box, JSON/multipart images, and long context) |
 
 Calls without a real provider key use platform credentials through Beaker and
 are charged to the run; this proxy path does not look up organization keys.
@@ -72,30 +72,11 @@ route accepts reasoning effort words rather than token budgets such as
 budget, map it to a supported effort word in the evaluation adapter. Do not
 apply that conversion to native requests merely because they are proxied.
 
-## TypeSafe / Jev
-
-Keep the application's TypeSafe client, canonical URL, model, state, questions,
-and answer handling.
-
-Platform routing supports Choice, Score, Noul, and Box questions at
-`POST /v1/systemone`, including JSON image assets, SDK multipart images, and
-long-context requests. Preserve the application's opt-in headers when used:
-`TypeSafe-Danger-Zone-Images: true` and
-`TypeSafe-Danger-Zone-Long-Context: true`.
-
-Model discovery (`GET /v1/models`) and custom hosts are not routed through the
-platform. Native SDK predictions do not require model discovery. Preserve any
-application calls that need it and use the customer's direct configuration.
-
-Jev is a decision model. It cannot use the Chat Completions helpers
-`inference_target()` or `scoring_inference_target()`. Do not put it in a
-chat-based comparison, optimizer, or `scorer_model` configuration. If the
-integration uses Jev as a native judge, explain that its proxy calls are
-accounted as `provider_proxy`, not dedicated `scorer` usage.
-
-The executable [TypeSafe example](typesafe_client.py) retains native
-requests. Use the application's existing dependency version and integration
-interface. It is an example call adapter, not a complete Integration factory.
+For native TypeSafe image and long-context calls, preserve the application's
+opt-in headers: `TypeSafe-Danger-Zone-Images: true` and
+`TypeSafe-Danger-Zone-Long-Context: true`. Model discovery (`GET /v1/models`)
+is not proxied. Jev's native decision requests use automatic routing; the
+Chat Completions helpers cannot represent them.
 
 ## Explicit gateway fallback
 
