@@ -434,9 +434,10 @@ optional versions (and, when code was editable too, a repository candidate), whi
 the developer applies separately; do not auto-apply it. Do not use
 `beaker-repository` as a document group name.
 
-Every integration supports explicitly requested model comparison, including the
-`DocumentChangeSet` of a winner. Preserve the selected editable
-surface; never change it just to enable a run.
+Both target kinds support explicitly requested model comparison when the
+application's client can run the selected models. Document winners retain their
+`DocumentChangeSet`. Preserve the selected editable surface; never change it
+just to enable a run.
 The named target is the **Beaker agent**; the run type is **agent optimization**.
 
 ## Route models without changing production defaults
@@ -454,7 +455,7 @@ Use customer clients and credentials as the last resort, or when the developer
 explicitly requests them. Do not copy local provider keys into hosted settings
 by default; preserve existing hosted credential choices. The explicit gateway
 uses platform keys when no agent or organization key is configured. OpenAI,
-Anthropic, Google/Gemini and OpenRouter keys are optional in hosted runs; leave
+Anthropic, Google/Gemini, OpenRouter and TypeSafe keys are optional in hosted runs; leave
 them out of `integrations.<id>.required_env`.
 
 Identify and wire an optional model/client override during setup when a narrow
@@ -560,7 +561,7 @@ Before launching, complete the credential preflight in
 [cli-and-hosted-operations.md](references/cli-and-hosted-operations.md). Derive
 required variables from setup, case loading, candidate initialization, application
 execution and scoring paths, then declare them in `integrations.<id>.required_env`
-(OpenAI, Anthropic, Google/Gemini and OpenRouter keys are optional and stay out).
+(OpenAI, Anthropic, Google/Gemini, OpenRouter and TypeSafe keys are optional and stay out).
 Check hosted readiness with:
 
 ```bash

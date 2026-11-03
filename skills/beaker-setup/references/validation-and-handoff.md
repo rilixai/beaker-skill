@@ -277,7 +277,7 @@ Synthetic rows are allowed only when the developer explicitly requests a smoke-o
   `integrations.<id>.required_env` entries alone.
 - `integrations.<id>.required_env` contains the variables those paths read
   directly, including setup-only credentials, minus the optional OpenAI,
-  Anthropic, Google/Gemini and OpenRouter keys. Required secrets are available
+  Anthropic, Google/Gemini, OpenRouter and TypeSafe keys. Required secrets are available
   from hosted settings. No real provider key was created or waited on solely
   for hosted routing or explicit gateway access. Local shell and `.beaker/.env`
   values were not treated as hosted settings.

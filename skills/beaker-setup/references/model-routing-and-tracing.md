@@ -39,6 +39,7 @@ The proxy handles these canonical provider hosts and inference endpoints:
 | `api.anthropic.com` | Messages |
 | `generativelanguage.googleapis.com` | GenerateContent and StreamGenerateContent (`v1`/`v1beta`; streaming uses `alt=sse`) |
 | `openrouter.ai` | Chat Completions |
+| `api.typesafe.ai` | System One (`POST /v1/systemone`; Choice, Score, Noul, Box, JSON/multipart images, and long context) |
 
 Calls without a real provider key use platform credentials through Beaker and
 are charged to the run; this proxy path does not look up organization keys.
@@ -48,8 +49,9 @@ Direct calls have no platform fallback. Preserve existing
 customer keys and billing choices. Do not create keys solely to make supported
 proxy calls work.
 
-OpenAI, Anthropic, Google/Gemini and OpenRouter keys (`OPENAI_API_KEY`,
-`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`)
+OpenAI, Anthropic, Google/Gemini, OpenRouter and TypeSafe keys (`OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`,
+`TYPESAFE_API_KEY`)
 are optional in hosted runs; leave them out of `integrations.<id>.required_env`
 unless the developer explicitly wants their own key used. Other required
 credentials still need real values. Do not add placeholders, host overrides, or
@@ -69,6 +71,11 @@ route accepts reasoning effort words rather than token budgets such as
 `reasoning.max_tokens`. If an existing Chat Completions wrapper exposes a
 budget, map it to a supported effort word in the evaluation adapter. Do not
 apply that conversion to native requests merely because they are proxied.
+
+For TypeSafe calls that use images, preserve `TypeSafe-Danger-Zone-Images: true`.
+For calls that use long context, preserve `TypeSafe-Danger-Zone-Long-Context: true`.
+Model discovery (`GET /v1/models`) is not proxied. The Chat Completions helpers
+cannot represent Jev's native decision requests.
 
 ## Explicit gateway fallback
 

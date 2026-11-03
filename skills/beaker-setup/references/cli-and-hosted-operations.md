@@ -321,7 +321,7 @@ Classify each credential before configuring it:
 - Prefer automatic hosted provider routing during initial integration when it
   supports the setup, host, endpoint, and model. When enabled, it supplies platform
   access without changing the client or requiring a real provider key. OpenAI,
-  Anthropic, Google/Gemini and OpenRouter keys are optional; leave them out of
+  Anthropic, Google/Gemini, OpenRouter and TypeSafe keys are optional; leave them out of
   `integrations.<id>.required_env`. Preserve existing hosted keys and customer
   billing choices; do not copy local provider keys into hosted settings by
   default.
