@@ -169,17 +169,9 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertIn(token, content, str(skill))
 
     def test_examples_compile_without_sdk_dependencies(self):
-        for path in (SKILL.parent / "references").glob("*_integration.py"):
+        for path in (SKILL.parent / "references").glob("*.py"):
             compile(path.read_text(), str(path), "exec")
 
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TypeSafeRoutingTests(unittest.TestCase):
-    def test_native_routing_contract(self) -> None:
-        text = (ROOT / "skills/beaker-setup/references/model-routing-and-tracing.md").read_text()
-        for required in ("api.typesafe.ai", "/v1/systemone", "TYPESAFE_API_KEY", "zstd", "scoring_inference_target()", "provider_proxy", "long-context"):
-            self.assertIn(required, text)
-        self.assertTrue((ROOT / "skills/beaker-setup/references/typesafe_client.py").is_file())

@@ -217,13 +217,12 @@ Preserve the native System One client and request shape.
 The platform route covers native `POST /v1/systemone` calls with Choice, Score,
 Noul, and Box questions, including JSON image assets, SDK multipart images, and
 long context. Preserve the application's image and long-context opt-in headers.
-These calls can use Beaker credits without a customer key. A real customer key
-retains direct billing. Model discovery (`GET /v1/models`) and custom hosts
-require the customer's direct configuration.
+Model discovery (`GET /v1/models`) and custom hosts require the customer's
+direct configuration.
 
 Jev is available for native application calls, not as a chat-based launch or
-scorer model. Report native judge traffic as `provider_proxy`, not dedicated
-`scorer` usage.
+scorer model. If the integration uses Jev as a native judge, explain that its
+proxy calls are accounted as `provider_proxy`, not dedicated `scorer` usage.
 
 ## Run lifecycle
 
