@@ -352,8 +352,5 @@ Call the named target the Beaker agent and the run type agent optimization.
 
 For Jev calls, confirm server-reported TypeSafe routing before omitting
 `TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-The initial platform route covers text Choice, Score and Noul requests and
-model listing. Images, Box, multipart, long context, and custom hosts need the
-customer's direct configuration. A real customer key retains direct billing.
-Jev cannot use the Chat Completions model-selection or scorer helpers. Report
-native judge traffic as `provider_proxy`, not dedicated `scorer` usage.
+Read [TypeSafe routing availability](references/cli-reference.md#typesafe-routing-availability)
+for supported requests, billing, and model-selection limits.

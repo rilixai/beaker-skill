@@ -283,8 +283,13 @@ sound like unfinished setup.
 
 For Jev calls, confirm server-reported TypeSafe routing before omitting
 `TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-The initial platform route covers text Choice, Score and Noul requests and
-model listing. Images, Box, multipart, long context, and custom hosts need the
-customer's direct configuration. A real customer key retains direct billing.
-Jev cannot use the Chat Completions model-selection or scorer helpers. Report
-native judge traffic as `provider_proxy`, not dedicated `scorer` usage.
+The platform route covers native `POST /v1/systemone` calls with Choice, Score,
+Noul, and Box questions, including JSON image assets, SDK multipart images, and
+long context. Preserve the application's image and long-context opt-in headers.
+These calls can use Beaker credits without a customer key. A real customer key
+retains direct billing. Model discovery (`GET /v1/models`) and custom hosts
+require the customer's direct configuration.
+
+Jev is available for native application calls, not as a chat-based launch or
+scorer model. Report native judge traffic as `provider_proxy`, not dedicated
+`scorer` usage.

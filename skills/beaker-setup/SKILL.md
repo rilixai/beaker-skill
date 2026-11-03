@@ -711,8 +711,5 @@ Read [validation-and-handoff.md](references/validation-and-handoff.md) before de
 
 For Jev calls, confirm server-reported TypeSafe routing before omitting
 `TYPESAFE_API_KEY`. Preserve the native System One client and request shape.
-The initial platform route covers text Choice, Score and Noul requests and
-model listing. Images, Box, multipart, long context, and custom hosts need the
-customer's direct configuration. A real customer key retains direct billing.
-Jev cannot use the Chat Completions model-selection or scorer helpers. Report
-native judge traffic as `provider_proxy`, not dedicated `scorer` usage.
+Read [TypeSafe / Jev routing](references/model-routing-and-tracing.md#typesafe--jev)
+for supported requests, billing, and model-selection limits.

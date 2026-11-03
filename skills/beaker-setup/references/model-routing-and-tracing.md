@@ -39,7 +39,7 @@ The proxy handles these canonical provider hosts and inference endpoints:
 | `api.anthropic.com` | Messages |
 | `generativelanguage.googleapis.com` | GenerateContent and StreamGenerateContent (`v1`/`v1beta`; streaming uses `alt=sse`) |
 | `openrouter.ai` | Chat Completions |
-| `api.typesafe.ai` | System One text decisions (`POST /v1/systemone`) when TypeSafe routing is enabled |
+| `api.typesafe.ai` | System One decisions, including images and long context (`POST /v1/systemone`) |
 
 Calls without a real provider key use platform credentials through Beaker and
 are charged to the run; this proxy path does not look up organization keys.
@@ -75,14 +75,22 @@ apply that conversion to native requests merely because they are proxied.
 ## TypeSafe / Jev
 
 Confirm that the server reports TypeSafe provider routing before relying on it.
-TypeSafe has a separate rollout switch and needs a configured platform credential.
+TypeSafe uses the shared provider-routing gate, organization allowlist, and
+platform credential checks; it has no separate rollout switch.
 Keep the application's TypeSafe client, canonical URL, model, state, questions,
 and answer handling. Both synchronous and asynchronous clients can use the proxy;
 the proxy decodes the SDK's default zstd compression. Do not disable TLS checks.
 
-Supported calls are text Choice, Score and Noul questions at `POST /v1/systemone`,
-plus the native `GET /v1/models` response. Image/Box, multipart, long-context,
-and custom-host calls require the customer's existing direct configuration.
+Platform routing supports Choice, Score, Noul, and Box questions at
+`POST /v1/systemone`, including JSON image assets, SDK multipart images, and
+long-context requests. Preserve the application's opt-in headers when used:
+`TypeSafe-Danger-Zone-Images: true` and
+`TypeSafe-Danger-Zone-Long-Context: true`. These requests can use Beaker credits;
+they do not require a customer key.
+
+Model discovery (`GET /v1/models`) and custom hosts are not routed through the
+platform. Native SDK predictions do not require model discovery. Preserve any
+application calls that need it and use the customer's direct configuration.
 Declare `TYPESAFE_API_KEY` when the developer chooses customer billing or the
 call cannot use platform routing. Otherwise leave it out of `required_env`.
 Never copy a local key to hosted settings just because it exists.
