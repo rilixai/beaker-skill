@@ -364,6 +364,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
+| Claude Code CLI in another sandbox or container | `beaker-sdk[tracing]` | `claude_code_stream.record(...)` on the `--output-format stream-json` transcript after the run |
 | Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
@@ -468,6 +469,34 @@ When the repository must not archive that content, use
 model input/output coverage, and only structure survives — the tree, timings,
 tokens, model and tool names. Say so at handoff, because prompt optimization has
 no prompts to read in that mode.
+
+`claude_agent_sdk` only works when the CLI runs on the same machine as the
+capture: it points the CLI at a loopback endpoint. When the CLI runs somewhere
+that endpoint cannot be reached (another sandbox or container), trace it from
+its `--output-format stream-json` transcript once it is fetched back:
+
+```python
+from beaker.tracing import current_trace
+from beaker.tracing.integrations import claude_code_stream
+
+claude_code_stream.record(current_trace(), transcript.read_text().splitlines(), prompt=instruction)
+```
+
+`record(...)` builds one model span per call (grouped by `message.id`) and one
+tool span per `tool_use`, closed by its `tool_result`. It takes the timings from
+the lines' `timestamp`, and marks API errors and failed results with an ERROR
+status. Non-JSON lines are skipped, so a transcript written with `2>&1 | tee` can
+be passed as is. The transcript does not repeat the `-p` prompt; pass it as
+`prompt`. Launch the CLI with `--include-partial-messages` so each call's output
+tokens are exact. Without it, the totals and cost still match what Claude Code
+reported, but the split of output tokens across one turn's calls is estimated
+(`beaker.usage.output_tokens_source` is `result` on those spans).
+
+Do not build spans from the transcript yourself: the CLI prints one `assistant`
+line per content block, each repeating the call's usage. One span per line
+over-counts calls and input tokens, and under-counts output tokens.
+`record(...)` returns `None` and records nothing outside an active capture, so it
+can be called unconditionally.
 
 Use `with registered(current_trace()) as litellm_trace:` around synchronous
 `completion(...)` calls and call `litellm_trace.wait()` before leaving the
