@@ -3,8 +3,8 @@ name: beaker-setup
 description: Set up a Python repository with the Beaker Integration contract, connect real labeled data and application execution, and validate setup. Keep evaluation tooling under .beaker and preserve production behavior. Use beaker-usage for operating an already configured integration.
 license: MIT
 metadata:
-  version: "0.6.6"
-  beaker_sdk_version: "0.6.6"
+  version: "0.6.7"
+  beaker_sdk_version: "0.6.7"
 ---
 
 # Beaker setup
@@ -27,14 +27,14 @@ load it normally without reinstalling it.
 
 ## Version check
 
-This skill (0.6.6) is written for beaker-sdk 0.6.6. The skill and the SDK are
+This skill (0.6.7) is written for beaker-sdk 0.6.7. The skill and the SDK are
 released in lockstep with the same version number, so any difference between
 them means one side is stale. Before the happy path, run `beaker --version`
-(or `uvx --from 'beaker-sdk>=0.6.6' beaker --version` while Beaker is not yet
-installed in the project). If the installed CLI is older than 0.6.6, or does
+(or `uvx --from 'beaker-sdk>=0.6.7' beaker --version` while Beaker is not yet
+installed in the project). If the installed CLI is older than 0.6.7, or does
 not recognize `--version`, upgrade `beaker-sdk` through the project's
 development-dependency workflow before continuing; older CLIs may lack commands
-or flags this skill relies on. If the CLI is newer than 0.6.6, this skill is
+or flags this skill relies on. If the CLI is newer than 0.6.7, this skill is
 stale: run `npx skills update beaker-setup` and `npx skills update
 beaker-usage`, then reload the skill as described above. Do not work around a
 mismatch by guessing at CLI behavior.
@@ -345,6 +345,11 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   errors, classify them before returning `CaseResult`, as described in
   [datasets-and-integration.md](references/datasets-and-integration.md). A caught
   error is not automatically a measured wrong answer.
+- Time only the application call. Set
+  `CaseResult.context["beaker_rollout_duration_ms"]` from
+  `asyncio.get_running_loop().time()` around it, so per-case setup (database
+  clones, world loading, shared locks) and cleanup are not counted as latency.
+  See [Time only the application call](references/datasets-and-integration.md#time-only-the-application-call).
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   passing and failing checks. Ask which metric to optimize and which weights to

@@ -152,8 +152,9 @@ result artifacts and can appear in the sample view; it is not private scratch
 space for scoring. Keep it compact: select the needed fields instead of returning
 an entire framework state object, and avoid duplicating large model/tool payloads
 already captured in `runtime.trace`. Scores and concise diagnoses go in `CaseScore`.
-`CaseResult` accepts only `output` and optional `output_kind`; do not add a
-second evidence or telemetry payload. `score_case` reads `case.expected`,
+`CaseResult` takes `output`, optional `output_kind` and optional `context`
+(scorer evidence and the `beaker_rollout_duration_ms` timer below); do not add
+another telemetry payload. `score_case` reads `case.expected`,
 `result.output`, and staged input files through its `case_files_dir` argument.
 
 A `RunSetup` subclass declares `row_model`, implements async-generator
@@ -344,6 +345,42 @@ Distinguish execution failure from a bad answer:
   rebuild it with the harness's own helper first or every crash silently
   scores zero. A batch of zeros that finished in milliseconds is a crash, not
   a baseline.
+
+### Time only the application call
+
+By default Beaker's latency is the whole `run_case` call. Per-case setup
+(cloning a database, loading a world, waiting on a shared lock), cleanup and
+display then count as candidate latency, and harness slowness looks like a
+regression. Report the application call alone in
+`CaseResult.context["beaker_rollout_duration_ms"]`; Beaker still records the
+full `run_case` time separately for diagnosis.
+
+```python
+import asyncio
+
+from beaker import CaseResult
+
+async def run_case(*, case_input, runtime) -> CaseResult:
+    world = await prepare_case_world(case_input)  # setup: excluded
+    try:
+        loop = asyncio.get_running_loop()
+        started = loop.time()
+        answer = await run_agent(case_input, world)
+        rollout_ms = (loop.time() - started) * 1000
+    finally:
+        await world.close()  # cleanup: excluded
+    return CaseResult(output=answer, context={"beaker_rollout_duration_ms": rollout_ms})
+```
+
+- Use `asyncio.get_running_loop().time()`. It reads the clock Beaker captured
+  before loading candidate code; `time.perf_counter()` or `time.time()` can be
+  patched or frozen by the candidate application.
+- Wrap exactly the work the optimized application does in production: model
+  calls, tool calls and the application's own processing. Leave out anything
+  that exists only because of the evaluation harness.
+- The value must be positive and finite. Beaker ignores an invalid value and
+  falls back to unknown latency; it never treats it as zero.
+- When `run_case` has no per-case setup or cleanup, the timer is optional.
 
 ## Prove candidate execution
 
