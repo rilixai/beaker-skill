@@ -152,8 +152,9 @@ result artifacts and can appear in the sample view; it is not private scratch
 space for scoring. Keep it compact: select the needed fields instead of returning
 an entire framework state object, and avoid duplicating large model/tool payloads
 already captured in `runtime.trace`. Scores and concise diagnoses go in `CaseScore`.
-`CaseResult` accepts only `output` and optional `output_kind`; do not add a
-second evidence or telemetry payload. `score_case` reads `case.expected`,
+`CaseResult` takes `output`, optional `output_kind` and optional `context`
+(scorer evidence and the `beaker_rollout_duration_ms` timer below); do not add
+another telemetry payload. `score_case` reads `case.expected`,
 `result.output`, and staged input files through its `case_files_dir` argument.
 
 A `RunSetup` subclass declares `row_model`, implements async-generator
@@ -351,8 +352,8 @@ By default Beaker's latency is the whole `run_case` call. Per-case setup
 (cloning a database, loading a world, waiting on a shared lock), cleanup and
 display then count as candidate latency, and harness slowness looks like a
 regression. Report the application call alone in
-`CaseResult.context["beaker_rollout_duration_ms"]`; Beaker records the
-remainder of `run_case` as setup time itself.
+`CaseResult.context["beaker_rollout_duration_ms"]`; Beaker still records the
+full `run_case` time separately for diagnosis.
 
 ```python
 import asyncio
