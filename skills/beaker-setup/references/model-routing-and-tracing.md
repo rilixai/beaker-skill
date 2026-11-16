@@ -364,6 +364,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
+| Claude Code CLI run by Harbor (`harbor`, agent `claude-code`) | `beaker-sdk[tracing]` | `claude_agent_sdk.registered(..., remote=True)` scope, with its `env(...)` passed as the agent's `AgentConfig(env=...)` |
 | Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
@@ -461,16 +462,51 @@ case — the CLI batches its exports, so telemetry still in flight when the
 capture closes is recorded as an omission and downgrades the capture to
 `incomplete`.
 
-When the case hands the CLI to a harness that runs it in a sandbox of its own —
-Harbor's Modal environment does — the capture's endpoint on loopback is
-unreachable from there. Use `registered(current_trace(), remote=True)` and pass
-`claude.env(...)` to the harness as the agent's environment. In a hosted rollout
-the endpoint is then a Modal connect token to the rollout's sandbox, opened by
-the platform for this capture; no Modal credentials are needed or exposed.
-Outside a hosted rollout, such as a local `beaker run`, it stays loopback with a
-warning, so a remote agent traces only when hosted. Let the harness end the CLI
-normally or with SIGTERM: a CLI killed outright loses its last export batch, and
-the capture records it as an omission.
+When the case hands the CLI to a harness that runs it in a sandbox of its own,
+the capture's endpoint on loopback is unreachable from there. Harbor's Modal
+environment is that case: its `claude-code` agent runs `claude` in a separate
+Modal sandbox. Use `registered(current_trace(), remote=True)` and pass
+`claude.env(...)` as the agent's environment. Harbor applies `AgentConfig.env`
+(`--ae` on its CLI) to every command it runs in the agent's sandbox:
+
+```python
+from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, TrialConfig
+from harbor.trial.trial import Trial
+
+async with beaker_claude.registered(current_trace(), remote=True) as claude:
+    agent = AgentConfig(
+        name="claude-code",
+        model_name=model_name,
+        env=claude.env(existing=agent_env),
+    )
+    trial = await Trial.create(
+        TrialConfig(task=TaskConfig(path=task_dir), agent=agent, environment=EnvironmentConfig(type="modal"))
+    )
+    result = await trial.run()
+```
+
+Keep the application's own agent variables in `existing=`; the call adds the
+telemetry variables only. If the repository builds Harbor's agent config
+elsewhere, merge `claude.env()` into that config's `env` for the duration of the
+`registered(...)` scope; do not set the variables process-wide.
+
+In a hosted rollout the endpoint is a Modal connect token to the rollout's own
+sandbox, which the platform opens for this capture. Beaker needs no Modal
+credentials for it. Harbor's Modal environment still uses the repository's own
+Modal credentials to create the agent's sandbox, so keep them in the hosted
+environment values as the application already requires. Outside a hosted
+rollout, such as a local `beaker run`, no tunnel exists: the endpoint stays
+loopback with a warning, the CLI's telemetry never arrives, and the capture is
+`incomplete`. Such a setup is validated on its first hosted run (see
+[validation-and-handoff.md](validation-and-handoff.md)).
+
+When Harbor's agent finishes on its own, the CLI exits normally and flushes its
+last export batch. When the agent hits its task timeout, Harbor stops waiting
+and tears the sandbox down with the CLI still running, so telemetry not yet
+exported is lost. The capture can still read `complete` when that happens, so
+it holds only the model calls exported before the cut. Keep the task's agent
+timeout above the case's normal duration, and treat the trace of a timed-out
+trial as truncated.
 
 Content is opt-in in Claude Code and the integration asks for it, so prompts,
 responses and tool input/output reach the capture for the optimizer to read.
