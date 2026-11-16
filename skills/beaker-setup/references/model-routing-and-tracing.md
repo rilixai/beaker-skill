@@ -504,10 +504,9 @@ loopback with a warning, the CLI's telemetry never arrives, and the capture is
 When Harbor's agent finishes on its own, the CLI exits normally and flushes its
 last export batch. When the agent hits its task timeout, Harbor stops waiting
 and tears the sandbox down with the CLI still running, so telemetry not yet
-exported is lost. The capture can still read `complete` when that happens, so
-it holds only the model calls exported before the cut. Keep the task's agent
-timeout above the case's normal duration, and treat the trace of a timed-out
-trial as truncated.
+exported is lost. The capture holds only the calls exported before the cut, and
+records the lost interaction as an omission, so it reads `incomplete`. Keep the
+task's agent timeout above the case's normal duration.
 
 Content is opt-in in Claude Code and the integration asks for it, so prompts,
 responses and tool input/output reach the capture for the optimizer to read.
