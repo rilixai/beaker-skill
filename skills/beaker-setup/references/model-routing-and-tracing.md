@@ -364,7 +364,7 @@ handoffs — so do not wrap those calls in `runtime.trace.model_call(...)` as we
 | LiteLLM | `beaker-sdk[tracing,litellm]` | `litellm.registered(...)` scope around the calls |
 | OpenAI Agents SDK | `beaker-sdk[tracing,openai-agents]` | `openai_agents.registered(...)` scope around the run |
 | Claude Agent SDK (`claude-agent-sdk`, `claude-code-sdk`) | `beaker-sdk[tracing,claude-agent-sdk]` | `claude_agent_sdk.registered(...)` scope, with its `options(...)`/`env(...)` passed to the query |
-| Claude Code CLI in another sandbox or container (e.g. Harbor's `claude_code` agent) | `beaker-sdk[tracing]` | `claude_code_stream.record(...)` on the `--output-format stream-json` transcript after the run |
+| Claude Code CLI in another sandbox or container | `beaker-sdk[tracing]` | `claude_code_stream.record(...)` on the `--output-format stream-json` transcript after the run |
 | Prime Intellect `verifiers` (`ToolEnv` / `StatefulToolEnv`, 0.3.x) | `beaker-sdk[tracing,verifiers]` | `verifiers.instrument(env)` on the environment instance; **tool spans only** — model calls still need `trace.model_call(...)` |
 
 `beaker trace instrument` detects the framework and installs its extras; it does
@@ -472,9 +472,8 @@ no prompts to read in that mode.
 
 `claude_agent_sdk` only works when the CLI runs on the same machine as the
 capture: it points the CLI at a loopback endpoint. When the CLI runs somewhere
-that endpoint cannot be reached (another sandbox or container, for example
-Harbor's `claude_code` agent on Modal), trace it from its
-`--output-format stream-json` transcript once it is fetched back:
+that endpoint cannot be reached (another sandbox or container), trace it from
+its `--output-format stream-json` transcript once it is fetched back:
 
 ```python
 from beaker.tracing import current_trace
