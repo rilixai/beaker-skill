@@ -461,6 +461,17 @@ case — the CLI batches its exports, so telemetry still in flight when the
 capture closes is recorded as an omission and downgrades the capture to
 `incomplete`.
 
+When the case hands the CLI to a harness that runs it in a sandbox of its own —
+Harbor's Modal environment does — the capture's endpoint on loopback is
+unreachable from there. Use `registered(current_trace(), remote=True)` and pass
+`claude.env(...)` to the harness as the agent's environment. In a hosted rollout
+the endpoint is then a Modal connect token to the rollout's sandbox, opened by
+the platform for this capture; no Modal credentials are needed or exposed.
+Outside a hosted rollout, such as a local `beaker run`, it stays loopback with a
+warning, so a remote agent traces only when hosted. Let the harness end the CLI
+normally or with SIGTERM: a CLI killed outright loses its last export batch, and
+the capture records it as an omission.
+
 Content is opt-in in Claude Code and the integration asks for it, so prompts,
 responses and tool input/output reach the capture for the optimizer to read.
 When the repository must not archive that content, use
