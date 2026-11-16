@@ -345,6 +345,11 @@ class, and async `run_case` and `score_case` callables; it holds no run state.
   errors, classify them before returning `CaseResult`, as described in
   [datasets-and-integration.md](references/datasets-and-integration.md). A caught
   error is not automatically a measured wrong answer.
+- Time only the application call. Set
+  `CaseResult.context["beaker_rollout_duration_ms"]` from
+  `asyncio.get_running_loop().time()` around it, so per-case setup (database
+  clones, world loading, shared locks) and cleanup are not counted as latency.
+  See [Time only the application call](references/datasets-and-integration.md#time-only-the-application-call).
 - Implement `score_case(*, case, result, case_files_dir)` with the real quality
   metric. Return `CaseScore(objective=..., field_scores=..., checks=...)`, with
   passing and failing checks. Ask which metric to optimize and which weights to
