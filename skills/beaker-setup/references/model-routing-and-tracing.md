@@ -501,6 +501,12 @@ loopback with a warning, the CLI's telemetry never arrives, and the capture is
 `incomplete`. Such a setup is validated on its first hosted run (see
 [validation-and-handoff.md](validation-and-handoff.md)).
 
+The CLI reaches the tunnel over outbound HTTPS from the agent's sandbox. If the
+Harbor task restricts that sandbox's network (`[environment].network_mode` set to
+`"allowlist"` or `"none"`), the exports are blocked and the capture reads
+`incomplete` with "Claude Code exported no spans". Allow outbound HTTPS to the
+tunnel, or trace the case with `claude_code_stream` below.
+
 When Harbor's agent finishes on its own, the CLI exits normally and flushes its
 last export batch. When the agent hits its task timeout, Harbor stops waiting
 and tears the sandbox down with the CLI still running, so telemetry not yet
