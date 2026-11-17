@@ -210,6 +210,17 @@ containing only scorer or judge calls does not satisfy runtime trace validation.
 Run `beaker trace instrument --check` first when instrumentation is uncertain;
 smoke does not support `--trace`.
 
+When the case's model calls come only from a CLI that a harness runs in another
+sandbox, such as Claude Code in Harbor's Modal environment, wired with
+`registered(..., remote=True)`, the local capture cannot receive them: no tunnel
+exists outside a hosted rollout, so the capture is `incomplete` and
+`beaker trace doctor --require-model-calls` fails. Do not work around this by
+hand-annotating those calls or by moving the CLI into the local process. Run the
+local capture to check everything else, then state at handoff that runtime
+trace validation of the CLI's calls happens on the first hosted run. In that
+run's trace receipts, check that the CLI's `claude_code.llm_request` calls appear
+as model calls.
+
 Synthetic rows are allowed only when the developer explicitly requests a smoke-only wiring check. Label them clearly, never upload them as optimization data, and never present them as validation of the real contract.
 
 ## Completion checklist
